@@ -1,0 +1,218 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 pb-12">
+    <div class="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Relatório de Produtividade</h1>
+            <p class="text-gray-500 font-medium mt-1">
+                {% if periodo == 'hoje' %}Hoje, {{ data_inicio|default('hoje') }}
+                {% elif periodo == 'ontem' %}Ontem
+                {% elif periodo == 'semana' %}Esta semana ({{ data_inicio }} a {{ data_fim }})
+                {% elif periodo == 'mes' %}Este mês ({{ data_inicio }} a {{ data_fim }})
+                {% else %}Período: {{ data_inicio }} a {{ data_fim }}{% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="copyToWhatsApp()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-green-700 transition transform hover:-translate-y-0.5">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.417-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.305 1.652zm6.599-3.351c1.554.913 3.14 1.38 4.78 1.381 5.4 0 9.792-4.391 9.795-9.791.001-2.614-1.018-5.069-2.87-6.923-1.851-1.854-4.305-2.871-6.918-2.872-5.401 0-9.791 4.392-9.794 9.794-.001 1.838.48 3.633 1.391 5.174l-.946 3.454 3.552-.92zM17.481 14.392c-.31-.155-1.829-.902-2.112-1.005-.282-.102-.488-.153-.692.155-.205.307-.796 1.005-.975 1.21-.179.206-.358.232-.668.077-.31-.155-1.309-.482-2.492-1.54-.919-.821-1.54-1.838-1.72-2.146-.179-.31-.019-.477.136-.631.14-.139.31-.358.463-.538.155-.18.206-.307.31-.513.102-.206.052-.385-.026-.54-.076-.155-.692-1.666-.948-2.28-.249-.597-.502-.516-.692-.525-.18-.01-.385-.011-.59-.011-.205 0-.538.077-.821.385-.282.308-1.077 1.051-1.077 2.564 0 1.513 1.103 2.974 1.256 3.18.155.205 2.17 3.313 5.256 4.645.733.316 1.306.505 1.751.646.737.234 1.41.201 1.94.122.59-.088 1.829-.747 2.086-1.467.256-.719.256-1.334.18-1.467-.076-.134-.282-.213-.591-.368z"/></svg>
+                Copiar p/ WhatsApp
+            </button>
+            <a href="/relatorio/pdf?periodo={{ periodo }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Baixar PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 text-blue-800 text-xs rounded-lg px-3 py-2 mb-6">
+        Ao clicar em <span class="font-semibold">Baixar PDF</span>:
+        o navegador fará o download do arquivo e o sistema também salva uma cópia em
+        <span class="font-semibold">exports/relatorios</span> (dentro da pasta do projeto).
+    </div>
+
+    <!-- Filtros de Período -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-sm font-semibold text-gray-600 mr-2">Período:</span>
+            <a href="/relatorio?periodo=hoje" class="px-4 py-2 rounded-lg text-sm font-medium transition {% if periodo == 'hoje' %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Hoje</a>
+            <a href="/relatorio?periodo=ontem" class="px-4 py-2 rounded-lg text-sm font-medium transition {% if periodo == 'ontem' %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Ontem</a>
+            <a href="/relatorio?periodo=semana" class="px-4 py-2 rounded-lg text-sm font-medium transition {% if periodo == 'semana' %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Semana</a>
+            <a href="/relatorio?periodo=mes" class="px-4 py-2 rounded-lg text-sm font-medium transition {% if periodo == 'mes' %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Mês</a>
+        </div>
+    </div>
+
+    <!-- Cards de Prospecção -->
+    <h2 class="text-lg font-bold text-gray-800 mb-4">📊 Prospecção</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-blue-50 p-5 rounded-2xl shadow-sm border border-blue-100 text-center">
+            <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Total</p>
+            <p class="text-3xl font-black text-blue-800">{{ relatorio.total_prospeccoes }}</p>
+        </div>
+        <div class="bg-yellow-50 p-5 rounded-2xl shadow-sm border border-yellow-100 text-center">
+            <p class="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-1">Tentativas</p>
+            <p class="text-3xl font-black text-yellow-800">{{ relatorio.tentativas_prospeccao }}</p>
+        </div>
+        <div class="bg-purple-50 p-5 rounded-2xl shadow-sm border border-purple-100 text-center">
+            <p class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Convertidos</p>
+            <p class="text-3xl font-black text-purple-800">{{ relatorio.convertidos }}</p>
+        </div>
+        <div class="bg-orange-50 p-5 rounded-2xl shadow-sm border border-orange-100 text-center">
+            <p class="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">Agendados</p>
+            <p class="text-3xl font-black text-orange-800">{{ relatorio.agendamentos }}</p>
+        </div>
+    </div>
+
+    <!-- Cards de CRM -->
+    <h2 class="text-lg font-bold text-gray-800 mb-4">👤 CRM (Leads)</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">Ligações</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.ligacoes }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-green-500 uppercase tracking-wider mb-1">WhatsApp</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.whatsapp }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Efetivos</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.efetivos }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">Interessados</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.interessados }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-teal-600 uppercase tracking-wider mb-1">Negócios</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.negociacoes }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">Novos Leads</p>
+            <p class="text-3xl font-black text-gray-900">{{ relatorio.novos_leads }}</p>
+        </div>
+    </div>
+
+    <!-- Detalhes -->
+    {% if relatorio.detalhes_prospeccao %}
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100 mb-8">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-800">📋 Prospecções ({{ relatorio.detalhes_prospeccao|length }})</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Loja</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Telefone</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in relatorio.detalhes_prospeccao %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-gray-900">{{ item.nome_loja }}</div>
+                            <div class="text-xs text-gray-500">{{ item.cidade }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.telefone or '-' }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100">{{ item.status_prospeccao }}</span>
+                            {% if item.data_retorno %}<div class="text-xs text-yellow-600 mt-1">📅 {{ item.data_retorno }}</div>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if relatorio.detalhes_leads %}
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-800">👤 Leads ({{ relatorio.detalhes_leads|length }})</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Loja</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tipo</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Resultado</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in relatorio.detalhes_leads %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-gray-900">{{ item.nome_loja }}</div>
+                            <div class="text-xs text-gray-500">{{ item.cidade }}</div>
+                        </td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-bold bg-blue-100">{{ item.tipo_contato }}</span></td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100">{{ item.resultado }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyToWhatsApp() {
+    let text = `🚀 *RELATÓRIO - {% if periodo == 'hoje' %}Hoje{% elif periodo == 'ontem' %}Ontem{% else %}{{ data_inicio }}{% endif %}*\n\n`;
+    text += `*📊 PROSPECÇÃO:*\nTotal: {{ relatorio.total_prospeccoes }} | Tentativas: {{ relatorio.tentativas_prospeccao }} | Convertidos: {{ relatorio.convertidos }}\n\n`;
+    text += `*👤 CRM:*\nLigações: {{ relatorio.ligacoes }} | Whats: {{ relatorio.whatsapp }} | Efetivos: {{ relatorio.efetivos }} | Novos: {{ relatorio.novos_leads }}\n\n`;
+    text += `_CRM Prospecção_`;
+    navigator.clipboard.writeText(text).then(() => alert('Relatório copiado!'));
+}
+</script>
+
+<style>
+@media print {
+    @page { margin: 1cm; size: auto; }
+    body { 
+        background: white; 
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+    }
+    aside, button, a, .no-print, nav { 
+        display: none !important; 
+    }
+    main { 
+        padding: 0 !important; 
+        margin: 0 !important; 
+    }
+    .max-w-6xl { 
+        max-width: 100% !important; 
+    }
+    .shadow-xl, .shadow-sm { 
+        box-shadow: none !important; 
+        border: 1px solid #ddd !important;
+    }
+    h1 { font-size: 14pt; margin-bottom: 0.5cm; }
+    h2 { font-size: 12pt; margin: 0.5cm 0 0.3cm 0; }
+    h3 { font-size: 11pt; }
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        page-break-inside: auto;
+    }
+    tr { page-break-inside: avoid; }
+    th, td { 
+        border: 1px solid #333; 
+        padding: 6px; 
+        text-align: left; 
+        font-size: 9pt;
+    }
+    th { 
+        background-color: #f0f0f0; 
+        font-weight: bold;
+    }
+    .bg-blue-50, .bg-yellow-50, .bg-purple-50, .bg-orange-50 {
+        background-color: #f9f9f9 !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

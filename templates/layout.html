@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM de Prospecção B2B</title>
+    
+    <!-- Tailwind CSS (Script Cdn Local) -->
+    <script src="/static/js/tailwindcss.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="/static/js/alpine.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+        /* Transições suaves */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+    
+    <div class="min-h-screen flex flex-col h-screen overflow-hidden">
+        <!-- Layout com Sidebar e Área Principal -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-white border-r border-gray-200 flex-col hidden md:flex shadow-sm z-10">
+                <div class="h-16 flex items-center px-6 border-b border-gray-200">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight">CRM <span class="text-brand-600">Multi</span></h1>
+                </div>
+                <!-- Menu -->
+                <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto" hx-boost="true">
+                    {% set links = [
+                        ('/', 'dashboard', 'Dashboard', 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'),
+                        ('/leads', 'leads', 'Lojas (Leads)', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'),
+                        ('/prospeccao', 'prospeccao', 'Prospecção (Busca)', 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'),
+                        ('/agendamentos', 'agendamentos', 'Agendamentos', 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'),
+                        ('/fila', 'fila', 'Fila de Ligação', 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129'),
+                        ('/relatorio', 'relatorio', 'Relatório Diário', 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z')
+                    ] %}
+                    {% for href, key, label, icon_path in links %}
+                    <a href="{{ href }}" class="flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors {{ 'font-semibold bg-brand-50 text-brand-700' if active_page == key else 'font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ 'text-brand-600' if active_page == key else 'text-gray-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon_path }}"/>
+                        </svg>
+                        {{ label }}
+                        {% if key == 'agendamentos' and total_retornos_hoje > 0 %}
+                        <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {{ total_retornos_hoje }}
+                        </span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </nav>
+            </aside>
+
+            <!-- Área de Conteúdo -->
+            <main class="flex-1 relative z-0 overflow-y-auto focus:outline-none flex flex-col bg-gray-50">
+                <!-- Mobile Header -->
+                <div class="md:hidden flex items-center justify-between bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+                    <h1 class="text-xl font-bold text-gray-800">CRM <span class="text-brand-600">Multi</span></h1>
+                    <button class="text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 p-1 rounded-md">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Conteúdo Dinâmico -->
+                <div class="flex-1 p-6 max-w-7xl mx-auto w-full" id="main-content">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

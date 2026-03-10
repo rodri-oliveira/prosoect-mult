@@ -1,0 +1,187 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+    <div class="py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol role="list" class="flex items-center space-x-4">
+                        <li>
+                            <div class="flex">
+                                <a href="/leads" class="text-sm font-medium text-gray-500 hover:text-gray-700">Leads</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="flex-shrink-0 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <span class="ml-4 text-sm font-medium text-gray-500">{{ lead.nome_loja }}</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+                <h1 class="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">{{ lead.nome_loja }}</h1>
+                <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                    <div class="mt-2 flex items-center text-sm text-gray-500">
+                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        {{ lead.cidade }}{% if lead.estado %} - {{ lead.estado }}{% endif %}
+                    </div>
+                    <div class="mt-2 flex items-center text-sm text-gray-500">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {{ lead.status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex sm:mt-0 sm:ml-4 gap-2">
+                <!-- Botões Ação Rápida -->
+                {% if lead.whatsapp %}
+                <a href="https://wa.me/55{{ lead.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                    <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    WhatsApp
+                </a>
+                {% endif %}
+                
+                <a href="https://www.google.com/search?q={{ lead.nome_loja }} {{ lead.cidade }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Google
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Detalhes Card -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+            <div class="px-4 py-5 sm:px-6 flex justify-between bg-gray-50 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-semibold text-gray-900">Informações</h3>
+            </div>
+            <div class="px-4 py-5 sm:p-0">
+                <dl class="sm:divide-y sm:divide-gray-200">
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 hover:bg-gray-50 transition">
+                        <dt class="text-sm font-medium text-gray-500">Telefone</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-medium">{{ lead.telefone or '-' }}</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 hover:bg-gray-50 transition">
+                        <dt class="text-sm font-medium text-gray-500">WhatsApp</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-medium">{{ lead.whatsapp or '-' }}</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 hover:bg-gray-50 transition">
+                        <dt class="text-sm font-medium text-gray-500">Responsável</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ lead.responsavel or '-' }}</dd>
+                    </div>
+                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 bg-brand-50 hover:bg-brand-100 transition rounded-b-lg">
+                        <dt class="text-sm font-bold text-brand-700 flex items-center">Status Atual</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <form action="/leads/{{ lead.id }}/status" method="POST" class="flex items-center space-x-2">
+                            <select name="status" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-md shadow-sm font-medium text-brand-700" onchange="this.form.submit()">
+                                {% set statuses = ['Novo Lead', 'Tentativa 1', 'Tentativa 2', 'Tentativa 3', 'Sem contato', 'Falou com responsável', 'Apresentação feita', 'Enviar catálogo', 'Interessado', 'Negociação', 'Cliente ativo', 'Sem interesse'] %}
+                                {% for s in statuses %}
+                                <option value="{{ s }}" {% if lead.status == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="next" value="/leads/{{ lead.id }}">
+                            </form>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Registro de Contato & Histórico -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Adicionar Contato Rapido -->
+            <div class="bg-white shadow sm:rounded-lg border border-gray-200">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2">Registrar Interação</h3>
+                    <form action="/leads/{{ lead.id }}/contato" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Canal *</label>
+                                <select name="tipo_contato" required class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-brand-500 focus:outline-none focus:ring-brand-500 sm:text-sm">
+                                    <option>Ligação</option>
+                                    <option>WhatsApp</option>
+                                    <option>Email</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Resultado da Interação *</label>
+                                <select name="resultado" required class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-brand-500 focus:outline-none focus:ring-brand-500 sm:text-sm">
+                                    <option>Não atendeu</option>
+                                    <option>Caixa postal</option>
+                                    <option>Sem contato</option>
+                                    <option>Falou com responsável</option>
+                                    <option>Apresentação feita</option>
+                                    <option>Pediu catálogo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Observações (Opcional)</label>
+                            <input type="text" name="observacao" placeholder="Ex: Pediu para ligar sexta à tarde" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
+                        </div>
+                        <input type="hidden" name="next" value="/leads/{{ lead.id }}">
+                        <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent font-semibold rounded-md text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition sm:text-sm w-full">
+                            Salvar Contato
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Histórico -->
+            <div class="bg-white shadow sm:rounded-lg border border-gray-200">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-semibold text-gray-900 mb-6">Histórico de Interações</h3>
+                    <ul role="list" class="-mb-8">
+                        {% for contato in contatos %}
+                        <li>
+                            <div class="relative pb-8">
+                                <!-- Line -->
+                                {% if not loop.last %}
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                {% endif %}
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white {% if contato.tipo_contato == 'Ligação' %}bg-blue-500{% elif contato.tipo_contato == 'WhatsApp' %}bg-green-500{% else %}bg-gray-500{% endif %}">
+                                            <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                        <div>
+                                            <p class="text-sm text-gray-500 font-medium">
+                                                {{ contato.tipo_contato }} <span class="text-gray-400 font-normal">→</span> <span class="font-bold text-gray-900">{{ contato.resultado }}</span>
+                                            </p>
+                                            {% if contato.observacao %}
+                                            <p class="text-sm mt-1 text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 italic">"{{ contato.observacao }}"</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-right text-sm whitespace-nowrap text-gray-400 font-medium">
+                                            <time datetime="{{ contato.data }}">{{ contato.data[:16] }}</time>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {% else %}
+                        <div class="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                            Nenhum contato registrado ainda.
+                        </div>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

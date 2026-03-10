@@ -1,0 +1,21 @@
+.env
+.env.*
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+.vscode/
+.idea/
+
+# Database / runtime files
+database.db
+*.db
+
+# Exports / generated reports
+exports/
+
+# OS files
+Thumbs.db
+.DS_Store

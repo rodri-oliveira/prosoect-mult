@@ -1,0 +1,299 @@
+import os
+from database import init_db
+from flask import Flask, render_template, request, redirect, url_for, send_file
+from io import BytesIO
+from services.relatorio_service import get_resumo_hoje, get_relatorio_completo
+from services.relatorio_pdf_service import (
+    build_relatorio_pdf_bytes,
+    default_pdf_filename,
+    save_pdf_copy,
+)
+from services.lead_service import get_leads, get_lead_by_id, create_lead, update_lead_status
+from services.fila_service import get_proximo_lead, processa_acao_fila, get_total_fila
+from services.prospeccao_service import (
+    get_prospeccoes_temp, add_prospeccao_temp, update_status_prospeccao,
+    converter_para_lead, delete_prospeccao_temp, get_resumo_prospeccao,
+    get_relatorio_prospeccao, get_retornos_agendados, get_total_retornos_hoje,
+    get_retornos_atrasados
+)
+app = Flask(__name__)
+
+# Context processor para disponibilizar dados globais em todos os templates
+@app.context_processor
+def inject_globals():
+    from datetime import date
+    return {
+        'total_retornos_hoje': get_total_retornos_hoje()
+    }
+
+# Auto-init db se não existir
+if not os.path.exists('database.db'):
+    init_db()
+
+@app.route('/')
+def index():
+    resumo = get_resumo_hoje()
+    return render_template('dashboard.html', resumo=resumo, active_page='dashboard')
+
+@app.route('/prospeccao')
+def prospeccao_view():
+    from datetime import date, timedelta
+    
+    filtro_status = request.args.get('status')
+    segmento = request.args.get('segmento')
+    cidade = request.args.get('cidade')
+    estado = request.args.get('estado')
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+    mostrar_arquivados = request.args.get('arquivados') == '1'
+    
+    # Se não tem filtro de data, mostra apenas de hoje por padrão
+    if not data_inicio and not data_fim and not mostrar_arquivados:
+        data_inicio = date.today().isoformat()
+        data_fim = date.today().isoformat()
+    
+    prospeccoes = get_prospeccoes_temp(filtro_status, segmento, cidade, estado, 
+                                       data_inicio, data_fim, mostrar_arquivados)
+    resumo_prospeccao = get_resumo_prospeccao(data_inicio, data_fim, mostrar_arquivados)
+    
+    return render_template('prospeccao.html', 
+                          prospeccoes=prospeccoes, 
+                          resumo_prospeccao=resumo_prospeccao,
+                          active_page='prospeccao',
+                          filtro_status=filtro_status,
+                          segmento=segmento,
+                          cidade=cidade,
+                          estado=estado,
+                          data_inicio=data_inicio,
+                          data_fim=data_fim,
+                          mostrar_arquivados=mostrar_arquivados)
+
+@app.route('/leads', methods=['GET'])
+def leads_list():
+    status = request.args.get('status')
+    leads = get_leads(status)
+    return render_template('leads.html', leads=leads, active_page='leads')
+
+@app.route('/leads/novo', methods=['POST'])
+def leads_create():
+    create_lead(request.form)
+    next_url = request.form.get('next_url')
+    if next_url:
+        return redirect(next_url)
+    return redirect(url_for('leads_list'))
+
+@app.route('/leads/<int:lead_id>')
+def lead_detail(lead_id):
+    lead, contatos, segmentos = get_lead_by_id(lead_id)
+    return render_template('lead_detalhe.html', lead=lead, contatos=contatos, segmentos=segmentos, active_page='leads')
+
+@app.route('/leads/<int:lead_id>/status', methods=['POST'])
+def lead_update_status(lead_id):
+    novo_status = request.form.get('status')
+    if novo_status:
+        update_lead_status(lead_id, novo_status)
+    return redirect(request.form.get('next', url_for('leads_list')))
+
+@app.route('/leads/<int:lead_id>/contato', methods=['POST'])
+def add_lead_contato(lead_id):
+    from services.lead_service import add_contato
+    add_contato(lead_id, request.form)
+    return redirect(request.form.get('next', url_for('leads_list')))
+
+@app.route('/fila')
+def fila_prospeccao():
+    lead = get_proximo_lead()
+    total_fila = get_total_fila()
+    return render_template('fila_prospeccao.html', lead=lead, total_fila=total_fila, active_page='fila')
+
+@app.route('/fila/acao/<int:lead_id>', methods=['POST'])
+def fila_acao(lead_id):
+    acao = request.form.get('acao')
+    observacao = request.form.get('observacao', '')
+    if acao and acao != 'Pular':
+        processa_acao_fila(lead_id, acao, observacao)
+    
+    if acao == 'Pular':
+        from services.lead_service import add_contato
+        add_contato(lead_id, {'tipo_contato': 'Sistema', 'resultado': 'Pulado na fila', 'observacao': ''})
+
+    return redirect(url_for('fila_prospeccao'))
+
+# === ROTAS DE PROSPECÇÃO TEMPORÁRIA (RASCUNHO) ===
+
+@app.route('/prospeccao/rascunho/novo', methods=['POST'])
+def rascunho_novo():
+    add_prospeccao_temp(request.form)
+    return redirect(url_for('prospeccao_view'))
+
+@app.route('/prospeccao/rascunho/<int:prospeccao_id>/status', methods=['POST'])
+def rascunho_status(prospeccao_id):
+    novo_status = request.form.get('status')
+    observacao = request.form.get('observacao', '')
+    data_retorno = request.form.get('data_retorno')
+    
+    if data_retorno:
+        update_status_prospeccao(prospeccao_id, novo_status, data_retorno=data_retorno)
+    elif observacao:
+        update_status_prospeccao(prospeccao_id, novo_status, observacao=observacao)
+    else:
+        update_status_prospeccao(prospeccao_id, novo_status)
+    
+    return redirect(url_for('prospeccao_view'))
+
+@app.route('/prospeccao/rascunho/<int:prospeccao_id>/converter', methods=['POST'])
+def rascunho_converter(prospeccao_id):
+    lead_id = converter_para_lead(prospeccao_id)
+    if lead_id:
+        return redirect(url_for('lead_detail', lead_id=lead_id))
+    return redirect(url_for('prospeccao_view'))
+
+@app.route('/prospeccao/rascunho/<int:prospeccao_id>/excluir', methods=['POST'])
+def rascunho_excluir(prospeccao_id):
+    delete_prospeccao_temp(prospeccao_id)
+    return redirect(url_for('prospeccao_view'))
+
+@app.route('/relatorio/prospeccao')
+def relatorio_prospeccao():
+    from datetime import date, timedelta
+    
+    periodo = request.args.get('periodo', 'hoje')  # hoje, ontem, semana, mes, personalizado
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+    
+    # Calcula datas baseado no período
+    hoje = date.today()
+    if periodo == 'hoje':
+        data_inicio = hoje.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'ontem':
+        ontem = hoje - timedelta(days=1)
+        data_inicio = ontem.isoformat()
+        data_fim = ontem.isoformat()
+    elif periodo == 'semana':
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        data_inicio = inicio_semana.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'mes':
+        inicio_mes = hoje.replace(day=1)
+        data_inicio = inicio_mes.isoformat()
+        data_fim = hoje.isoformat()
+    
+    relatorio = get_relatorio_prospeccao(data_inicio, data_fim)
+    
+    return render_template('relatorio_prospeccao.html', 
+                          relatorio=relatorio, 
+                          periodo=periodo,
+                          data_inicio=data_inicio,
+                          data_fim=data_fim,
+                          active_page='relatorio')
+
+@app.route('/relatorio')
+def relatorio_diario():
+    from datetime import date, timedelta
+    
+    periodo = request.args.get('periodo', 'hoje')
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+    
+    # Calcula datas baseado no período
+    hoje = date.today()
+    if periodo == 'hoje':
+        data_inicio = hoje.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'ontem':
+        ontem = hoje - timedelta(days=1)
+        data_inicio = ontem.isoformat()
+        data_fim = ontem.isoformat()
+    elif periodo == 'semana':
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        data_inicio = inicio_semana.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'mes':
+        inicio_mes = hoje.replace(day=1)
+        data_inicio = inicio_mes.isoformat()
+        data_fim = hoje.isoformat()
+    
+    relatorio = get_relatorio_completo(data_inicio, data_fim)
+    
+    return render_template('relatorio.html', 
+                          relatorio=relatorio,
+                          periodo=periodo,
+                          data_inicio=data_inicio,
+                          data_fim=data_fim,
+                          active_page='relatorio')
+
+@app.route('/relatorio/pdf')
+def relatorio_pdf():
+    from datetime import date, timedelta
+
+    periodo = request.args.get('periodo', 'hoje')
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+
+    hoje = date.today()
+    if periodo == 'hoje':
+        data_inicio = hoje.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'ontem':
+        ontem = hoje - timedelta(days=1)
+        data_inicio = ontem.isoformat()
+        data_fim = ontem.isoformat()
+    elif periodo == 'semana':
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        data_inicio = inicio_semana.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'mes':
+        inicio_mes = hoje.replace(day=1)
+        data_inicio = inicio_mes.isoformat()
+        data_fim = hoje.isoformat()
+
+    relatorio = get_relatorio_completo(data_inicio, data_fim)
+
+    pdf_bytes = build_relatorio_pdf_bytes(relatorio, data_inicio, data_fim)
+    filename = default_pdf_filename(data_inicio, data_fim)
+
+    export_dir = os.path.join(app.root_path, 'exports', 'relatorios')
+    save_pdf_copy(pdf_bytes, export_dir, filename)
+
+    return send_file(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf',
+    )
+
+@app.route('/agendamentos')
+def agendamentos_view():
+    from datetime import date
+    
+    data_filtro = request.args.get('data')
+    mostrar_todos = request.args.get('todos') == '1'
+    
+    hoje = date.today().isoformat()
+    
+    retornos_hoje = get_retornos_agendados(hoje)
+    retornos_atrasados = get_retornos_atrasados()
+    
+    # Sempre busca futuros para contagem no card, mesmo que não mostre a lista
+    retornos_futuros = get_retornos_agendados(hoje, mostrar_todos=True)
+    # Conta apenas os que são depois de hoje (exclui hoje)
+    total_futuros = len([r for r in retornos_futuros if r['data_retorno'] != hoje])
+    
+    total_retornos_hoje = len(retornos_hoje)
+    total_atrasados = len(retornos_atrasados)
+    
+    return render_template('agendamentos.html',
+                          retornos_hoje=retornos_hoje,
+                          retornos_atrasados=retornos_atrasados,
+                          retornos_futuros=retornos_futuros if mostrar_todos else [],
+                          total_hoje=total_retornos_hoje,
+                          total_atrasados=total_atrasados,
+                          total_futuros=total_futuros,
+                          mostrar_todos=mostrar_todos,
+                          data_filtro=data_filtro,
+                          hoje=hoje,
+                          active_page='agendamentos')
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
