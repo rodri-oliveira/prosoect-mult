@@ -50,3 +50,18 @@ def consultar_cnpj_brasilapi(value, timeout_seconds=8):
         return {"error": str(e), "status": None}
     except Exception as e:
         return {"error": str(e), "status": None}
+
+
+def is_cnpj_ativo_brasilapi(data: dict) -> bool:
+    if not isinstance(data, dict):
+        return False
+
+    desc = data.get('descricao_situacao_cadastral')
+    if isinstance(desc, str) and desc.strip():
+        return desc.strip().upper() == 'ATIVA'
+
+    situ = data.get('situacao_cadastral')
+    if isinstance(situ, str) and situ.strip():
+        return situ.strip().upper() == 'ATIVA'
+
+    return False

@@ -8,7 +8,7 @@ from services.relatorio_pdf_service import (
     default_pdf_filename,
     save_pdf_copy,
 )
-from services.cnpj_service import is_valid_cnpj, normalize_cnpj, consultar_cnpj_brasilapi
+from services.cnpj_service import is_valid_cnpj, normalize_cnpj, consultar_cnpj_brasilapi, is_cnpj_ativo_brasilapi
 from services.lead_service import get_leads, get_lead_by_id, create_lead, update_lead_status
 from services.fila_service import get_proximo_lead, processa_acao_fila, get_total_fila
 from services.prospeccao_service import (
@@ -197,7 +197,12 @@ def api_consultar_cnpj():
     if isinstance(data, dict) and data.get('error'):
         return jsonify({'ok': False, 'cnpj': cnpj, 'valid_local': True, 'message': 'Falha ao consultar', 'data': data}), 502
 
-    return jsonify({'ok': True, 'cnpj': cnpj, 'valid_local': True, 'data': data})
+    ativo = is_cnpj_ativo_brasilapi(data or {})
+    situacao = ''
+    if isinstance(data, dict):
+        situacao = (data.get('descricao_situacao_cadastral') or data.get('situacao_cadastral') or '').strip()
+
+    return jsonify({'ok': True, 'cnpj': cnpj, 'valid_local': True, 'ativo': ativo, 'situacao': situacao, 'data': data})
 
 @app.route('/fila/acao/<int:lead_id>', methods=['POST'])
 def fila_acao(lead_id):

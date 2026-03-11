@@ -487,6 +487,14 @@ async function consultarCNPJ() {
             return;
         }
 
+        if (data.ativo === false) {
+            const situ = (data.situacao || '').trim();
+            status.textContent = situ ? `CNPJ NÃO ATIVO (${situ})` : 'CNPJ NÃO ATIVO';
+            status.className = 'text-xs text-red-700';
+            el.value = data.cnpj;
+            return;
+        }
+
         const razao = data.data && (data.data.razao_social || data.data.nome_fantasia);
         status.textContent = razao ? `OK: ${razao}` : 'OK';
         status.className = 'text-xs text-green-700';
