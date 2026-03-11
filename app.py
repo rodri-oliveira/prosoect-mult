@@ -74,6 +74,12 @@ def prospeccao_view():
 def rascunho_novo():
     data = dict(request.form)
 
+    segmentos = [s.strip() for s in request.form.getlist('segmento') if (s or '').strip()]
+    if segmentos:
+        data['segmento'] = ', '.join(segmentos)
+    else:
+        data['segmento'] = ''
+
     cnpj = (data.get('cnpj') or '').strip()
     if cnpj:
         cnpj_norm = normalize_cnpj(cnpj)
@@ -234,11 +240,17 @@ def fila_acao(lead_id):
             prospeccao = get_prospeccao_by_id(prospeccao_id)
         except Exception:
             prospeccao = None
-        segmento = request.form.get('segmento')
+        segmentos = [s.strip() for s in request.form.getlist('segmento') if (s or '').strip()]
+        segmento = ', '.join(segmentos)
+
         if not segmento and prospeccao:
-            segmento = prospeccao.get('segmento')
+            segmento = (prospeccao.get('segmento') or '').strip()
+
         if not segmento:
             return redirect(url_for('prospeccao_view', erro='Informe o segmento antes de registrar envio do portfólio.'))
+
+        if segmentos:
+            update_segmento_prospeccao(prospeccao_id, segmento)
     
     if data_retorno:
         update_status_prospeccao(prospeccao_id, novo_status, data_retorno=data_retorno, hora_retorno=hora_retorno)
@@ -266,7 +278,8 @@ def agendamento_registrar_tentativa(prospeccao_id):
     observacao = (request.form.get('observacao') or '').strip()
     data_retorno = (request.form.get('data_retorno') or '').strip()
     hora_retorno = (request.form.get('hora_retorno') or '').strip()
-    segmento = (request.form.get('segmento') or '').strip()
+    segmentos = [s.strip() for s in request.form.getlist('segmento') if (s or '').strip()]
+    segmento = ', '.join(segmentos)
     pos_acao = (request.form.get('pos_acao') or '').strip()
     next_url = request.form.get('next', url_for('agendamentos_view'))
 

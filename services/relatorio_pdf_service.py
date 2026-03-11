@@ -432,50 +432,74 @@ def build_relatorio_prospeccao_pdf_bytes(relatorio: dict, data_inicio: str, data
     elements.append(status_table)
     elements.append(Spacer(1, 0.4 * cm))
 
+    # Estilos para as células da tabela
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=8,
+        alignment=0, # Left
+    )
+    cell_style_bold = ParagraphStyle(
+        'CellStyleBold',
+        parent=cell_style,
+        fontSize=7,
+        fontName='Helvetica-Bold',
+        textColor=colors.white,
+    )
+
     items = relatorio.get('items') or relatorio.get('detalhes_prospeccao') or []
     elements.append(Paragraph(f"Lista Detalhada ({len(items)})", section_style))
-    itens_data = [["Data", "Loja", "Cidade/UF", "Telefone", "Status", "Retorno", "Obs"]]
+    
+    # Cabeçalho com Paragraph para suportar quebra se necessário
+    itens_data = [[
+        Paragraph("Data", cell_style_bold),
+        Paragraph("Loja", cell_style_bold),
+        Paragraph("CNPJ", cell_style_bold),
+        Paragraph("Cidade/UF", cell_style_bold),
+        Paragraph("Segmento", cell_style_bold),
+        Paragraph("Status", cell_style_bold),
+        Paragraph("Próximo Passo", cell_style_bold)
+    ]]
+
     for item in items:
         cidade = str(_row_get(item, 'cidade', ''))
         uf = str(_row_get(item, 'estado', ''))
         cidade_uf = cidade
         if uf:
             cidade_uf = f"{cidade}/{uf}" if cidade else uf
+        
         data_retorno = str(_row_get(item, 'data_retorno', ''))
         hora_retorno = str(_row_get(item, 'hora_retorno', ''))
-        retorno = data_retorno
+        proximo_passo = data_retorno if data_retorno else str(_row_get(item, 'observacao', ''))
         if data_retorno and hora_retorno:
-            retorno = f"{data_retorno} {hora_retorno}"
+            proximo_passo = f"Retorno: {data_retorno} {hora_retorno}"
 
-        itens_data.append(
-            [
-                str(_row_get(item, 'data_prospeccao', '')),
-                str(_row_get(item, 'nome_loja', '')),
-                cidade_uf,
-                str(_row_get(item, 'telefone', '')),
-                str(_row_get(item, 'status_prospeccao', '')),
-                retorno,
-                str(_row_get(item, 'observacao', '')),
-            ]
-        )
+        itens_data.append([
+            Paragraph(str(_row_get(item, 'data_prospeccao', '')), cell_style),
+            Paragraph(str(_row_get(item, 'nome_loja', '')), cell_style),
+            Paragraph(str(_row_get(item, 'cnpj', '') or '-'), cell_style),
+            Paragraph(cidade_uf, cell_style),
+            Paragraph(str(_row_get(item, 'segmento', '') or '-'), cell_style),
+            Paragraph(str(_row_get(item, 'status_prospeccao', '')), cell_style),
+            Paragraph(proximo_passo, cell_style)
+        ])
 
     itens_table = Table(
         itens_data,
-        colWidths=[2.0 * cm, 5.0 * cm, 2.8 * cm, 2.7 * cm, 3.0 * cm, 2.8 * cm, 4.2 * cm],
-        repeatRows=1,
+        colWidths=[1.6 * cm, 3.8 * cm, 2.4 * cm, 2.5 * cm, 2.5 * cm, 2.2 * cm, 3.0 * cm],
+        repeatRows=1
     )
     itens_table.setStyle(
         TableStyle(
             [
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#111827')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 8),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
                 ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#cbd5e1')),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 7),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
             ]
         )

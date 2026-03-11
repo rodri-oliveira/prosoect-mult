@@ -25,8 +25,8 @@ def get_prospeccoes_temp(filtro_status=None, segmento=None, cidade=None, estado=
         query += ' AND status_prospeccao = ?'
         params.append(filtro_status)
     if segmento:
-        query += ' AND segmento = ?'
-        params.append(segmento)
+        query += ' AND segmento LIKE ?'
+        params.append(f'%{segmento}%')
     if cidade:
         query += ' AND cidade LIKE ?'
         params.append(f'%{cidade}%')

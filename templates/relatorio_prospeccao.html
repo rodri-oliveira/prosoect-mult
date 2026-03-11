@@ -1,15 +1,8 @@
 {% extends 'layout.html' %}
 {% block content %}
 <div class="max-w-6xl mx-auto mt-6">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">Análise de Prospecção</h2>
-            <p class="text-gray-500 text-sm mt-1">Visão gerencial de tentativas, retornos e conversões</p>
-        </div>
-        <a href="/prospeccao" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
-            ← Voltar à Prospecção
-        </a>
-    </div>
+    <h1 class="text-2xl font-bold text-blue-700 mb-1">ANÁLISE DE PROSPECÇÃO</h1>
+    <p class="text-sm text-gray-500 mb-6">Período: {{ data_inicio }} a {{ data_fim }}</p>
 
     <!-- Filtros de Período -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
@@ -54,59 +47,65 @@
         </div>
     </div>
 
-    <!-- Cards de Resumo -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p class="text-sm text-gray-500">Total de Prospecções</p>
-            <p class="text-3xl font-bold text-brand-600">{{ relatorio.total_geral }}</p>
+    <!-- Resumo -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h3 class="font-semibold text-gray-800">Resumo</h3>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p class="text-sm text-gray-500">Tentativas de Contato</p>
-            <p class="text-3xl font-bold text-cyan-700">{{ relatorio.total_tentativas }}</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p class="text-sm text-gray-500">Convertidos em Leads</p>
-            <p class="text-3xl font-bold text-emerald-700">{{ relatorio.total_convertidos }}</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p class="text-sm text-gray-500">Taxa de Conversão</p>
-            <p class="text-3xl font-bold text-purple-600">
-                {% if relatorio.total_tentativas > 0 %}
-                    {{ "%.1f"|format((relatorio.total_convertidos / relatorio.total_tentativas) * 100) }}%
-                {% else %}0%{% endif %}
-            </p>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700 border-b">Total</th>
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700 border-b">Tentativas</th>
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700 border-b">Convertidos</th>
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700 border-b">Conversão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="px-4 py-3 text-center text-xl font-bold text-gray-900">{{ relatorio.total_geral }}</td>
+                        <td class="px-4 py-3 text-center text-xl font-bold text-cyan-700">{{ relatorio.total_tentativas }}</td>
+                        <td class="px-4 py-3 text-center text-xl font-bold text-emerald-700">{{ relatorio.total_convertidos }}</td>
+                        <td class="px-4 py-3 text-center text-xl font-bold text-purple-600">
+                            {% if relatorio.total_tentativas > 0 %}
+                                {{ "%.1f"|format((relatorio.total_convertidos / relatorio.total_tentativas) * 100) }}%
+                            {% else %}0%{% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Resumo por Status -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h3 class="font-semibold text-gray-800 mb-4">📈 Resultados por Status</h3>
-            {% if relatorio.resumo %}
-            <div class="space-y-2">
-                {% for status, total in relatorio.resumo %}
-                <div class="flex items-center justify-between p-2 rounded-lg
-                    {% if status == 'Não contatado' %}bg-gray-50
-                    {% elif status == 'Não atendeu' %}bg-red-50
-                    {% elif status == 'Caixa postal' %}bg-gray-100
-                    {% elif status == 'Pediu para retornar' %}bg-yellow-50
-                    {% elif status == 'Envio do portfólio' or status == 'Pediu portfólio' %}bg-blue-50
-                    {% elif status == 'Interessado' %}bg-green-50
-                    {% elif status == 'Sem interesse' %}bg-red-50
-                    {% elif status == 'Convertido em Lead' %}bg-purple-50
-                    {% else %}bg-gray-50{% endif %}">
-                    <span class="text-sm font-medium text-gray-700">
-                        {% if status == 'Pediu para retornar' %}Agendar retorno
-                        {% elif status == 'Pediu portfólio' %}Envio do portfólio
-                        {% else %}{{ status }}{% endif %}
-                    </span>
-                    <span class="text-sm font-bold text-gray-900">{{ total }}</span>
-                </div>
-                {% endfor %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 class="font-semibold text-gray-800">Resultados por Status</h3>
             </div>
-            {% else %}
-            <p class="text-gray-500 text-sm">Nenhum dado para o período selecionado.</p>
-            {% endif %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-blue-700">
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-white">Status</th>
+                            <th class="px-4 py-2 text-right text-sm font-semibold text-white">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for status, total in relatorio.resumo %}
+                        <tr class="{% if loop.index % 2 == 0 %}bg-gray-50{% else %}bg-white{% endif %}">
+                            <td class="px-4 py-2 text-sm text-gray-700">
+                                {% if status == 'Pediu para retornar' %}Agendar retorno
+                                {% elif status == 'Pediu portfólio' %}Envio do portfólio
+                                {% else %}{{ status }}{% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm font-bold text-gray-900 text-right">{{ total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -139,31 +138,33 @@
     </div>
 
     <!-- Lista Detalhada -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <h3 class="font-semibold text-gray-800">📋 Lista Detalhada ({{ relatorio['items']|length }} itens)</h3>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="px-4 py-3 bg-blue-700">
+            <h3 class="font-semibold text-white">Lista Detalhada ({{ relatorio['items']|length }})</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loja</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cidade/UF</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observação</th>
+                <thead>
+                    <tr class="bg-blue-700">
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Data</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Loja</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">CNPJ</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Cidade/UF</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Segmento</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Próximo Passo</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200">
                     {% for item in relatorio['items'] %}
-                    <tr class="{% if item.arquivado %}bg-gray-50{% endif %}">
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ item.data_prospeccao }}</td>
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ item.nome_loja }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ item.telefone or '-' }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                    <tr class="{% if item.arquivado %}bg-gray-100{% elif loop.index % 2 == 0 %}bg-gray-50{% else %}bg-white{% endif %}">
+                        <td class="px-3 py-2 text-xs text-gray-700">{{ item.data_prospeccao }}</td>
+                        <td class="px-3 py-2 text-xs font-medium text-gray-900">{{ item.nome_loja }}</td>
+                        <td class="px-3 py-2 text-xs text-gray-600">{{ item.cnpj or '-' }}</td>
+                        <td class="px-3 py-2 text-xs text-gray-600">{{ item.cidade }}{% if item.estado %}/{{ item.estado }}{% endif %}</td>
+                        <td class="px-3 py-2 text-xs text-gray-600">{{ item.segmento or '-' }}</td>
+                        <td class="px-3 py-2">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium
                                 {% if item.status_prospeccao == 'Não contatado' %}bg-gray-100 text-gray-600
                                 {% elif item.status_prospeccao == 'Não atendeu' %}bg-red-100 text-red-700
                                 {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
@@ -178,7 +179,13 @@
                                 {% else %}{{ item.status_prospeccao }}{% endif %}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{{ item.observacao or '-' }}</td>
+                        <td class="px-3 py-2 text-xs text-gray-600">
+                            {% if item.data_retorno %}
+                                Retorno: {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
+                            {% else %}
+                                {{ item.observacao or '-' }}
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -187,13 +194,18 @@
     </div>
 
     <!-- Exportar -->
-    <div class="mt-6 flex gap-3">
-        <button onclick="copiarRelatorio()" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900">
-            📋 Copiar para Clipboard
-        </button>
-        <a href="/relatorio/prospeccao/pdf?periodo={{ periodo }}{% if periodo == 'personalizado' %}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}{% endif %}" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
-            ⬇️ Baixar PDF
+    <div class="mt-6 flex justify-between items-center">
+        <a href="/prospeccao" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200">
+            ← Voltar à Prospecção
         </a>
+        <div class="flex gap-3">
+            <button onclick="copiarRelatorio()" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900">
+                📋 Copiar
+            </button>
+            <a href="/relatorio/prospeccao/pdf?periodo={{ periodo }}{% if periodo == 'personalizado' %}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}{% endif %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                ⬇️ PDF
+            </a>
+        </div>
     </div>
 </div>
 

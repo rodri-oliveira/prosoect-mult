@@ -228,6 +228,11 @@
                         <label class="block text-xs font-medium text-gray-700">Nome da Loja *</label>
                         <input type="text" name="nome_loja" id="f_nome" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">Endereço</label>
+                        <input type="text" name="endereco" id="f_endereco" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
+                    </div>
                     
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -245,15 +250,11 @@
                         <input type="text" name="cnpj" id="f_cnpj" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border" placeholder="00.000.000/0000-00">
                         <div class="mt-2 flex items-center gap-2">
                             <button type="button" onclick="consultarCNPJ()" class="px-3 py-1.5 rounded-md bg-gray-800 text-white text-xs font-medium hover:bg-gray-900">Validar na Receita</button>
+                            <button type="button" id="btnBuscarCnpjGoogle" onclick="buscarCNPJNoGoogle()" disabled class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-200">Buscar CNPJ no Google</button>
                             <span id="cnpjStatus" class="text-xs text-gray-500"></span>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700">Endereço</label>
-                        <input type="text" name="endereco" id="f_endereco" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
-                    </div>
-                    
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-2">
                             <label class="block text-xs font-medium text-gray-700">Cidade</label>
@@ -267,24 +268,68 @@
 
                     <div>
                         <label class="block text-xs font-medium text-gray-700">Segmento</label>
-                        <select name="segmento" id="f_segmento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
-                            <option value="">Selecione...</option>
-                            <option value="Informática">Informática</option>
-                            <option value="Celulares">Celulares</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Pet Shop">Pet Shop</option>
-                            <option value="Farmácia">Farmácia</option>
-                            <option value="Gamer">Gamer</option>
-                            <option value="Loja de Brinquedos">Loja de Brinquedos</option>
-                            <option value="Loja Infantil">Loja Infantil</option>
-                            <option value="Loja de Bebê">Loja de Bebê</option>
-                            <option value="Ortopédica">Ortopédica</option>
-                            <option value="Fitness">Fitness</option>
-                            <option value="Assistência Técnica">Assistência Técnica</option>
-                            <option value="Papelaria">Papelaria</option>
-                            <option value="Loja de Presentes">Loja de Presentes</option>
-                            <option value="Agropecuária">Agropecuária</option>
-                        </select>
+                        <div id="f_segmento" class="mt-1 w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 max-h-40 overflow-y-auto space-y-1">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Informática" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Informática</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Celulares" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Celulares</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Eletrônicos" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Eletrônicos</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Pet Shop" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Pet Shop</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Farmácia" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Farmácia</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Gamer" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Gamer</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Loja de Brinquedos" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Loja de Brinquedos</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Loja Infantil" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Loja Infantil</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Loja de Bebê" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Loja de Bebê</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Ortopédica" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Ortopédica</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Fitness" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Fitness</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Assistência Técnica" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Assistência Técnica</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Papelaria" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Papelaria</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Loja de Presentes" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Loja de Presentes</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="segmento" value="Agropecuária" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Agropecuária</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div>
@@ -370,6 +415,40 @@ function segmentoSelector() {
     }
 }
 
+function buscarCNPJNoGoogle() {
+    const nome = (document.getElementById('f_nome')?.value || '').trim();
+    const cidade = (document.getElementById('f_cidade')?.value || '').trim();
+    const uf = (document.getElementById('f_estado')?.value || '').trim();
+    const endereco = (document.getElementById('f_endereco')?.value || '').trim();
+
+    if (!nome || (!cidade && !uf)) return;
+
+    const parts = [];
+    parts.push('CNPJ');
+    parts.push(nome);
+    if (endereco) parts.push(endereco);
+    if (cidade) parts.push(cidade);
+    if (uf) parts.push(uf);
+
+    const query = parts.join(' ');
+    const url = `https://www.google.com/search?hl=pt-BR&nfpr=1&q=${encodeURIComponent(query)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function updateBtnBuscarCnpjGoogle() {
+    const btn = document.getElementById('btnBuscarCnpjGoogle');
+    if (!btn) return;
+    const nome = (document.getElementById('f_nome')?.value || '').trim();
+    const cidade = (document.getElementById('f_cidade')?.value || '').trim();
+    const uf = (document.getElementById('f_estado')?.value || '').trim();
+
+    const ok = !!nome && (!!cidade || !!uf);
+    btn.disabled = !ok;
+    btn.className = ok
+        ? 'px-3 py-1.5 rounded-md bg-white text-gray-800 text-xs font-medium border border-gray-300 hover:bg-gray-50'
+        : 'px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-200';
+}
+
 let lastQuery = 'lojas';
 
 function searchMap() {
@@ -400,8 +479,12 @@ function searchMap() {
     if(cidade) document.getElementById('f_cidade').value = cidade;
     if(estado) document.getElementById('f_estado').value = estado;
     
-    if(segmentosSelecionados.length > 0) {
-        document.getElementById('f_segmento').value = segmentosSelecionados[0];
+    const form = document.getElementById('formLead');
+    if (form) {
+        const checks = form.querySelectorAll('input[name="segmento"]');
+        checks.forEach((el) => {
+            el.checked = segmentosSelecionados.includes(el.value);
+        });
     }
 }
 
@@ -525,6 +608,12 @@ async function loadCities(uf, datalistId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    ['f_nome', 'f_cidade', 'f_estado', 'f_endereco'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateBtnBuscarCnpjGoogle);
+    });
+    updateBtnBuscarCnpjGoogle();
+
     const mapEstado = document.getElementById('mapEstado');
     if (mapEstado) {
         mapEstado.addEventListener('change', function(e) {
