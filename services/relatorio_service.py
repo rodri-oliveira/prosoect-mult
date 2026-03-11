@@ -27,6 +27,13 @@ def get_resumo_hoje():
     # Novos leads
     c.execute("SELECT COUNT(*) as qtd FROM leads WHERE date(data_criacao) = ?", (hoje,))
     novos_leads = c.fetchone()['qtd']
+
+    c.execute("""
+        SELECT COUNT(*) as qtd FROM prospeccao_temp
+        WHERE data_prospeccao = ?
+          AND (arquivado = 0 OR arquivado IS NULL)
+    """, (hoje,))
+    novas_prospeccoes = c.fetchone()['qtd']
     
     # Interessados e Negociações
     c.execute("SELECT COUNT(*) as qtd FROM leads WHERE status = 'Interessado'")
@@ -42,6 +49,7 @@ def get_resumo_hoje():
         'whatsapp': whatsapp,
         'efetivos': efetivos,
         'novos_leads': novos_leads,
+        'novas_prospeccoes': novas_prospeccoes,
         'interessados': interessados,
         'negociacoes': negociacoes
     }
@@ -119,6 +127,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
     """, (data_inicio, data_fim))
     total_prospeccoes = c.fetchone()['qtd']
     
@@ -126,6 +135,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
         AND status_prospeccao != 'Não contatado'
     """, (data_inicio, data_fim))
     tentativas_prospeccao = c.fetchone()['qtd']
@@ -135,6 +145,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
         SELECT status_prospeccao, COUNT(*) as total
         FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
         GROUP BY status_prospeccao
     """, (data_inicio, data_fim))
     status_prospeccao = c.fetchall()
@@ -143,6 +154,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
         AND convertido_lead_id IS NOT NULL
     """, (data_inicio, data_fim))
     convertidos = c.fetchone()['qtd']
@@ -151,7 +163,9 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
         AND status_prospeccao = 'Pediu para retornar'
+          AND data_retorno IS NOT NULL
     """, (data_inicio, data_fim))
     agendamentos = c.fetchone()['qtd']
     
@@ -159,6 +173,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT * FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
+          AND (arquivado = 0 OR arquivado IS NULL)
         ORDER BY data_prospeccao DESC, data_criacao DESC
     """, (data_inicio, data_fim))
     detalhes_prospeccao = c.fetchall()
@@ -172,6 +187,33 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
         ORDER BY c.data DESC
     ''', (data_inicio, data_fim))
     detalhes_leads = c.fetchall()
+
+    c.execute('''
+        SELECT e.tipo_evento, e.detalhe, date(e.data_evento) as data, e.data_retorno_antes, e.data_retorno_depois,
+               p.nome_loja, p.cidade, p.estado, p.telefone, p.hora_retorno
+        FROM prospeccao_eventos e
+        JOIN prospeccao_temp p ON p.id = e.prospeccao_id
+        WHERE date(e.data_evento) BETWEEN ? AND ?
+          AND e.tipo_evento IN ('RETORNO_TENTATIVA', 'RETORNO_REAGENDADO_AUTO', 'RETORNO_RESULTADO', 'STATUS_ATUALIZADO')
+        ORDER BY e.data_evento DESC
+    ''', (data_inicio, data_fim))
+    detalhes_eventos_prospeccao = c.fetchall()
+
+    c.execute('''
+        SELECT COUNT(*) as qtd
+        FROM prospeccao_eventos
+        WHERE date(data_evento) BETWEEN ? AND ?
+          AND tipo_evento = 'RETORNO_TENTATIVA'
+    ''', (data_inicio, data_fim))
+    tentativas_retorno_periodo = c.fetchone()['qtd']
+
+    c.execute('''
+        SELECT COUNT(*) as qtd
+        FROM prospeccao_eventos
+        WHERE date(data_evento) BETWEEN ? AND ?
+          AND tipo_evento = 'RETORNO_REAGENDADO_AUTO'
+    ''', (data_inicio, data_fim))
+    reagendados_auto_periodo = c.fetchone()['qtd']
     
     conn.close()
     
@@ -189,8 +231,11 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
         'tentativas_prospeccao': tentativas_prospeccao,
         'convertidos': convertidos,
         'agendamentos': agendamentos,
+        'tentativas_retorno_periodo': tentativas_retorno_periodo,
+        'reagendados_auto_periodo': reagendados_auto_periodo,
         'status_prospeccao': status_prospeccao,
         # Detalhes
         'detalhes_prospeccao': detalhes_prospeccao,
-        'detalhes_leads': detalhes_leads
+        'detalhes_leads': detalhes_leads,
+        'detalhes_eventos_prospeccao': detalhes_eventos_prospeccao
     }

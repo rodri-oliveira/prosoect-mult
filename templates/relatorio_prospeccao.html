@@ -3,8 +3,8 @@
 <div class="max-w-6xl mx-auto mt-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">📊 Relatório de Prospecção</h2>
-            <p class="text-gray-500 text-sm mt-1">Análise de tentativas de contato e conversões</p>
+            <h2 class="text-2xl font-bold text-gray-900">� Análise de Prospecção</h2>
+            <p class="text-gray-500 text-sm mt-1">Visão gerencial de tentativas, retornos e conversões</p>
         </div>
         <a href="/prospeccao" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
             ← Voltar à Prospecção
@@ -62,11 +62,11 @@
         </div>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p class="text-sm text-gray-500">Tentativas de Contato</p>
-            <p class="text-3xl font-bold text-blue-600">{{ relatorio.total_tentativas }}</p>
+            <p class="text-3xl font-bold text-cyan-700">{{ relatorio.total_tentativas }}</p>
         </div>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p class="text-sm text-gray-500">Convertidos em Leads</p>
-            <p class="text-3xl font-bold text-green-600">{{ relatorio.total_convertidos }}</p>
+            <p class="text-3xl font-bold text-emerald-700">{{ relatorio.total_convertidos }}</p>
         </div>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p class="text-sm text-gray-500">Taxa de Conversão</p>
@@ -90,12 +90,16 @@
                     {% elif status == 'Não atendeu' %}bg-red-50
                     {% elif status == 'Caixa postal' %}bg-gray-100
                     {% elif status == 'Pediu para retornar' %}bg-yellow-50
-                    {% elif status == 'Pediu portfólio' %}bg-blue-50
+                    {% elif status == 'Envio do portfólio' or status == 'Pediu portfólio' %}bg-blue-50
                     {% elif status == 'Interessado' %}bg-green-50
                     {% elif status == 'Sem interesse' %}bg-red-50
                     {% elif status == 'Convertido em Lead' %}bg-purple-50
                     {% else %}bg-gray-50{% endif %}">
-                    <span class="text-sm font-medium text-gray-700">{{ status }}</span>
+                    <span class="text-sm font-medium text-gray-700">
+                        {% if status == 'Pediu para retornar' %}Agendar retorno
+                        {% elif status == 'Pediu portfólio' %}Envio do portfólio
+                        {% else %}{{ status }}{% endif %}
+                    </span>
                     <span class="text-sm font-bold text-gray-900">{{ total }}</span>
                 </div>
                 {% endfor %}
@@ -117,7 +121,11 @@
                             <p class="text-xs font-semibold text-gray-500 mb-1">{{ item.data_prospeccao }}</p>
                     {% endif %}
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">{{ item.status_prospeccao }}</span>
+                        <span class="text-gray-600">
+                            {% if item.status_prospeccao == 'Pediu para retornar' %}Agendar retorno
+                            {% elif item.status_prospeccao == 'Pediu portfólio' %}Envio do portfólio
+                            {% else %}{{ item.status_prospeccao }}{% endif %}
+                        </span>
                         <span class="font-medium text-gray-900">{{ item.total }}</span>
                     </div>
                     {% set dia_atual = item.data_prospeccao %}
@@ -133,7 +141,7 @@
     <!-- Lista Detalhada -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <h3 class="font-semibold text-gray-800">📋 Lista Detalhada ({{ relatorio.items|length }} itens)</h3>
+            <h3 class="font-semibold text-gray-800">📋 Lista Detalhada ({{ relatorio['items']|length }} itens)</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -148,7 +156,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for item in relatorio.items %}
+                    {% for item in relatorio['items'] %}
                     <tr class="{% if item.arquivado %}bg-gray-50{% endif %}">
                         <td class="px-4 py-3 text-sm text-gray-900">{{ item.data_prospeccao }}</td>
                         <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ item.nome_loja }}</td>
@@ -160,12 +168,14 @@
                                 {% elif item.status_prospeccao == 'Não atendeu' %}bg-red-100 text-red-700
                                 {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
                                 {% elif item.status_prospeccao == 'Pediu para retornar' %}bg-yellow-100 text-yellow-800
-                                {% elif item.status_prospeccao == 'Pediu portfólio' %}bg-blue-100 text-blue-800
+                                {% elif item.status_prospeccao == 'Envio do portfólio' or item.status_prospeccao == 'Pediu portfólio' %}bg-blue-100 text-blue-800
                                 {% elif item.status_prospeccao == 'Interessado' %}bg-green-100 text-green-800
                                 {% elif item.status_prospeccao == 'Sem interesse' %}bg-red-50 text-red-600
                                 {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
                                 {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                {{ item.status_prospeccao }}
+                                {% if item.status_prospeccao == 'Pediu para retornar' %}Agendar retorno
+                                {% elif item.status_prospeccao == 'Pediu portfólio' %}Envio do portfólio
+                                {% else %}{{ item.status_prospeccao }}{% endif %}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{{ item.observacao or '-' }}</td>
@@ -202,7 +212,7 @@ POR STATUS:
 {% endfor %}
 
 DETALHAMENTO:
-{% for item in relatorio.items %}- {{ item.data_prospeccao }} | {{ item.nome_loja }} | {{ item.status_prospeccao }}{% if item.observacao %} | {{ item.observacao }}{% endif %}
+{% for item in relatorio['items'] %}- {{ item.data_prospeccao }} | {{ item.nome_loja }} | {{ item.status_prospeccao }}{% if item.observacao %} | {{ item.observacao }}{% endif %}
 {% endfor %}`;
 
     navigator.clipboard.writeText(texto).then(() => {

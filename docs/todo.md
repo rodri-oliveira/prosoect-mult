@@ -28,6 +28,7 @@
 - [ ] Lead Speed — mostrar "X dias sem contato" na lista de leads
 - [ ] Pesquisar loja no Google (botão na página de detalhe do lead)
 - [ ] Importação de lista de empresas via CSV/Excel
+- [ ] Padronizar classificação do contato (resultados mais específicos) e tornar observação obrigatória quando houver "próximo passo"
 - [ ] Integração com API de CNPJ (ReceitaWS)
 - [ ] Score de leads (baseado em interações e resultado)
 - [ ] Mapa de clientes (visualização geográfica)

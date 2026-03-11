@@ -88,6 +88,34 @@
                                 </svg>
                                 {{ lead.telefone or 'Sem telefone' }}
                             </p>
+                            {% if lead.ultimo_resultado %}
+                            <p class="mt-2 sm:mt-0 flex items-center">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {% if lead.ultimo_tipo_contato %}{{ lead.ultimo_tipo_contato }} • {% endif %}{{ lead.ultimo_resultado }}{% if lead.ultimo_contato_data %} • {{ lead.ultimo_contato_data[:10] }}{% endif %}
+                                </span>
+                            </p>
+                            {% endif %}
+                            {% if lead.ultimo_observacao %}
+                            <p class="mt-2 sm:mt-0 flex items-center">
+                                <span class="px-2 inline-flex text-xs leading-5 font-medium rounded-full bg-yellow-50 text-yellow-900 border border-yellow-200">
+                                    {{ lead.ultimo_observacao[:60] }}{% if lead.ultimo_observacao|length > 60 %}...{% endif %}
+                                </span>
+                            </p>
+                            {% endif %}
+                            {% if lead.ultimo_resultado == 'Pediu catálogo' %}
+                            <p class="mt-2 sm:mt-0 flex items-center">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    Pediu portfólio
+                                </span>
+                            </p>
+                            {% endif %}
+                            {% if not lead.cnpj %}
+                            <p class="mt-2 sm:mt-0 flex items-center">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
+                                    Sem CNPJ
+                                </span>
+                            </p>
+                            {% endif %}
                         </div>
                         <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                             <p>

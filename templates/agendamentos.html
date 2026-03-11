@@ -13,9 +13,128 @@
         </div>
     </div>
 
+    <a href="#" id="back-to-top" class="hidden fixed bottom-6 right-6 bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg hover:bg-brand-700 transition">
+        ↑ Topo
+    </a>
+
+    {% if request.args.get('erro') %}
+    <div class="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        {{ request.args.get('erro') }}
+    </div>
+    {% endif %}
+
+    <!-- Retornos de Leads (CRM) -->
+    {% if retornos_leads_atrasados or retornos_leads_hoje %}
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-gray-800">👤 Retornos de Leads</h3>
+            <div class="text-xs text-gray-500">Esses retornos continuam aqui mesmo após converter</div>
+        </div>
+
+        {% if retornos_leads_atrasados %}
+        <div id="leads-atrasados" class="scroll-mt-24 bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-xl">⚠️</span>
+                <h4 class="font-bold text-red-800">Leads Atrasados</h4>
+                <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-bold">{{ total_leads_atrasados }}</span>
+            </div>
+            <div class="space-y-2">
+                {% for lead in retornos_leads_atrasados %}
+                <a href="/leads/{{ lead.id }}" class="block bg-white rounded-lg p-3 border-l-4 border-red-400 shadow-sm hover:shadow-md transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-semibold text-gray-900">{{ lead.nome_loja }}</div>
+                            <div class="text-sm text-gray-500">{{ lead.cidade }}{% if lead.estado %} / {{ lead.estado }}{% endif %}</div>
+                            <div class="text-sm text-red-700 font-medium">📅 {{ lead.data_retorno }}</div>
+                            {% if lead.hora_retorno %}
+                            <div class="text-xs text-gray-600 mt-1">⏰ {{ lead.hora_retorno }}</div>
+                            {% endif %}
+                            {% if lead.ultimo_resultado %}
+                            <div class="text-xs text-gray-600 mt-1">Último: {{ lead.ultimo_tipo_contato }} → {{ lead.ultimo_resultado }}</div>
+                            {% endif %}
+                            {% if lead.ultimo_observacao %}
+                            <div class="text-xs text-gray-500 mt-1">📝 {{ lead.ultimo_observacao }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="text-right">
+                            <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Atrasado</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-2">📅 {{ lead.data_retorno }}{% if lead.hora_retorno %} ⏰ {{ lead.hora_retorno }}{% endif %}</div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if retornos_leads_hoje %}
+        <div id="leads-hoje" class="scroll-mt-24 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-xl">📞</span>
+                <h4 class="font-bold text-yellow-800">Leads para Hoje</h4>
+                <span class="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold">{{ total_leads_hoje }}</span>
+            </div>
+            <div class="space-y-2">
+                {% for lead in retornos_leads_hoje %}
+                <a href="/leads/{{ lead.id }}" class="block bg-white rounded-lg p-3 border-l-4 border-yellow-400 shadow-sm hover:shadow-md transition" data-hora-retorno="{{ lead.hora_retorno or '' }}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-semibold text-gray-900">{{ lead.nome_loja }}</div>
+                            <div class="text-sm text-gray-500">{{ lead.cidade }}{% if lead.estado %} / {{ lead.estado }}{% endif %}</div>
+                            <div class="text-sm text-yellow-700 font-medium">📅 {{ lead.data_retorno }}</div>
+                            {% if lead.hora_retorno %}
+                            <div class="text-xs text-gray-600 mt-1">⏰ {{ lead.hora_retorno }}</div>
+                            {% endif %}
+                            {% if lead.ultimo_resultado %}
+                            <div class="text-xs text-gray-600 mt-1">Último: {{ lead.ultimo_tipo_contato }} → {{ lead.ultimo_resultado }}</div>
+                            {% endif %}
+                            {% if lead.ultimo_observacao %}
+                            <div class="text-xs text-gray-500 mt-1">📝 {{ lead.ultimo_observacao }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="text-right">
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">Hoje</span>
+                            <div class="mt-2">
+                                <span class="js-time-badge hidden px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-2">📅 {{ lead.data_retorno }}{% if lead.hora_retorno %} ⏰ {{ lead.hora_retorno }}{% endif %}</div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if mostrar_todos and retornos_leads_futuros and total_leads_futuros > 0 %}
+        <div class="bg-white border border-gray-200 rounded-lg p-4 mt-4">
+            <h4 class="font-bold text-gray-800 mb-3">📆 Próximos Retornos (Leads)</h4>
+            <div class="space-y-2 max-h-[260px] overflow-y-auto">
+                {% for lead in retornos_leads_futuros %}
+                {% if lead.data_retorno != hoje %}
+                <a href="/leads/{{ lead.id }}" class="block bg-gray-50 rounded-lg p-3 border-l-4 border-blue-400 hover:bg-gray-100 transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-semibold text-gray-900">{{ lead.nome_loja }}</div>
+                            <div class="text-sm text-gray-500">{{ lead.cidade }}{% if lead.estado %} / {{ lead.estado }}{% endif %}</div>
+                        </div>
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">{{ lead.data_retorno }}{% if lead.hora_retorno %} {{ lead.hora_retorno }}{% endif %}</span>
+                    </div>
+                    {% if lead.hora_retorno %}
+                    <div class="text-xs text-gray-600 mt-1">⏰ {{ lead.hora_retorno }}</div>
+                    {% endif %}
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Cards de Resumo -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 p-4">
+        <div class="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 p-4 {% if total_hoje > 0 %}cursor-pointer hover:shadow-md transition-shadow{% endif %}" {% if total_hoje > 0 %}onclick="scrollToHash('#retornos-hoje')"{% endif %} role="button" tabindex="0">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-yellow-700">Retornos para Hoje</p>
@@ -27,14 +146,14 @@
             </div>
             {% if total_hoje > 0 %}
             <div class="mt-3 pt-3 border-t border-yellow-200">
-                <a href="#retornos-hoje" class="text-sm font-medium text-yellow-700 hover:text-yellow-900">
+                <a href="#retornos-hoje" class="js-scroll text-sm font-medium text-yellow-700 hover:text-yellow-900">
                     Ver lista →
                 </a>
             </div>
             {% endif %}
         </div>
 
-        <div class="bg-red-50 rounded-lg shadow-sm border border-red-200 p-4">
+        <div class="bg-red-50 rounded-lg shadow-sm border border-red-200 p-4 {% if total_atrasados > 0 %}cursor-pointer hover:shadow-md transition-shadow{% endif %}" {% if total_atrasados > 0 %}onclick="scrollToHash('#retornos-atrasados')"{% endif %} role="button" tabindex="0">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-red-700">Retornos Atrasados</p>
@@ -46,14 +165,14 @@
             </div>
             {% if total_atrasados > 0 %}
             <div class="mt-3 pt-3 border-t border-red-200">
-                <a href="#retornos-atrasados" class="text-sm font-medium text-red-700 hover:text-red-900">
+                <a href="#retornos-atrasados" class="js-scroll text-sm font-medium text-red-700 hover:text-red-900">
                     Ver lista →
                 </a>
             </div>
             {% endif %}
         </div>
 
-        <div class="bg-blue-50 rounded-lg shadow-sm border border-blue-200 p-4">
+        <div class="bg-blue-50 rounded-lg shadow-sm border border-blue-200 p-4 {% if total_futuros > 0 %}cursor-pointer hover:shadow-md transition-shadow{% endif %}" {% if total_futuros > 0 and not mostrar_todos %}onclick="window.location.href='/agendamentos?todos=1'"{% endif %} role="button" tabindex="0">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-blue-700">Próximos Retornos</p>
@@ -80,37 +199,45 @@
 
     <!-- Alerta de Retornos Atrasados -->
     {% if retornos_atrasados %}
-    <div id="retornos-atrasados" class="bg-red-100 border border-red-300 rounded-lg p-4 mb-6">
+    <div id="retornos-atrasados" class="scroll-mt-24 bg-red-100 border border-red-300 rounded-lg p-4 mb-6">
         <div class="flex items-center gap-2 mb-3">
             <span class="text-2xl">🚨</span>
             <h3 class="font-bold text-red-800">Retornos Atrasados - Urgente!</h3>
         </div>
         <div class="space-y-2">
             {% for item in retornos_atrasados %}
-            <div class="bg-white rounded-lg p-3 border-l-4 border-red-500 shadow-sm">
+            <div class="bg-white rounded-lg p-3 border-l-4 border-red-500 shadow-sm cursor-pointer" role="button" tabindex="0"
+                 onclick="openRegistrarModal(this)"
+                 data-prospeccao-id="{{ item.id }}"
+                 data-nome-loja="{{ item.nome_loja }}"
+                 data-telefone="{{ item.telefone or '' }}"
+                 data-segmento="{{ item.segmento or '' }}"
+                 data-next="/agendamentos#retornos-atrasados">
                 <div class="flex justify-between items-start">
                     <div>
                         <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
                         <p class="text-sm text-red-600 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                        {% if item.hora_retorno %}
+                        <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
+                        {% endif %}
                         {% if item.observacao %}
                         <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
+                        {% endif %}
+                        {% if item.tentativas_retorno %}
+                        <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
+                        {% endif %}
+                        {% if item.data_primeiro_agendamento and item.data_primeiro_agendamento != item.data_retorno %}
+                        <p class="text-xs text-red-700 mt-1 font-medium">Primeiro agendamento: {{ item.data_primeiro_agendamento }}</p>
                         {% endif %}
                     </div>
                     <div class="text-right">
                         <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">
-                            Atrasado: {{ item.data_retorno }}
+                            Atrasado: {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
                         </span>
                         <div class="mt-2 flex gap-1 justify-end">
-                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                <input type="hidden" name="status" value="Não atendeu">
-                                <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100">❌ Não atendeu</button>
-                            </form>
-                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                <input type="hidden" name="status" value="Interessado">
-                                <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-700 hover:bg-green-100">✅ Interessado</button>
-                            </form>
-                            <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline">
+                            <button type="button" class="px-2 py-1 text-xs rounded bg-brand-50 text-brand-700 hover:bg-brand-100" onclick="event.stopPropagation(); openRegistrarModal(this.closest('[data-prospeccao-id]'))">📝 Registrar tentativa</button>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline" onclick="event.stopPropagation();">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter</button>
                             </form>
                         </div>
@@ -124,7 +251,7 @@
 
     <!-- Retornos para Hoje -->
     {% if retornos_hoje %}
-    <div id="retornos-hoje" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+    <div id="retornos-hoje" class="scroll-mt-24 bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <div class="flex items-center gap-2 mb-3">
             <span class="text-2xl">📞</span>
             <h3 class="font-bold text-yellow-800">Retornos para Hoje</h3>
@@ -134,30 +261,42 @@
         </div>
         <div class="space-y-2">
             {% for item in retornos_hoje %}
-            <div class="bg-white rounded-lg p-3 border-l-4 border-yellow-400 shadow-sm">
+            <div class="bg-white rounded-lg p-3 border-l-4 border-yellow-400 shadow-sm cursor-pointer" role="button" tabindex="0"
+                 onclick="openRegistrarModal(this)"
+                 data-hora-retorno="{{ item.hora_retorno or '' }}"
+                 data-prospeccao-id="{{ item.id }}"
+                 data-nome-loja="{{ item.nome_loja }}"
+                 data-telefone="{{ item.telefone or '' }}"
+                 data-segmento="{{ item.segmento or '' }}"
+                 data-next="/agendamentos#retornos-hoje">
                 <div class="flex justify-between items-start">
                     <div>
                         <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
                         <p class="text-sm text-yellow-700 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                        {% if item.hora_retorno %}
+                        <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
+                        {% endif %}
                         {% if item.observacao %}
                         <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
+                        {% endif %}
+                        {% if item.tentativas_retorno %}
+                        <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
+                        {% endif %}
+                        {% if item.data_primeiro_agendamento and item.data_primeiro_agendamento != item.data_retorno %}
+                        <p class="text-xs text-yellow-800 mt-1 font-medium">Primeiro agendamento: {{ item.data_primeiro_agendamento }}</p>
                         {% endif %}
                     </div>
                     <div class="text-right">
                         <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">
-                            Hoje: {{ item.data_retorno }}
+                            Hoje: {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
                         </span>
+                        <div class="mt-2">
+                            <span class="js-time-badge hidden px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800"></span>
+                        </div>
                         <div class="mt-2 flex gap-1 justify-end">
-                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                <input type="hidden" name="status" value="Não atendeu">
-                                <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100">❌ Não atendeu</button>
-                            </form>
-                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                <input type="hidden" name="status" value="Interessado">
-                                <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-700 hover:bg-green-100">✅ Interessado</button>
-                            </form>
-                            <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline">
+                            <button type="button" class="px-2 py-1 text-xs rounded bg-brand-50 text-brand-700 hover:bg-brand-100" onclick="event.stopPropagation(); openRegistrarModal(this.closest('[data-prospeccao-id]'))">📝 Registrar tentativa</button>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline" onclick="event.stopPropagation();">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter</button>
                             </form>
                         </div>
@@ -182,13 +321,16 @@
                         <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
                         <p class="text-sm text-gray-600">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                        {% if item.hora_retorno %}
+                        <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
+                        {% endif %}
                         {% if item.observacao %}
                         <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
                         {% endif %}
                     </div>
                     <div class="text-right">
                         <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
-                            {{ item.data_retorno }}
+                            {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
                         </span>
                         <div class="mt-2 flex gap-1 justify-end">
                             <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
@@ -207,7 +349,7 @@
     {% endif %}
 
     <!-- Mensagem se não houver nada -->
-    {% if not retornos_hoje and not retornos_atrasados and not (mostrar_todos and retornos_futuros) %}
+    {% if not retornos_hoje and not retornos_atrasados and not (mostrar_todos and retornos_futuros) and not retornos_leads_hoje and not retornos_leads_atrasados and not (mostrar_todos and retornos_leads_futuros) %}
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
         <div class="text-4xl mb-3">📅</div>
         <h3 class="text-lg font-semibold text-gray-700">Nenhum agendamento de retorno</h3>
@@ -219,6 +361,67 @@
     {% endif %}
 </div>
 
+<!-- Modal Registrar Tentativa -->
+<div id="registrarModal" class="hidden fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/40" onclick="closeRegistrarModal()"></div>
+    <div class="relative mx-auto mt-24 w-full max-w-xl bg-white rounded-lg shadow-xl border border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <div class="text-sm text-gray-500">Registrar tentativa</div>
+                <div id="modalTitle" class="text-lg font-semibold text-gray-900">-</div>
+                <div id="modalPhone" class="text-sm text-gray-600 mt-0.5">-</div>
+            </div>
+            <button type="button" class="text-gray-500 hover:text-gray-700" onclick="closeRegistrarModal()">✕</button>
+        </div>
+        <form id="registrarForm" method="POST" class="p-4 space-y-4">
+            <input type="hidden" name="next" id="modalNext">
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Resultado *</label>
+                <select name="resultado" id="modalResultado" required class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-brand-500 focus:outline-none focus:ring-brand-500 sm:text-sm">
+                    <option value="">Selecione...</option>
+                    <option>Não atendeu</option>
+                    <option>Caixa postal</option>
+                    <option>Sem contato</option>
+                    <option>Envio do portfólio</option>
+                    <option>Pediu preço</option>
+                    <option>Agendar retorno</option>
+                    <option>Interessado</option>
+                    <option>Sem interesse</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Use "Envio do portfólio"/"Agendar retorno" quando houver próximo passo.</p>
+            </div>
+
+            <div id="modalSegmentoWrap" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Segmento *</label>
+                <input type="text" name="segmento" id="modalSegmento" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border" placeholder="Ex: Informática">
+            </div>
+
+            <div id="modalDataRetornoWrap" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Data de retorno *</label>
+                <input type="date" name="data_retorno" id="modalDataRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
+            </div>
+
+            <div id="modalHoraRetornoWrap" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Horário de retorno *</label>
+                <input type="time" name="hora_retorno" id="modalHoraRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                <input type="text" name="observacao" id="modalObs" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border" placeholder="Ex: enviou no WhatsApp, retornar amanhã 15h">
+                <p class="text-xs text-gray-500 mt-1">Obrigatória quando houver próximo passo (ex.: envio do portfólio, pediu preço).</p>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 flex gap-2 justify-end">
+                <button type="button" class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50" onclick="closeRegistrarModal()">Cancelar</button>
+                <button type="submit" name="pos_acao" value="salvar" class="px-4 py-2 rounded-md bg-brand-600 text-white font-semibold hover:bg-brand-700">Salvar</button>
+                <button id="btnSalvarConverter" type="submit" name="pos_acao" value="converter" class="hidden px-4 py-2 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700">Salvar e converter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function pedirDataRetorno(form) {
     const data = prompt('Nova data para retornar (AAAA-MM-DD):');
@@ -226,5 +429,161 @@ function pedirDataRetorno(form) {
     form.querySelector('.data-retorno-input').value = data;
     return true;
 }
+
+function scrollToHash(hash) {
+    if (!hash) return;
+    const el = document.querySelector(hash);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.add('ring-2', 'ring-brand-300');
+    window.setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-brand-300');
+    }, 1200);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btnTop = document.getElementById('back-to-top');
+    document.querySelectorAll('a.js-scroll[href^="#"]').forEach((a) => {
+        a.addEventListener('click', (e) => {
+            const hash = a.getAttribute('href');
+            if (!hash) return;
+            e.preventDefault();
+            history.replaceState(null, '', hash);
+            scrollToHash(hash);
+        });
+    });
+    if (btnTop) {
+        btnTop.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        const toggleTop = () => {
+            if (window.scrollY > 200) btnTop.classList.remove('hidden');
+            else btnTop.classList.add('hidden');
+        };
+        window.addEventListener('scroll', toggleTop, { passive: true });
+        toggleTop();
+    }
+    scrollToHash(window.location.hash);
+
+    // Destaque automático por horário (apenas itens de hoje)
+    // Regra: faltando até 30min => destaque; passou do horário => alerta suave.
+    const now = new Date();
+    const toMinutes = (hhmm) => {
+        if (!hhmm) return null;
+        const parts = String(hhmm).split(':');
+        if (parts.length < 2) return null;
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (Number.isNaN(h) || Number.isNaN(m)) return null;
+        return h * 60 + m;
+    };
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    document.querySelectorAll('[data-hora-retorno]').forEach((el) => {
+        const hhmm = el.getAttribute('data-hora-retorno');
+        const mins = toMinutes(hhmm);
+        if (mins === null) return;
+        const diff = mins - nowMinutes;
+
+        const badge = el.querySelector('.js-time-badge');
+        const setBadge = (text, cls) => {
+            if (!badge) return;
+            badge.textContent = text;
+            badge.className = `js-time-badge px-2 py-1 rounded-full text-xs font-bold ${cls}`;
+        };
+
+        // passou do horário
+        if (diff < 0) {
+            el.classList.add('bg-red-50');
+            el.classList.add('ring-1', 'ring-red-200');
+            setBadge(`Atrasado ${Math.abs(diff)} min`, 'bg-red-100 text-red-800');
+            return;
+        }
+
+        // faltando até 30 minutos
+        if (diff <= 30) {
+            el.classList.add('bg-yellow-50');
+            el.classList.add('ring-2', 'ring-brand-300');
+            setBadge(`Vence em ${diff} min`, 'bg-yellow-100 text-yellow-800');
+        }
+    });
+});
+
+function openRegistrarModal(cardEl) {
+    if (!cardEl) return;
+    const modal = document.getElementById('registrarModal');
+    const form = document.getElementById('registrarForm');
+    const id = cardEl.getAttribute('data-prospeccao-id');
+    const nome = cardEl.getAttribute('data-nome-loja') || '-';
+    const tel = cardEl.getAttribute('data-telefone') || '';
+    const seg = cardEl.getAttribute('data-segmento') || '';
+    const next = cardEl.getAttribute('data-next') || '/agendamentos';
+
+    document.getElementById('modalTitle').textContent = nome;
+    document.getElementById('modalPhone').textContent = tel ? `📞 ${tel}` : '📞 Sem telefone';
+    document.getElementById('modalNext').value = next;
+    document.getElementById('modalSegmento').value = seg;
+    document.getElementById('modalResultado').value = '';
+    document.getElementById('modalObs').value = '';
+    document.getElementById('modalDataRetorno').value = '';
+    const hr = document.getElementById('modalHoraRetorno');
+    if (hr) hr.value = '';
+
+    form.action = `/agendamentos/${id}/registrar-tentativa`;
+    modal.classList.remove('hidden');
+    updateModalRequirements();
+}
+
+function closeRegistrarModal() {
+    const modal = document.getElementById('registrarModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateModalRequirements() {
+    const resultado = document.getElementById('modalResultado');
+    const segWrap = document.getElementById('modalSegmentoWrap');
+    const seg = document.getElementById('modalSegmento');
+    const dateWrap = document.getElementById('modalDataRetornoWrap');
+    const date = document.getElementById('modalDataRetorno');
+    const timeWrap = document.getElementById('modalHoraRetornoWrap');
+    const time = document.getElementById('modalHoraRetorno');
+    const obs = document.getElementById('modalObs');
+    const v = (resultado.value || '').toLowerCase();
+
+    const needsDate = v === 'envio do portfólio' || v === 'agendar retorno';
+    const needsTime = needsDate;
+    const needsSeg = v === 'envio do portfólio';
+    const needsObs = v === 'envio do portfólio' || v === 'agendar retorno' || v === 'pediu preço';
+    const shouldShowConverter = v === 'interessado';
+
+    if (dateWrap && date) {
+        dateWrap.classList.toggle('hidden', !needsDate);
+        date.required = needsDate;
+        if (!needsDate) date.value = '';
+    }
+    if (timeWrap && time) {
+        timeWrap.classList.toggle('hidden', !needsTime);
+        time.required = needsTime;
+        if (!needsTime) time.value = '';
+    }
+    if (segWrap && seg) {
+        segWrap.classList.toggle('hidden', !needsSeg);
+        seg.required = needsSeg;
+        if (!needsSeg && seg.value === '') seg.value = '';
+    }
+    if (obs) {
+        obs.required = needsObs;
+    }
+
+    const btnConv = document.getElementById('btnSalvarConverter');
+    if (btnConv) {
+        btnConv.classList.toggle('hidden', !shouldShowConverter);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const r = document.getElementById('modalResultado');
+    if (r) r.addEventListener('change', updateModalRequirements);
+});
 </script>
 {% endblock %}

@@ -50,28 +50,73 @@ def get_prospeccoes_temp(filtro_status=None, segmento=None, cidade=None, estado=
 def add_prospeccao_temp(dados):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+
+    obs = dados.get('observacoes')
+    if obs is None:
+        obs = dados.get('observacao', '')
+
+    status = dados.get('status_prospeccao') if dados.get('status_prospeccao') else 'Não contatado'
+    if status == 'Pediu portfólio':
+        status = 'Envio do portfólio'
+
+    data_retorno = dados.get('data_retorno') if status in ('Pediu para retornar', 'Envio do portfólio') else None
+    hora_retorno = dados.get('hora_retorno') if data_retorno else None
     c.execute('''
-        INSERT INTO prospeccao_temp (nome_loja, telefone, whatsapp, endereco, cidade, estado, segmento, observacao, data_prospeccao, status_prospeccao, data_retorno)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, DATE('now')), COALESCE(?, 'Não contatado'), ?)
+        INSERT INTO prospeccao_temp (nome_loja, cnpj, telefone, whatsapp, endereco, cidade, estado, segmento, observacao, data_prospeccao, status_prospeccao, data_retorno, hora_retorno)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, DATE('now')), COALESCE(?, 'Não contatado'), ?, ?)
     ''', (
         dados.get('nome_loja'),
+        dados.get('cnpj'),
         dados.get('telefone'),
         dados.get('whatsapp'),
         dados.get('endereco'),
         dados.get('cidade'),
         dados.get('estado'),
         dados.get('segmento'),
-        dados.get('observacoes', ''),
+        obs,
         dados.get('data_prospeccao'),
-        dados.get('status_prospeccao') if dados.get('status_prospeccao') else 'Não contatado',
-        dados.get('data_retorno') if dados.get('status_prospeccao') == 'Pediu para retornar' else None
+        status,
+        data_retorno,
+        hora_retorno,
     ))
     conn.commit()
     conn.close()
 
-def update_status_prospeccao(prospeccao_id, novo_status, observacao=None, data_retorno=None):
+def update_segmento_prospeccao(prospeccao_id, segmento):
+    if not segmento:
+        return
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    c.execute('UPDATE prospeccao_temp SET segmento = ? WHERE id = ?', (segmento, prospeccao_id))
+    conn.commit()
+    conn.close()
+
+def registrar_resultado_retorno(prospeccao_id, resultado, observacao=None):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT data_retorno FROM prospeccao_temp WHERE id = ?', (prospeccao_id,))
+    row = c.fetchone()
+    data_retorno_atual = row[0] if row else None
+
+    detalhe = (resultado or '').strip()
+    if observacao:
+        detalhe = f"{detalhe} | {observacao}" if detalhe else observacao
+
+    c.execute('''
+        INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (prospeccao_id, 'RETORNO_RESULTADO', detalhe, data_retorno_atual, data_retorno_atual))
+
+    conn.commit()
+    conn.close()
+
+def update_status_prospeccao(prospeccao_id, novo_status, observacao=None, data_retorno=None, hora_retorno=None):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute('SELECT data_retorno FROM prospeccao_temp WHERE id = ?', (prospeccao_id,))
+    row = c.fetchone()
+    data_retorno_antes = row[0] if row else None
     
     set_clause = 'status_prospeccao = ?'
     params = [novo_status]
@@ -82,9 +127,98 @@ def update_status_prospeccao(prospeccao_id, novo_status, observacao=None, data_r
     if data_retorno:
         set_clause += ', data_retorno = ?'
         params.append(data_retorno)
+        set_clause += ', hora_retorno = ?'
+        params.append(hora_retorno)
+        if novo_status == 'Pediu para retornar':
+            set_clause += ', data_primeiro_agendamento = COALESCE(data_primeiro_agendamento, ?)'
+            params.append(data_retorno)
     
     params.append(prospeccao_id)
     c.execute(f'UPDATE prospeccao_temp SET {set_clause} WHERE id = ?', params)
+
+    data_retorno_depois = data_retorno if data_retorno else data_retorno_antes
+    detalhe = novo_status
+    if observacao:
+        detalhe = f"{novo_status} | {observacao}"
+    c.execute('''
+        INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (prospeccao_id, 'STATUS_ATUALIZADO', detalhe, data_retorno_antes, data_retorno_depois))
+    conn.commit()
+    conn.close()
+
+def registrar_tentativa_retorno(prospeccao_id, observacao=None, data_tentativa=None):
+    from datetime import date
+
+    if not data_tentativa:
+        data_tentativa = date.today().isoformat()
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute('SELECT data_retorno FROM prospeccao_temp WHERE id = ?', (prospeccao_id,))
+    row = c.fetchone()
+    data_retorno_atual = row[0] if row else None
+
+    if observacao:
+        c.execute('''
+            UPDATE prospeccao_temp
+            SET tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1,
+                data_ultima_tentativa = ?,
+                observacao = ?
+            WHERE id = ?
+        ''', (data_tentativa, observacao, prospeccao_id))
+    else:
+        c.execute('''
+            UPDATE prospeccao_temp
+            SET tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1,
+                data_ultima_tentativa = ?
+            WHERE id = ?
+        ''', (data_tentativa, prospeccao_id))
+
+    c.execute('''
+        INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (prospeccao_id, 'RETORNO_TENTATIVA', observacao or '', data_retorno_atual, data_retorno_atual))
+
+    conn.commit()
+    conn.close()
+
+def rolar_agendamentos_pendentes(hoje=None):
+    from datetime import date
+
+    if not hoje:
+        hoje = date.today().isoformat()
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT id, data_retorno
+        FROM prospeccao_temp
+        WHERE status_prospeccao = 'Pediu para retornar'
+          AND data_retorno IS NOT NULL
+          AND data_retorno < ?
+          AND (arquivado = 0 OR arquivado IS NULL)
+    ''', (hoje,))
+    pendentes = c.fetchall()
+
+    c.execute('''
+        UPDATE prospeccao_temp
+        SET data_primeiro_agendamento = COALESCE(data_primeiro_agendamento, data_retorno),
+            data_retorno = ?
+        WHERE status_prospeccao = 'Pediu para retornar'
+          AND data_retorno IS NOT NULL
+          AND data_retorno < ?
+          AND (arquivado = 0 OR arquivado IS NULL)
+    ''', (hoje, hoje))
+
+    if pendentes:
+        c.executemany('''
+            INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois)
+            VALUES (?, ?, ?, ?, ?)
+        ''', [(row[0], 'RETORNO_REAGENDADO_AUTO', '', row[1], hoje) for row in pendentes])
+
     conn.commit()
     conn.close()
 
@@ -120,6 +254,7 @@ def converter_para_lead(prospeccao_id):
     # Cria lead no CRM
     dados_lead = {
         'nome_loja': prospeccao['nome_loja'],
+        'cnpj': prospeccao['cnpj'],
         'telefone': prospeccao['telefone'],
         'whatsapp': prospeccao['whatsapp'],
         'endereco': prospeccao['endereco'],
@@ -291,7 +426,7 @@ def get_retornos_agendados(data=None, mostrar_todos=False):
             WHERE data_retorno = ?
               AND status_prospeccao = 'Pediu para retornar'
               AND (arquivado = 0 OR arquivado IS NULL)
-            ORDER BY data_criacao ASC
+            ORDER BY (hora_retorno IS NULL) ASC, hora_retorno ASC, data_criacao ASC
         ''', (data,))
     
     retornos = c.fetchall()

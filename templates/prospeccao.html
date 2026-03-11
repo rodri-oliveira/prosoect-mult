@@ -9,8 +9,8 @@
             <p class="text-sm text-gray-500 mt-1">Busque lojas, adicione à lista e classifique os resultados das ligações.</p>
         </div>
         <div class="flex gap-2">
-            <a href="/relatorio/prospeccao" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
-                📊 Relatório
+            <a href="/relatorio/prospeccao" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
+                Análise
             </a>
         </div>
     </div>
@@ -43,7 +43,7 @@
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                 <div class="p-4 bg-gray-50 border-b border-gray-200">
                     <div class="flex items-end gap-3">
-                        <div class="flex-1" x-data="segmentoSelector()" @click.away="open = false">
+                        <div class="flex-1 relative" x-data="segmentoSelector()" @click.away="open = false">
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Segmentos</label>
                             <button type="button" @click="open = !open" class="w-full rounded-md border border-gray-300 shadow-sm bg-white px-3 py-2 text-left sm:text-sm flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 min-h-[38px]">
                                 <span class="flex flex-wrap gap-1 flex-1" x-show="selecionados.length > 0">
@@ -59,7 +59,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="open" x-transition class="absolute z-50 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto py-1">
+                            <div x-show="open" x-transition class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto py-1">
                                 <template x-for="seg in segmentos" :key="seg">
                                     <label class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700">
                                         <input type="checkbox" :value="seg" :checked="selecionados.includes(seg)" @change="toggle(seg)" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 mr-2.5">
@@ -177,6 +177,7 @@
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
                                     <input type="hidden" name="status" value="Pediu para retornar">
                                     <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                    <input type="hidden" name="hora_retorno" class="hora-retorno-input">
                                     <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">🔄 Retornar</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
@@ -240,6 +241,15 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-medium text-gray-700">CNPJ</label>
+                        <input type="text" name="cnpj" id="f_cnpj" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border" placeholder="00.000.000/0000-00">
+                        <div class="mt-2 flex items-center gap-2">
+                            <button type="button" onclick="consultarCNPJ()" class="px-3 py-1.5 rounded-md bg-gray-800 text-white text-xs font-medium hover:bg-gray-900">Validar na Receita</button>
+                            <span id="cnpjStatus" class="text-xs text-gray-500"></span>
+                        </div>
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-medium text-gray-700">Endereço</label>
                         <input type="text" name="endereco" id="f_endereco" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
                     </div>
@@ -288,8 +298,8 @@
                             <option value="">Não contatado ainda</option>
                             <option value="Não atendeu">❌ Não atendeu</option>
                             <option value="Caixa postal">📮 Caixa postal</option>
-                            <option value="Pediu para retornar">🔄 Pediu para retornar</option>
-                            <option value="Pediu portfólio">📄 Pediu portfólio</option>
+                            <option value="Pediu para retornar">🔄 Agendar retorno</option>
+                            <option value="Envio do portfólio">📄 Envio do portfólio</option>
                             <option value="Interessado">✅ Interessado</option>
                             <option value="Sem interesse">⛔ Sem interesse</option>
                         </select>
@@ -301,12 +311,42 @@
                         <input type="date" name="data_retorno" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
                     </div>
 
+                    <div id="campo-hora-retorno" class="hidden">
+                        <label class="block text-xs font-medium text-gray-700">Horário para Retornar</label>
+                        <input type="time" name="hora_retorno" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
+                    </div>
+
                     <div class="pt-3 border-t border-gray-100">
                         <button type="submit" class="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700">
                             Adicionar à Lista
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalRetorno" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/30"></div>
+    <div class="relative z-10 flex items-center justify-center min-h-full p-4">
+        <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-3 bg-brand-50 border-b border-gray-200">
+                <h3 class="text-base font-semibold text-brand-800">Agendar retorno</h3>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Data *</label>
+                    <input type="date" id="retornoData" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Horário *</label>
+                    <input type="time" id="retornoHora" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="retornoCancelar" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium">Cancelar</button>
+                    <button type="button" id="retornoSalvar" class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium">Salvar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -366,10 +406,95 @@ function searchMap() {
 }
 
 function pedirDataRetorno(form) {
-    const data = prompt('Data para retornar (AAAA-MM-DD):');
-    if (!data) return false;
-    form.querySelector('.data-retorno-input').value = data;
-    return true;
+    const modal = document.getElementById('modalRetorno');
+    const inputData = document.getElementById('retornoData');
+    const inputHora = document.getElementById('retornoHora');
+    const btnCancelar = document.getElementById('retornoCancelar');
+    const btnSalvar = document.getElementById('retornoSalvar');
+    if (!modal || !inputData || !inputHora || !btnCancelar || !btnSalvar) return true;
+
+    const agora = new Date();
+    const yyyy = agora.getFullYear();
+    const mm = String(agora.getMonth() + 1).padStart(2, '0');
+    const dd = String(agora.getDate()).padStart(2, '0');
+    const hh = String(agora.getHours()).padStart(2, '0');
+    const mi = String(agora.getMinutes()).padStart(2, '0');
+    if (!inputData.value) inputData.value = `${yyyy}-${mm}-${dd}`;
+    if (!inputHora.value) inputHora.value = `${hh}:${mi}`;
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    const close = () => {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    };
+
+    const onCancel = () => {
+        cleanup();
+        close();
+    };
+
+    const onSave = () => {
+        const data = (inputData.value || '').trim();
+        const hora = (inputHora.value || '').trim();
+        if (!data || !hora) return;
+        const d = form.querySelector('.data-retorno-input');
+        const h = form.querySelector('.hora-retorno-input');
+        if (d) d.value = data;
+        if (h) h.value = hora;
+        cleanup();
+        close();
+        form.submit();
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Escape') onCancel();
+    };
+
+    const cleanup = () => {
+        btnCancelar.removeEventListener('click', onCancel);
+        btnSalvar.removeEventListener('click', onSave);
+        document.removeEventListener('keydown', onKeyDown);
+    };
+
+    btnCancelar.addEventListener('click', onCancel);
+    btnSalvar.addEventListener('click', onSave);
+    document.addEventListener('keydown', onKeyDown);
+    setTimeout(() => inputData.focus(), 0);
+    return false;
+}
+
+async function consultarCNPJ() {
+    const el = document.getElementById('f_cnpj');
+    const status = document.getElementById('cnpjStatus');
+    const cnpj = (el.value || '').trim();
+    if (!cnpj) {
+        status.textContent = 'Informe o CNPJ';
+        status.className = 'text-xs text-red-700';
+        return;
+    }
+
+    status.textContent = 'Consultando...';
+    status.className = 'text-xs text-gray-500';
+
+    try {
+        const resp = await fetch(`/api/cnpj/consultar?cnpj=${encodeURIComponent(cnpj)}`);
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) {
+            status.textContent = data.message || 'CNPJ inválido';
+            status.className = 'text-xs text-red-700';
+            return;
+        }
+
+        const razao = data.data && (data.data.razao_social || data.data.nome_fantasia);
+        status.textContent = razao ? `OK: ${razao}` : 'OK';
+        status.className = 'text-xs text-green-700';
+        el.value = data.cnpj;
+    } catch (e) {
+        status.textContent = 'Erro ao consultar';
+        status.className = 'text-xs text-red-700';
+    }
 }
 
 // IBGE Cidades
@@ -391,20 +516,35 @@ async function loadCities(uf, datalistId) {
     }
 }
 
-document.getElementById('mapEstado').addEventListener('change', function(e) {
-    loadCities(e.target.value, 'cidadesList');
-});
+document.addEventListener('DOMContentLoaded', () => {
+    const mapEstado = document.getElementById('mapEstado');
+    if (mapEstado) {
+        mapEstado.addEventListener('change', function(e) {
+            loadCities(e.target.value, 'cidadesList');
+        });
 
-loadCities('SP', 'cidadesList');
+        const ufInicial = mapEstado.value || 'SP';
+        loadCities(ufInicial, 'cidadesList');
+    }
 
-// Mostrar/esconder campo de data de retorno
-document.querySelector('select[name="status_prospeccao"]').addEventListener('change', function() {
-    const campoData = document.getElementById('campo-data-retorno');
-    if (this.value === 'Pediu para retornar') {
-        campoData.classList.remove('hidden');
-    } else {
-        campoData.classList.add('hidden');
-        document.querySelector('input[name="data_retorno"]').value = '';
+    // Mostrar/esconder campo de data de retorno
+    const statusSelect = document.querySelector('select[name="status_prospeccao"]');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            const campoData = document.getElementById('campo-data-retorno');
+            const campoHora = document.getElementById('campo-hora-retorno');
+            if (this.value === 'Pediu para retornar' || this.value === 'Envio do portfólio') {
+                if (campoData) campoData.classList.remove('hidden');
+                if (campoHora) campoHora.classList.remove('hidden');
+            } else {
+                if (campoData) campoData.classList.add('hidden');
+                if (campoHora) campoHora.classList.add('hidden');
+                const d = document.querySelector('input[name="data_retorno"]');
+                if (d) d.value = '';
+                const h = document.querySelector('input[name="hora_retorno"]');
+                if (h) h.value = '';
+            }
+        });
     }
 });
 </script>

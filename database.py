@@ -53,12 +53,20 @@ def init_db():
             FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE
         )
     ''')
+
+    c.execute("PRAGMA table_info(contatos)")
+    contato_cols = [row[1] for row in c.fetchall()]
+    if 'data_retorno' not in contato_cols:
+        c.execute('ALTER TABLE contatos ADD COLUMN data_retorno DATE')
+    if 'hora_retorno' not in contato_cols:
+        c.execute('ALTER TABLE contatos ADD COLUMN hora_retorno TIME')
     
     # Tabela prospeccao_temp - rascunho de prospecção (mantém histórico permanente)
     c.execute('''
         CREATE TABLE IF NOT EXISTS prospeccao_temp (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_loja TEXT NOT NULL,
+            cnpj TEXT,
             telefone TEXT,
             whatsapp TEXT,
             endereco TEXT,
@@ -75,6 +83,34 @@ def init_db():
             FOREIGN KEY(convertido_lead_id) REFERENCES leads(id)
         )
     ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS prospeccao_eventos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prospeccao_id INTEGER NOT NULL,
+            data_evento DATETIME DEFAULT CURRENT_TIMESTAMP,
+            tipo_evento TEXT NOT NULL,
+            detalhe TEXT,
+            data_retorno_antes DATE,
+            data_retorno_depois DATE,
+            FOREIGN KEY(prospeccao_id) REFERENCES prospeccao_temp(id) ON DELETE CASCADE
+        )
+    ''')
+
+    c.execute("PRAGMA table_info(prospeccao_temp)")
+    cols = [row[1] for row in c.fetchall()]
+    if 'cnpj' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN cnpj TEXT')
+
+    if 'data_primeiro_agendamento' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN data_primeiro_agendamento DATE')
+    if 'tentativas_retorno' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN tentativas_retorno INTEGER DEFAULT 0')
+    if 'data_ultima_tentativa' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN data_ultima_tentativa DATE')
+
+    if 'hora_retorno' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN hora_retorno TIME')
     
     conn.commit()
     conn.close()

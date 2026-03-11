@@ -60,6 +60,14 @@
             <p class="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">Agendados</p>
             <p class="text-3xl font-black text-orange-800">{{ relatorio.agendamentos }}</p>
         </div>
+        <div class="bg-red-50 p-5 rounded-2xl shadow-sm border border-red-100 text-center">
+            <p class="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Tentativas Retorno</p>
+            <p class="text-3xl font-black text-red-800">{{ relatorio.tentativas_retorno_periodo }}</p>
+        </div>
+        <div class="bg-cyan-50 p-5 rounded-2xl shadow-sm border border-cyan-100 text-center">
+            <p class="text-xs font-bold text-cyan-700 uppercase tracking-wider mb-1">Reagendados Auto</p>
+            <p class="text-3xl font-black text-cyan-800">{{ relatorio.reagendados_auto_periodo }}</p>
+        </div>
     </div>
 
     <!-- Cards de CRM -->
@@ -117,6 +125,56 @@
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100">{{ item.status_prospeccao }}</span>
                             {% if item.data_retorno %}<div class="text-xs text-yellow-600 mt-1">📅 {{ item.data_retorno }}</div>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if relatorio.detalhes_eventos_prospeccao %}
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100 mt-8">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-800">🗓️ Eventos de Retorno ({{ relatorio.detalhes_eventos_prospeccao|length }})</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Loja</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Evento</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for ev in relatorio.detalhes_eventos_prospeccao %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ ev.data }}</td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-gray-900">{{ ev.nome_loja }}</div>
+                            <div class="text-xs text-gray-500">{{ ev.cidade }}{% if ev.estado %}/{{ ev.estado }}{% endif %}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ev.tipo_evento == 'RETORNO_TENTATIVA' %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">Tentativa</span>
+                            {% elif ev.tipo_evento == 'RETORNO_REAGENDADO_AUTO' %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">Reagendado automático</span>
+                            {% elif ev.tipo_evento == 'RETORNO_RESULTADO' %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Resultado</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-800 border border-gray-200">Status atualizado</span>
+                            {% endif %}
+                            {% if ev.data_retorno_antes and ev.data_retorno_depois and ev.data_retorno_antes != ev.data_retorno_depois %}
+                            <div class="text-xs text-gray-500 mt-1">📅 {{ ev.data_retorno_antes }} → {{ ev.data_retorno_depois }}</div>
+                            {% endif %}
+                            {% if ev.hora_retorno %}
+                            <div class="text-xs text-gray-500 mt-1">⏰ {{ ev.hora_retorno }}</div>
+                            {% endif %}
+                            {% if ev.detalhe %}
+                            <div class="text-xs text-gray-600 mt-1">� {{ ev.detalhe }}</div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

@@ -1,6 +1,6 @@
 import os
 from database import init_db
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from io import BytesIO
 from services.relatorio_service import get_resumo_hoje, get_relatorio_completo
 from services.relatorio_pdf_service import (
@@ -8,14 +8,17 @@ from services.relatorio_pdf_service import (
     default_pdf_filename,
     save_pdf_copy,
 )
+from services.cnpj_service import is_valid_cnpj, normalize_cnpj, consultar_cnpj_brasilapi
 from services.lead_service import get_leads, get_lead_by_id, create_lead, update_lead_status
 from services.fila_service import get_proximo_lead, processa_acao_fila, get_total_fila
 from services.prospeccao_service import (
     get_prospeccoes_temp, add_prospeccao_temp, update_status_prospeccao,
     converter_para_lead, delete_prospeccao_temp, get_resumo_prospeccao,
     get_relatorio_prospeccao, get_retornos_agendados, get_total_retornos_hoje,
-    get_retornos_atrasados
+    get_retornos_atrasados, registrar_tentativa_retorno, rolar_agendamentos_pendentes
 )
+from services.prospeccao_service import arquivar_prospeccao
+from services.prospeccao_service import update_segmento_prospeccao, registrar_resultado_retorno
 app = Flask(__name__)
 
 # Context processor para disponibilizar dados globais em todos os templates
@@ -27,8 +30,7 @@ def inject_globals():
     }
 
 # Auto-init db se não existir
-if not os.path.exists('database.db'):
-    init_db()
+init_db()
 
 @app.route('/')
 def index():
@@ -68,6 +70,50 @@ def prospeccao_view():
                           data_fim=data_fim,
                           mostrar_arquivados=mostrar_arquivados)
 
+@app.route('/prospeccao/rascunho/novo', methods=['POST'])
+def rascunho_novo():
+    data = dict(request.form)
+
+    cnpj = (data.get('cnpj') or '').strip()
+    if cnpj:
+        cnpj_norm = normalize_cnpj(cnpj)
+        if not is_valid_cnpj(cnpj_norm):
+            data['cnpj'] = ''
+        else:
+            data['cnpj'] = cnpj_norm
+
+    add_prospeccao_temp(data)
+    next_url = request.form.get('next') or request.form.get('next_url')
+    return redirect(next_url or url_for('prospeccao_view'))
+
+@app.route('/prospeccao/rascunho/<int:prospeccao_id>/status', methods=['POST'])
+def rascunho_status(prospeccao_id):
+    novo_status = (request.form.get('status') or '').strip()
+    observacao = (request.form.get('observacao') or '').strip() or None
+    data_retorno = (request.form.get('data_retorno') or '').strip() or None
+    hora_retorno = (request.form.get('hora_retorno') or '').strip() or None
+
+    if not novo_status:
+        return redirect(request.form.get('next', url_for('prospeccao_view')))
+
+    if novo_status == 'Pediu para retornar' and not data_retorno:
+        return redirect(url_for('prospeccao_view', erro='Informe a data de retorno.'))
+    if novo_status == 'Pediu para retornar' and data_retorno and not hora_retorno:
+        return redirect(url_for('prospeccao_view', erro='Informe o horário de retorno.'))
+
+    update_status_prospeccao(
+        prospeccao_id,
+        novo_status,
+        observacao=observacao,
+        data_retorno=data_retorno,
+        hora_retorno=hora_retorno,
+    )
+
+    if novo_status == 'Sem interesse':
+        arquivar_prospeccao(prospeccao_id)
+
+    return redirect(request.form.get('next', url_for('prospeccao_view')))
+
 @app.route('/leads', methods=['GET'])
 def leads_list():
     status = request.args.get('status')
@@ -97,14 +143,40 @@ def lead_update_status(lead_id):
 @app.route('/leads/<int:lead_id>/contato', methods=['POST'])
 def add_lead_contato(lead_id):
     from services.lead_service import add_contato
+    resultado = (request.form.get('resultado') or '').strip()
+    data_retorno = (request.form.get('data_retorno') or '').strip()
+    hora_retorno = (request.form.get('hora_retorno') or '').strip()
+
+    if resultado in ('Envio do portifólio', 'Agendar retorno'):
+        if not data_retorno:
+            return redirect(url_for('lead_detail', lead_id=lead_id, erro='Informe a data de retorno para continuar.'))
+        if not hora_retorno:
+            return redirect(url_for('lead_detail', lead_id=lead_id, erro='Informe o horário de retorno.'))
+
+    if resultado == 'Envio do portifólio':
+        _lead, _contatos, segmentos = get_lead_by_id(lead_id)
+        if not segmentos:
+            return redirect(url_for('lead_detail', lead_id=lead_id, erro='Informe o segmento do lead antes de registrar o envio do portifólio.'))
+
     add_contato(lead_id, request.form)
     return redirect(request.form.get('next', url_for('leads_list')))
 
-@app.route('/fila')
-def fila_prospeccao():
-    lead = get_proximo_lead()
-    total_fila = get_total_fila()
-    return render_template('fila_prospeccao.html', lead=lead, total_fila=total_fila, active_page='fila')
+@app.route('/api/cnpj/consultar', methods=['GET'])
+def api_consultar_cnpj():
+    cnpj_raw = request.args.get('cnpj', '')
+    cnpj = normalize_cnpj(cnpj_raw)
+    valid_local = is_valid_cnpj(cnpj)
+
+    if not cnpj:
+        return jsonify({'ok': False, 'cnpj': None, 'valid_local': False, 'message': 'CNPJ vazio'}), 400
+    if not valid_local:
+        return jsonify({'ok': False, 'cnpj': cnpj, 'valid_local': False, 'message': 'CNPJ inválido'}), 400
+
+    data = consultar_cnpj_brasilapi(cnpj)
+    if isinstance(data, dict) and data.get('error'):
+        return jsonify({'ok': False, 'cnpj': cnpj, 'valid_local': True, 'message': 'Falha ao consultar', 'data': data}), 502
+
+    return jsonify({'ok': True, 'cnpj': cnpj, 'valid_local': True, 'data': data})
 
 @app.route('/fila/acao/<int:lead_id>', methods=['POST'])
 def fila_acao(lead_id):
@@ -115,31 +187,132 @@ def fila_acao(lead_id):
     
     if acao == 'Pular':
         from services.lead_service import add_contato
-        add_contato(lead_id, {'tipo_contato': 'Sistema', 'resultado': 'Pulado na fila', 'observacao': ''})
-
-    return redirect(url_for('fila_prospeccao'))
-
-# === ROTAS DE PROSPECÇÃO TEMPORÁRIA (RASCUNHO) ===
-
-@app.route('/prospeccao/rascunho/novo', methods=['POST'])
-def rascunho_novo():
-    add_prospeccao_temp(request.form)
-    return redirect(url_for('prospeccao_view'))
-
-@app.route('/prospeccao/rascunho/<int:prospeccao_id>/status', methods=['POST'])
-def rascunho_status(prospeccao_id):
     novo_status = request.form.get('status')
     observacao = request.form.get('observacao', '')
     data_retorno = request.form.get('data_retorno')
+    hora_retorno = request.form.get('hora_retorno')
+    next_url = request.form.get('next')
+
+    if novo_status == 'Pediu portfólio':
+        novo_status = 'Envio do portfólio'
+
+    if novo_status in ('Pediu para retornar', 'Envio do portfólio') and not data_retorno:
+        return redirect(url_for('prospeccao_view', erro='Informe a data de retorno para continuar.'))
+    if novo_status in ('Pediu para retornar', 'Envio do portfólio') and data_retorno and not hora_retorno:
+        return redirect(url_for('prospeccao_view', erro='Informe o horário de retorno para continuar.'))
+
+    if novo_status == 'Envio do portfólio':
+        prospeccao = None
+        try:
+            from services.prospeccao_service import get_prospeccao_by_id
+            prospeccao = get_prospeccao_by_id(prospeccao_id)
+        except Exception:
+            prospeccao = None
+        segmento = request.form.get('segmento')
+        if not segmento and prospeccao:
+            segmento = prospeccao.get('segmento')
+        if not segmento:
+            return redirect(url_for('prospeccao_view', erro='Informe o segmento antes de registrar envio do portfólio.'))
     
     if data_retorno:
-        update_status_prospeccao(prospeccao_id, novo_status, data_retorno=data_retorno)
+        update_status_prospeccao(prospeccao_id, novo_status, data_retorno=data_retorno, hora_retorno=hora_retorno)
     elif observacao:
         update_status_prospeccao(prospeccao_id, novo_status, observacao=observacao)
     else:
         update_status_prospeccao(prospeccao_id, novo_status)
-    
+
+    if novo_status == 'Sem interesse':
+        arquivar_prospeccao(prospeccao_id)
+
+    if next_url:
+        return redirect(next_url)
     return redirect(url_for('prospeccao_view'))
+
+@app.route('/agendamentos/<int:prospeccao_id>/nao-atendeu', methods=['POST'])
+def agendamento_nao_atendeu(prospeccao_id):
+    observacao = request.form.get('observacao', '')
+    registrar_tentativa_retorno(prospeccao_id, observacao=observacao)
+    return redirect(request.form.get('next', url_for('agendamentos_view')))
+
+@app.route('/agendamentos/<int:prospeccao_id>/registrar-tentativa', methods=['POST'])
+def agendamento_registrar_tentativa(prospeccao_id):
+    resultado = (request.form.get('resultado') or '').strip()
+    observacao = (request.form.get('observacao') or '').strip()
+    data_retorno = (request.form.get('data_retorno') or '').strip()
+    hora_retorno = (request.form.get('hora_retorno') or '').strip()
+    segmento = (request.form.get('segmento') or '').strip()
+    pos_acao = (request.form.get('pos_acao') or '').strip()
+    next_url = request.form.get('next', url_for('agendamentos_view'))
+
+    def _err(msg):
+        sep = '&' if ('?' in next_url) else '?'
+        return redirect(f"{next_url}{sep}erro={msg}")
+
+    if not resultado:
+        return _err('Selecione o resultado da tentativa.')
+
+    resultados_tentativa = ('Não atendeu', 'Caixa postal', 'Sem contato')
+    resultados_proximo_passo = ('Envio do portfólio', 'Agendar retorno', 'Pediu preço')
+
+    if resultado in resultados_proximo_passo and not observacao:
+        return _err('Observação obrigatória para registrar o próximo passo.')
+
+    if resultado in ('Envio do portfólio', 'Agendar retorno') and not data_retorno:
+        return _err('Informe a data de retorno para continuar.')
+    if resultado in ('Envio do portfólio', 'Agendar retorno') and data_retorno and not hora_retorno:
+        return _err('Informe o horário de retorno para continuar.')
+
+    if resultado == 'Envio do portfólio':
+        if not segmento:
+            prospeccao, _contatos, _seg = None, None, None
+            try:
+                from services.prospeccao_service import get_prospeccao_by_id
+                prospeccao = get_prospeccao_by_id(prospeccao_id)
+            except Exception:
+                prospeccao = None
+            if not prospeccao or not prospeccao.get('segmento'):
+                return _err('Informe o segmento antes de registrar envio do portfólio.')
+        else:
+            update_segmento_prospeccao(prospeccao_id, segmento)
+
+    if resultado in resultados_tentativa:
+        detalhe = resultado
+        if observacao:
+            detalhe = f"{resultado} | {observacao}"
+        registrar_tentativa_retorno(prospeccao_id, observacao=detalhe)
+        return redirect(next_url)
+
+    if resultado == 'Sem interesse':
+        update_status_prospeccao(prospeccao_id, 'Sem interesse', observacao=observacao or None)
+        registrar_resultado_retorno(prospeccao_id, 'Sem interesse', observacao=observacao or None)
+        arquivar_prospeccao(prospeccao_id)
+        return redirect(next_url)
+
+    if resultado == 'Interessado':
+        update_status_prospeccao(prospeccao_id, 'Interessado', observacao=observacao or None)
+        registrar_resultado_retorno(prospeccao_id, 'Interessado', observacao=observacao or None)
+        if pos_acao == 'converter':
+            lead_id = converter_para_lead(prospeccao_id)
+            if lead_id:
+                return redirect(url_for('lead_detail', lead_id=lead_id))
+        return redirect(next_url)
+
+    if resultado in ('Envio do portfólio', 'Agendar retorno'):
+        update_status_prospeccao(
+            prospeccao_id,
+            'Pediu para retornar',
+            observacao=observacao or None,
+            data_retorno=data_retorno,
+            hora_retorno=hora_retorno,
+        )
+        registrar_resultado_retorno(prospeccao_id, resultado, observacao=observacao or None)
+        return redirect(next_url)
+
+    if resultado == 'Pediu preço':
+        registrar_resultado_retorno(prospeccao_id, 'Pediu preço', observacao=observacao)
+        return redirect(next_url)
+
+    return _err('Resultado inválido.')
 
 @app.route('/prospeccao/rascunho/<int:prospeccao_id>/converter', methods=['POST'])
 def rascunho_converter(prospeccao_id):
@@ -266,14 +439,22 @@ def relatorio_pdf():
 @app.route('/agendamentos')
 def agendamentos_view():
     from datetime import date
+    from services.lead_service import get_retornos_leads, get_retornos_leads_atrasados
     
     data_filtro = request.args.get('data')
     mostrar_todos = request.args.get('todos') == '1'
     
     hoje = date.today().isoformat()
+
+    rolar_agendamentos_pendentes(hoje)
     
     retornos_hoje = get_retornos_agendados(hoje)
     retornos_atrasados = get_retornos_atrasados()
+
+    retornos_leads_hoje = get_retornos_leads(hoje)
+    retornos_leads_atrasados = get_retornos_leads_atrasados(hoje)
+    retornos_leads_futuros = get_retornos_leads(hoje, mostrar_todos=True)
+    total_leads_futuros = len([r for r in retornos_leads_futuros if r['data_retorno'] != hoje])
     
     # Sempre busca futuros para contagem no card, mesmo que não mostre a lista
     retornos_futuros = get_retornos_agendados(hoje, mostrar_todos=True)
@@ -282,17 +463,26 @@ def agendamentos_view():
     
     total_retornos_hoje = len(retornos_hoje)
     total_atrasados = len(retornos_atrasados)
+
+    total_leads_hoje = len(retornos_leads_hoje)
+    total_leads_atrasados = len(retornos_leads_atrasados)
     
     return render_template('agendamentos.html',
                           retornos_hoje=retornos_hoje,
                           retornos_atrasados=retornos_atrasados,
                           retornos_futuros=retornos_futuros if mostrar_todos else [],
+                          retornos_leads_hoje=retornos_leads_hoje,
+                          retornos_leads_atrasados=retornos_leads_atrasados,
+                          retornos_leads_futuros=retornos_leads_futuros,
+                          hoje=hoje,
+                          mostrar_todos=mostrar_todos,
                           total_hoje=total_retornos_hoje,
                           total_atrasados=total_atrasados,
                           total_futuros=total_futuros,
-                          mostrar_todos=mostrar_todos,
+                          total_leads_hoje=total_leads_hoje,
+                          total_leads_atrasados=total_leads_atrasados,
+                          total_leads_futuros=total_leads_futuros,
                           data_filtro=data_filtro,
-                          hoje=hoje,
                           active_page='agendamentos')
 
 if __name__ == '__main__':

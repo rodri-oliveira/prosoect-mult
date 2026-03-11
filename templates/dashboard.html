@@ -10,9 +10,6 @@
         <a href="/prospeccao" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700 transition">
             Nova Prospecção
         </a>
-        <a href="/fila" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition">
-            Fila de Ligação
-        </a>
     </div>
 </div>
 
@@ -73,6 +70,20 @@
         </dt>
         <dd class="ml-16 pb-6 flex items-baseline sm:pb-7">
             <p class="text-3xl font-semibold text-gray-900">{{ resumo.novos_leads }}</p>
+        </dd>
+    </div>
+
+    <div class="relative bg-white pt-5 px-4 pb-12 sm:pt-6 sm:px-6 shadow rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+        <dt>
+            <div class="absolute bg-cyan-50 p-3 rounded-lg flex items-center justify-center">
+                <svg class="h-6 w-6 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <p class="ml-16 text-sm font-medium text-gray-500 truncate">Novas Prospecções Hoje</p>
+        </dt>
+        <dd class="ml-16 pb-6 flex items-baseline sm:pb-7">
+            <p class="text-3xl font-semibold text-gray-900">{{ resumo.novas_prospeccoes }}</p>
         </dd>
     </div>
 
