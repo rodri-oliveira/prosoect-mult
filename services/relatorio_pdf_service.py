@@ -56,6 +56,25 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
         spaceBefore=10,
     )
 
+    cell_style = ParagraphStyle(
+        'Cell',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+        wordWrap='CJK',
+    )
+
+    def _p(val: str):
+        v = '' if val is None else str(val)
+        return Paragraph(v.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'), cell_style)
+
+    def _fmt_cnpj(val: str) -> str:
+        s = '' if val is None else str(val)
+        digits = ''.join(ch for ch in s if ch.isdigit())
+        if len(digits) != 14:
+            return s
+        return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
+
     elements = []
 
     elements.append(Paragraph("RELATÓRIO DE PRODUTIVIDADE", title_style))
@@ -111,23 +130,41 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
     detalhes_prosp = relatorio.get('detalhes_prospeccao') or []
     elements.append(Paragraph(f"Prospecção - Detalhes ({len(detalhes_prosp)})", section_style))
 
-    prosp_data = [["Data", "Loja", "Cidade", "Telefone", "Status", "Retorno", "Obs"]]
+    prosp_data = [["Loja", "CNPJ", "Cidade/UF", "Segmento", "Status", "Próximo Passo"]]
     for item in detalhes_prosp:
+        retorno = str(_row_get(item, 'data_retorno', ''))
+        hora_retorno = str(_row_get(item, 'hora_retorno', ''))
+        if retorno and hora_retorno:
+            proximo_passo = f"Retorno: {retorno} {hora_retorno}"
+        else:
+            proximo_passo = str(_row_get(item, 'status_prospeccao', ''))
+
+        cidade = str(_row_get(item, 'cidade', ''))
+        uf = str(_row_get(item, 'estado', ''))
+        cidade_uf = cidade
+        if uf:
+            cidade_uf = f"{cidade}/{uf}" if cidade else uf
         prosp_data.append(
             [
-                str(_row_get(item, 'data_prospeccao', '')),
-                str(_row_get(item, 'nome_loja', '')),
-                str(_row_get(item, 'cidade', '')),
-                str(_row_get(item, 'telefone', '')),
-                str(_row_get(item, 'status_prospeccao', '')),
-                str(_row_get(item, 'data_retorno', '')),
-                str(_row_get(item, 'observacao', '')),
+                _p(_row_get(item, 'nome_loja', '')),
+                _p(_fmt_cnpj(_row_get(item, 'cnpj', ''))),
+                _p(cidade_uf),
+                _p(_row_get(item, 'segmento', '')),
+                _p(_row_get(item, 'status_prospeccao', '')),
+                _p(proximo_passo),
             ]
         )
 
     prosp_table = Table(
         prosp_data,
-        colWidths=[2.0 * cm, 4.8 * cm, 2.6 * cm, 2.8 * cm, 3.0 * cm, 2.2 * cm, 5.0 * cm],
+        colWidths=[
+            5.0 * cm,  # Loja
+            3.0 * cm,  # CNPJ
+            2.5 * cm,  # Cidade/UF
+            2.5 * cm,  # Segmento
+            3.0 * cm,  # Status
+            3.0 * cm,  # Próximo Passo
+        ],
         repeatRows=1,
     )
     prosp_table.setStyle(
@@ -142,6 +179,7 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                 ('FONTSIZE', (0, 1), (-1, -1), 7),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
             ]
         )
@@ -153,23 +191,34 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
     detalhes_leads = relatorio.get('detalhes_leads') or []
     elements.append(Paragraph(f"Leads - Ações Registradas ({len(detalhes_leads)})", section_style))
 
-    leads_data = [["Data", "Loja", "Cidade", "Tipo", "Resultado", "Obs", "Status"]]
+    leads_data = [["Loja", "CNPJ", "Cidade/UF", "Segmento", "Status", "Última Ação"]]
     for item in detalhes_leads:
+        cidade = str(_row_get(item, 'cidade', ''))
+        uf = str(_row_get(item, 'estado', ''))
+        cidade_uf = cidade
+        if uf:
+            cidade_uf = f"{cidade}/{uf}" if cidade else uf
         leads_data.append(
             [
-                str(_row_get(item, 'data', '')),
-                str(_row_get(item, 'nome_loja', '')),
-                str(_row_get(item, 'cidade', '')),
-                str(_row_get(item, 'tipo_contato', '')),
-                str(_row_get(item, 'resultado', '')),
-                str(_row_get(item, 'observacao', '')),
-                str(_row_get(item, 'status_final', '')),
+                _p(_row_get(item, 'nome_loja', '')),
+                _p(_fmt_cnpj(_row_get(item, 'cnpj', ''))),
+                _p(cidade_uf),
+                _p(_row_get(item, 'segmentos', '')),
+                _p(_row_get(item, 'status_final', '')),
+                _p(_row_get(item, 'resultado', '')),
             ]
         )
 
     leads_table = Table(
         leads_data,
-        colWidths=[2.0 * cm, 5.0 * cm, 2.6 * cm, 2.0 * cm, 3.0 * cm, 5.0 * cm, 2.2 * cm],
+        colWidths=[
+            5.0 * cm,  # Loja
+            3.0 * cm,  # CNPJ
+            2.5 * cm,  # Cidade/UF
+            2.5 * cm,  # Segmento
+            3.0 * cm,  # Status
+            3.0 * cm,  # Última Ação
+        ],
         repeatRows=1,
     )
     leads_table.setStyle(
@@ -190,8 +239,250 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
     )
     elements.append(leads_table)
 
+    # Eventos de Prospecção (retornos/tentativas/resultados/reagendados)
+    detalhes_eventos = relatorio.get('detalhes_eventos_prospeccao') or []
+    elements.append(Spacer(1, 0.4 * cm))
+    elements.append(Paragraph(f"Prospecção - Eventos ({len(detalhes_eventos)})", section_style))
+
+    eventos_data = [["Data", "Hora", "Loja", "CNPJ", "Cidade/UF", "Segmento", "Evento", "Resultado"]]
+
+    def _evento_label(tipo: str) -> str:
+        if not tipo:
+            return ''
+        m = {
+            'RETORNO_TENTATIVA': 'Tentativa',
+            'RETORNO_REAGENDADO_AUTO': 'Reagendado automático',
+            'RETORNO_RESULTADO': 'Resultado',
+            'STATUS_ATUALIZADO': 'Status atualizado',
+        }
+        return m.get(tipo, tipo)
+
+    for ev in detalhes_eventos:
+        cidade = str(_row_get(ev, 'cidade', ''))
+        uf = str(_row_get(ev, 'estado', ''))
+        cidade_uf = cidade
+        if uf:
+            cidade_uf = f"{cidade}/{uf}" if cidade else uf
+
+        evento = _evento_label(str(_row_get(ev, 'tipo_evento', '')))
+        eventos_data.append(
+            [
+                str(_row_get(ev, 'data', '')),
+                str(_row_get(ev, 'hora', '')),
+                _p(_row_get(ev, 'nome_loja', '')),
+                _p(_fmt_cnpj(_row_get(ev, 'cnpj', ''))),
+                _p(cidade_uf),
+                _p(_row_get(ev, 'segmento', '')),
+                _p(evento),
+                _p(_row_get(ev, 'detalhe', '')),
+            ]
+        )
+
+    eventos_table = Table(
+        eventos_data,
+        colWidths=[
+            1.4 * cm,  # Data
+            1.0 * cm,  # Hora
+            3.5 * cm,  # Loja
+            2.5 * cm,  # CNPJ
+            2.3 * cm,  # Cidade/UF
+            2.2 * cm,  # Segmento
+            2.5 * cm,  # Evento
+            3.6 * cm,  # Resultado
+        ],
+        repeatRows=1,
+    )
+    eventos_table.setStyle(
+        TableStyle(
+            [
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7c3aed')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#cbd5e1')),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#faf5ff')]),
+            ]
+        )
+    )
+    elements.append(eventos_table)
+
     doc.build(elements)
 
+    buffer.seek(0)
+    return buffer.read()
+
+
+def build_relatorio_prospeccao_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) -> bytes:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from io import BytesIO
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.0 * cm,
+        title="Análise de Prospecção",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'Title',
+        parent=styles['Heading1'],
+        fontSize=16,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=10,
+    )
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.gray,
+        spaceAfter=14,
+    )
+    section_style = ParagraphStyle(
+        'Section',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#111827'),
+        spaceAfter=6,
+        spaceBefore=10,
+    )
+
+    elements = []
+    elements.append(Paragraph("ANÁLISE DE PROSPECÇÃO", title_style))
+    elements.append(Paragraph(f"Período: {data_inicio} a {data_fim}", subtitle_style))
+
+    total_geral = int(relatorio.get('total_geral', 0) or 0)
+    total_tentativas = int(relatorio.get('total_tentativas', 0) or 0)
+    total_convertidos = int(relatorio.get('total_convertidos', 0) or 0)
+    taxa = 0.0
+    if total_tentativas > 0:
+        taxa = (total_convertidos / total_tentativas) * 100.0
+
+    elements.append(Paragraph("Resumo", section_style))
+    resumo_data = [
+        ["Total", "Tentativas", "Convertidos", "Conversão"],
+        [str(total_geral), str(total_tentativas), str(total_convertidos), f"{taxa:.1f}%"],
+    ]
+    resumo_table = Table(resumo_data, colWidths=[4.0 * cm] * 4)
+    resumo_table.setStyle(
+        TableStyle(
+            [
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#111827')),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#d1d5db')),
+                ('FONTNAME', (0, 1), (-1, 1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, 1), 11),
+                ('TOPPADDING', (0, 1), (-1, 1), 6),
+                ('BOTTOMPADDING', (0, 1), (-1, 1), 6),
+            ]
+        )
+    )
+    elements.append(resumo_table)
+    elements.append(Spacer(1, 0.4 * cm))
+
+    resumo_status = relatorio.get('resumo') or []
+    elements.append(Paragraph("Resultados por Status", section_style))
+    status_data = [["Status", "Total"]]
+    for row in resumo_status:
+        try:
+            status = row['status_prospeccao']
+            total = row['total']
+        except Exception:
+            try:
+                status, total = row
+            except Exception:
+                continue
+        status_data.append([str(status), str(total)])
+
+    status_table = Table(status_data, colWidths=[14.0 * cm, 3.0 * cm], repeatRows=1)
+    status_table.setStyle(
+        TableStyle(
+            [
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#cbd5e1')),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+            ]
+        )
+    )
+    elements.append(status_table)
+    elements.append(Spacer(1, 0.4 * cm))
+
+    items = relatorio.get('items') or relatorio.get('detalhes_prospeccao') or []
+    elements.append(Paragraph(f"Lista Detalhada ({len(items)})", section_style))
+    itens_data = [["Data", "Loja", "Cidade/UF", "Telefone", "Status", "Retorno", "Obs"]]
+    for item in items:
+        cidade = str(_row_get(item, 'cidade', ''))
+        uf = str(_row_get(item, 'estado', ''))
+        cidade_uf = cidade
+        if uf:
+            cidade_uf = f"{cidade}/{uf}" if cidade else uf
+        data_retorno = str(_row_get(item, 'data_retorno', ''))
+        hora_retorno = str(_row_get(item, 'hora_retorno', ''))
+        retorno = data_retorno
+        if data_retorno and hora_retorno:
+            retorno = f"{data_retorno} {hora_retorno}"
+
+        itens_data.append(
+            [
+                str(_row_get(item, 'data_prospeccao', '')),
+                str(_row_get(item, 'nome_loja', '')),
+                cidade_uf,
+                str(_row_get(item, 'telefone', '')),
+                str(_row_get(item, 'status_prospeccao', '')),
+                retorno,
+                str(_row_get(item, 'observacao', '')),
+            ]
+        )
+
+    itens_table = Table(
+        itens_data,
+        colWidths=[2.0 * cm, 5.0 * cm, 2.8 * cm, 2.7 * cm, 3.0 * cm, 2.8 * cm, 4.2 * cm],
+        repeatRows=1,
+    )
+    itens_table.setStyle(
+        TableStyle(
+            [
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#111827')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#cbd5e1')),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+            ]
+        )
+    )
+    elements.append(itens_table)
+
+    doc.build(elements)
     buffer.seek(0)
     return buffer.read()
 

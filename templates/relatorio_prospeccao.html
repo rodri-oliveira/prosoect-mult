@@ -3,7 +3,7 @@
 <div class="max-w-6xl mx-auto mt-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">� Análise de Prospecção</h2>
+            <h2 class="text-2xl font-bold text-gray-900">Análise de Prospecção</h2>
             <p class="text-gray-500 text-sm mt-1">Visão gerencial de tentativas, retornos e conversões</p>
         </div>
         <a href="/prospeccao" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
@@ -191,9 +191,9 @@
         <button onclick="copiarRelatorio()" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900">
             📋 Copiar para Clipboard
         </button>
-        <button onclick="window.print()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
-            🖨️ Imprimir / PDF
-        </button>
+        <a href="/relatorio/prospeccao/pdf?periodo={{ periodo }}{% if periodo == 'personalizado' %}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}{% endif %}" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700">
+            ⬇️ Baixar PDF
+        </a>
     </div>
 </div>
 

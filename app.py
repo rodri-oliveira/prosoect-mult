@@ -109,6 +109,27 @@ def rascunho_status(prospeccao_id):
         hora_retorno=hora_retorno,
     )
 
+    if novo_status in ('Envio do portfólio', 'Interessado'):
+        try:
+            from services.prospeccao_service import get_prospeccao_by_id, converter_para_lead
+            prospeccao = get_prospeccao_by_id(prospeccao_id)
+        except Exception:
+            prospeccao = None
+
+        if not prospeccao:
+            return redirect(request.form.get('next', url_for('prospeccao_view')))
+
+        if prospeccao.get('convertido_lead_id'):
+            return redirect(url_for('lead_detail', lead_id=prospeccao['convertido_lead_id']))
+
+        cnpj = normalize_cnpj((prospeccao.get('cnpj') or '').strip())
+        if not cnpj or not is_valid_cnpj(cnpj):
+            return redirect(url_for('prospeccao_view', erro='Para converter em Lead, informe um CNPJ válido.'))
+
+        lead_id = converter_para_lead(prospeccao_id)
+        if lead_id:
+            return redirect(url_for('lead_detail', lead_id=lead_id))
+
     if novo_status == 'Sem interesse':
         arquivar_prospeccao(prospeccao_id)
 
@@ -360,6 +381,48 @@ def relatorio_prospeccao():
                           data_inicio=data_inicio,
                           data_fim=data_fim,
                           active_page='relatorio')
+
+@app.route('/relatorio/prospeccao/pdf')
+def relatorio_prospeccao_pdf():
+    from datetime import date, timedelta
+
+    periodo = request.args.get('periodo', 'hoje')
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+
+    hoje = date.today()
+    if periodo == 'hoje':
+        data_inicio = hoje.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'ontem':
+        ontem = hoje - timedelta(days=1)
+        data_inicio = ontem.isoformat()
+        data_fim = ontem.isoformat()
+    elif periodo == 'semana':
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        data_inicio = inicio_semana.isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'mes':
+        inicio_mes = hoje.replace(day=1)
+        data_inicio = inicio_mes.isoformat()
+        data_fim = hoje.isoformat()
+
+    relatorio = get_relatorio_prospeccao(data_inicio, data_fim)
+
+    from services.relatorio_pdf_service import build_relatorio_prospeccao_pdf_bytes
+
+    pdf_bytes = build_relatorio_prospeccao_pdf_bytes(relatorio, data_inicio, data_fim)
+    filename = f"analise_prospeccao_{data_inicio}_a_{data_fim}_{date.today().strftime('%Y%m%d')}.pdf"
+
+    export_dir = os.path.join(app.root_path, 'exports', 'relatorios')
+    save_pdf_copy(pdf_bytes, export_dir, filename)
+
+    return send_file(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf',
+    )
 
 @app.route('/relatorio')
 def relatorio_diario():

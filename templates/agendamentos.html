@@ -221,8 +221,23 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.observacao %}
-                        <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
+                        {% if item.ultima_tentativa_detalhe %}
+                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
+                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
+                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
+                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
+                                {% else %}bg-brand-50 text-brand-800{% endif %}">
+                                {% if 'não atendeu' in _ult %}📵
+                                {% elif 'caixa postal' in _ult %}📮
+                                {% elif 'sem contato' in _ult %}🚫
+                                {% else %}📝{% endif %}
+                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
+                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                            </span>
+                        </div>
                         {% endif %}
                         {% if item.tentativas_retorno %}
                         <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
@@ -277,8 +292,23 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.observacao %}
-                        <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
+                        {% if item.ultima_tentativa_detalhe %}
+                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
+                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
+                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
+                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
+                                {% else %}bg-brand-50 text-brand-800{% endif %}">
+                                {% if 'não atendeu' in _ult %}📵
+                                {% elif 'caixa postal' in _ult %}📮
+                                {% elif 'sem contato' in _ult %}🚫
+                                {% else %}📝{% endif %}
+                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
+                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                            </span>
+                        </div>
                         {% endif %}
                         {% if item.tentativas_retorno %}
                         <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
@@ -324,8 +354,23 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.observacao %}
-                        <p class="text-xs text-gray-500 mt-1">📝 {{ item.observacao }}</p>
+                        {% if item.ultima_tentativa_detalhe %}
+                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
+                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
+                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
+                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
+                                {% else %}bg-brand-50 text-brand-800{% endif %}">
+                                {% if 'não atendeu' in _ult %}📵
+                                {% elif 'caixa postal' in _ult %}📮
+                                {% elif 'sem contato' in _ult %}🚫
+                                {% else %}📝{% endif %}
+                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
+                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                            </span>
+                        </div>
                         {% endif %}
                     </div>
                     <div class="text-right">

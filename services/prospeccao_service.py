@@ -160,21 +160,12 @@ def registrar_tentativa_retorno(prospeccao_id, observacao=None, data_tentativa=N
     row = c.fetchone()
     data_retorno_atual = row[0] if row else None
 
-    if observacao:
-        c.execute('''
-            UPDATE prospeccao_temp
-            SET tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1,
-                data_ultima_tentativa = ?,
-                observacao = ?
-            WHERE id = ?
-        ''', (data_tentativa, observacao, prospeccao_id))
-    else:
-        c.execute('''
-            UPDATE prospeccao_temp
-            SET tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1,
-                data_ultima_tentativa = ?
-            WHERE id = ?
-        ''', (data_tentativa, prospeccao_id))
+    c.execute('''
+        UPDATE prospeccao_temp
+        SET tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1,
+            data_ultima_tentativa = ?
+        WHERE id = ?
+    ''', (data_tentativa, prospeccao_id))
 
     c.execute('''
         INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois)
@@ -412,7 +403,25 @@ def get_retornos_agendados(data=None, mostrar_todos=False):
     if mostrar_todos:
         # Todos os retornos futuros
         c.execute('''
-            SELECT * FROM prospeccao_temp 
+            SELECT
+                *,
+                (
+                    SELECT e.detalhe
+                    FROM prospeccao_eventos e
+                    WHERE e.prospeccao_id = prospeccao_temp.id
+                      AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                    ORDER BY e.data_evento DESC
+                    LIMIT 1
+                ) AS ultima_tentativa_detalhe,
+                (
+                    SELECT e.data_evento
+                    FROM prospeccao_eventos e
+                    WHERE e.prospeccao_id = prospeccao_temp.id
+                      AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                    ORDER BY e.data_evento DESC
+                    LIMIT 1
+                ) AS ultima_tentativa_data_evento
+            FROM prospeccao_temp
             WHERE data_retorno IS NOT NULL 
               AND data_retorno >= ?
               AND status_prospeccao = 'Pediu para retornar'
@@ -422,7 +431,25 @@ def get_retornos_agendados(data=None, mostrar_todos=False):
     else:
         # Apenas retornos para data específica
         c.execute('''
-            SELECT * FROM prospeccao_temp 
+            SELECT
+                *,
+                (
+                    SELECT e.detalhe
+                    FROM prospeccao_eventos e
+                    WHERE e.prospeccao_id = prospeccao_temp.id
+                      AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                    ORDER BY e.data_evento DESC
+                    LIMIT 1
+                ) AS ultima_tentativa_detalhe,
+                (
+                    SELECT e.data_evento
+                    FROM prospeccao_eventos e
+                    WHERE e.prospeccao_id = prospeccao_temp.id
+                      AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                    ORDER BY e.data_evento DESC
+                    LIMIT 1
+                ) AS ultima_tentativa_data_evento
+            FROM prospeccao_temp
             WHERE data_retorno = ?
               AND status_prospeccao = 'Pediu para retornar'
               AND (arquivado = 0 OR arquivado IS NULL)
@@ -459,7 +486,25 @@ def get_retornos_atrasados():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('''
-        SELECT * FROM prospeccao_temp 
+        SELECT
+            *,
+            (
+                SELECT e.detalhe
+                FROM prospeccao_eventos e
+                WHERE e.prospeccao_id = prospeccao_temp.id
+                  AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                ORDER BY e.data_evento DESC
+                LIMIT 1
+            ) AS ultima_tentativa_detalhe,
+            (
+                SELECT e.data_evento
+                FROM prospeccao_eventos e
+                WHERE e.prospeccao_id = prospeccao_temp.id
+                  AND e.tipo_evento = 'RETORNO_TENTATIVA'
+                ORDER BY e.data_evento DESC
+                LIMIT 1
+            ) AS ultima_tentativa_data_evento
+        FROM prospeccao_temp
         WHERE data_retorno < ?
           AND data_retorno IS NOT NULL
           AND status_prospeccao = 'Pediu para retornar'

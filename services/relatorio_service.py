@@ -178,9 +178,12 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     """, (data_inicio, data_fim))
     detalhes_prospeccao = c.fetchall()
     
-    # Detalhes dos leads do período
+    # Detalhes dos leads do período (com CNPJ e Segmento)
     c.execute('''
-        SELECT c.resultado, c.observacao, c.tipo_contato, l.nome_loja, l.status as status_final, l.cidade, l.estado, date(c.data) as data
+        SELECT c.resultado, c.observacao, c.tipo_contato, 
+               l.nome_loja, l.status as status_final, l.cidade, l.estado, 
+               l.cnpj, date(c.data) as data,
+               (SELECT GROUP_CONCAT(segmento, ', ') FROM segmentos_loja WHERE lead_id = l.id) as segmentos
         FROM contatos c
         JOIN leads l ON c.lead_id = l.id
         WHERE date(c.data) BETWEEN ? AND ?
@@ -189,8 +192,12 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     detalhes_leads = c.fetchall()
 
     c.execute('''
-        SELECT e.tipo_evento, e.detalhe, date(e.data_evento) as data, e.data_retorno_antes, e.data_retorno_depois,
-               p.nome_loja, p.cidade, p.estado, p.telefone, p.hora_retorno
+        SELECT e.tipo_evento, e.detalhe,
+               date(e.data_evento) as data,
+               strftime('%H:%M', e.data_evento) as hora,
+               e.data_retorno_antes, e.data_retorno_depois,
+               p.nome_loja, p.cidade, p.estado, p.telefone, p.hora_retorno,
+               p.segmento, p.cnpj
         FROM prospeccao_eventos e
         JOIN prospeccao_temp p ON p.id = e.prospeccao_id
         WHERE date(e.data_evento) BETWEEN ? AND ?
