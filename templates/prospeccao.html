@@ -70,14 +70,14 @@
                         </div>
                         <div class="w-1/3" x-data="cidadeAutocomplete()">
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Cidade</label>
-                            <div class="relative">
+                            <div class="relative" @click.away="open = false">
                                 <input 
                                     type="text" 
                                     id="mapCidade" 
                                     x-ref="input"
                                     x-model="search"
                                     @focus="open = true; ensureLoaded()"
-                                    @click.away="open = false"
+                                    @blur="setTimeout(() => { open = false }, 150)"
                                     @keydown.escape="open = false"
                                     @keydown.arrow-down.prevent="moveDown()"
                                     @keydown.arrow-up.prevent="moveUp()"
@@ -89,6 +89,7 @@
                                 <div 
                                     x-show="open && filteredCidades.length > 0" 
                                     x-transition
+                                    :class="open ? 'pointer-events-auto' : 'pointer-events-none'"
                                     class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto py-1"
                                 >
                                     <template x-for="(cidade, index) in filteredCidades" :key="cidade">
