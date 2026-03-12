@@ -111,6 +111,11 @@ def init_db():
 
     if 'hora_retorno' not in cols:
         c.execute('ALTER TABLE prospeccao_temp ADD COLUMN hora_retorno TIME')
+
+    if 'maps_place_id' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_place_id TEXT')
+    if 'maps_url' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_url TEXT')
     
     conn.commit()
     conn.close()

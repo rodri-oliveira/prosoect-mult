@@ -70,6 +70,191 @@ def prospeccao_view():
                           data_fim=data_fim,
                           mostrar_arquivados=mostrar_arquivados)
 
+
+@app.route('/api/maps/resultados', methods=['GET'])
+def api_maps_resultados():
+    query = (request.args.get('query') or '').strip()
+    cidade = (request.args.get('cidade') or '').strip()
+    estado = (request.args.get('estado') or '').strip()
+    segmentos = request.args.getlist('segmentos')
+
+    try:
+        limit = int((request.args.get('limit') or '20').strip())
+    except Exception:
+        limit = 20
+    if limit < 1:
+        limit = 1
+    if limit > 50:
+        limit = 50
+
+    itens = []
+    modo = 'mock'
+    message = None
+
+    if query:
+        segs = [s for s in (segmentos or []) if (s or '').strip()]
+        endereco_base = cidade + (f'/{estado}' if estado else '')
+
+        query_real = query
+        if cidade or estado:
+            local = ', '.join([p for p in [cidade, estado] if p])
+            query_real = f"{query} em {local}" if local else query
+
+        try:
+            from services.maps_scrape_service import scrape_maps_results
+            itens = scrape_maps_results(query_real, limit=limit, headless=False)
+            for it in itens:
+                it['cidade'] = it.get('cidade') or cidade
+                it['estado'] = it.get('estado') or estado
+                it['segmentos'] = it.get('segmentos') or segs
+            modo = 'real'
+        except Exception as e:
+            message = str(e)
+            itens = []
+            for i in range(1, limit + 1):
+                itens.append({
+                    'id': f'mock-{i}',
+                    'nome': f'Resultado Exemplo {i} ({query})',
+                    'endereco': endereco_base,
+                    'telefone': f'(11) 9000{i:02d}-000{i%10}',
+                    'whatsapp': f'(11) 9000{i:02d}-000{i%10}',
+                    'website': '',
+                    'maps_url': f'https://www.google.com/maps/search/{query}',
+                    'cidade': cidade,
+                    'estado': estado,
+                    'segmentos': segs,
+                })
+            modo = 'mock'
+
+    existing_keys = []
+    try:
+        keys = [str(it.get('maps_place_id') or it.get('id') or '').strip() for it in (itens or [])]
+        keys = [k for k in keys if k]
+        urls = [str(it.get('maps_url') or '').strip() for it in (itens or [])]
+        urls = [u for u in urls if u]
+
+        if keys or urls:
+            import sqlite3
+            from database import DB_PATH
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+
+            existing_urls = []
+
+            if keys:
+                placeholders = ','.join(['?'] * len(keys))
+                c.execute(f'SELECT maps_place_id FROM prospeccao_temp WHERE maps_place_id IN ({placeholders})', keys)
+                existing_keys = [row[0] for row in (c.fetchall() or []) if row and row[0]]
+
+            if urls:
+                placeholders = ','.join(['?'] * len(urls))
+                c.execute(f'SELECT maps_url FROM prospeccao_temp WHERE maps_url IN ({placeholders})', urls)
+                existing_urls = [row[0] for row in (c.fetchall() or []) if row and row[0]]
+
+            conn.close()
+
+            existing_set = set(existing_keys)
+            existing_url_set = set(existing_urls)
+            for it in itens or []:
+                k = str(it.get('maps_place_id') or it.get('id') or '').strip()
+                u = str(it.get('maps_url') or '').strip()
+                if (k and k in existing_set) or (u and u in existing_url_set):
+                    it['already_added'] = True
+    except Exception:
+        existing_keys = []
+
+    return jsonify({
+        'ok': True,
+        'modo': modo,
+        'query': query,
+        'message': message,
+        'existing_keys': existing_keys,
+        'items': itens,
+    })
+
+
+@app.route('/api/maps/adicionar', methods=['POST'])
+def api_maps_adicionar():
+    payload = request.get_json(silent=True) or {}
+    items = payload.get('items') or []
+
+    if not isinstance(items, list):
+        return jsonify({'ok': False, 'message': 'Formato inválido.'}), 400
+
+    from services.prospeccao_service import add_prospeccao_temp_info
+
+    adicionados = []
+    duplicados = []
+    added_keys = []
+    duplicate_keys = []
+
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+
+        segmentos = it.get('segmentos')
+        if isinstance(segmentos, list):
+            segmento_str = ', '.join([str(s).strip() for s in segmentos if str(s or '').strip()])
+        else:
+            segmento_str = (it.get('segmento') or '').strip()
+
+        maps_key = (it.get('maps_place_id') or it.get('place_id') or it.get('id') or '').strip()
+
+        dados = {
+            'nome_loja': (it.get('nome') or it.get('nome_loja') or '').strip(),
+            'cnpj': (it.get('cnpj') or '').strip(),
+            'telefone': (it.get('telefone') or '').strip(),
+            'whatsapp': (it.get('whatsapp') or '').strip(),
+            'endereco': (it.get('endereco') or '').strip(),
+            'cidade': (it.get('cidade') or '').strip(),
+            'estado': (it.get('estado') or '').strip(),
+            'segmento': segmento_str,
+            'maps_place_id': maps_key,
+            'maps_url': (it.get('maps_url') or '').strip(),
+        }
+
+        if not dados['nome_loja']:
+            continue
+
+        prospeccao_id, created = add_prospeccao_temp_info(dados)
+        if created:
+            adicionados.append(prospeccao_id)
+            if maps_key:
+                added_keys.append(maps_key)
+        else:
+            duplicados.append(prospeccao_id)
+            if maps_key:
+                duplicate_keys.append(maps_key)
+
+    return jsonify({
+        'ok': True,
+        'added_count': len(adicionados),
+        'duplicate_count': len(duplicados),
+        'added_ids': adicionados,
+        'duplicate_ids': duplicados,
+        'added_keys': added_keys,
+        'duplicate_keys': duplicate_keys,
+    })
+
+
+@app.route('/api/maps/detalhe', methods=['POST'])
+def api_maps_detalhe():
+    payload = request.get_json(silent=True) or {}
+    maps_url = (payload.get('maps_url') or '').strip()
+
+    if not maps_url:
+        return jsonify({'ok': False, 'message': 'maps_url obrigatório.'}), 400
+
+    if not (maps_url.startswith('https://www.google.com/maps') or maps_url.startswith('https://google.com/maps')):
+        return jsonify({'ok': False, 'message': 'URL inválida.'}), 400
+
+    try:
+        from services.maps_scrape_service import scrape_maps_place_details
+        detalhe = scrape_maps_place_details(maps_url, headless=False)
+        return jsonify({'ok': True, 'item': detalhe})
+    except Exception as e:
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
 @app.route('/prospeccao/rascunho/novo', methods=['POST'])
 def rascunho_novo():
     data = dict(request.form)
@@ -87,6 +272,9 @@ def rascunho_novo():
             data['cnpj'] = ''
         else:
             data['cnpj'] = cnpj_norm
+
+    data['maps_place_id'] = (request.form.get('maps_place_id') or '').strip()
+    data['maps_url'] = (request.form.get('maps_url') or '').strip()
 
     add_prospeccao_temp(data)
     next_url = request.form.get('next') or request.form.get('next_url')
