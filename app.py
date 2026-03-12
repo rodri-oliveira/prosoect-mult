@@ -283,6 +283,45 @@ def api_maps_detalhe():
     except Exception as e:
         return jsonify({'ok': False, 'message': str(e)}), 500
 
+
+@app.route('/api/prospeccao/rascunho/novo', methods=['POST'])
+def api_rascunho_novo():
+    payload = request.get_json(silent=True)
+    if isinstance(payload, dict):
+        data = dict(payload)
+        segmentos = data.get('segmento')
+        if isinstance(segmentos, list):
+            segmentos = [s.strip() for s in segmentos if (s or '').strip()]
+            data['segmento'] = ', '.join(segmentos) if segmentos else ''
+        else:
+            data['segmento'] = (segmentos or '').strip()
+    else:
+        data = dict(request.form)
+        segmentos = [s.strip() for s in request.form.getlist('segmento') if (s or '').strip()]
+        if segmentos:
+            data['segmento'] = ', '.join(segmentos)
+        else:
+            data['segmento'] = ''
+
+    cnpj = (data.get('cnpj') or '').strip()
+    if cnpj:
+        cnpj_norm = normalize_cnpj(cnpj)
+        if not is_valid_cnpj(cnpj_norm):
+            data['cnpj'] = ''
+        else:
+            data['cnpj'] = cnpj_norm
+
+    data['maps_place_id'] = (data.get('maps_place_id') or '').strip()
+    data['maps_url'] = (data.get('maps_url') or '').strip()
+
+    try:
+        from services.prospeccao_service import add_prospeccao_temp_info
+        prospeccao_id, created = add_prospeccao_temp_info(data)
+        key = (data.get('maps_place_id') or '').strip() or (data.get('maps_url') or '').strip()
+        return jsonify({'ok': True, 'id': prospeccao_id, 'created': bool(created), 'key': key, 'maps_place_id': data.get('maps_place_id') or '', 'maps_url': data.get('maps_url') or ''})
+    except Exception as e:
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
 @app.route('/prospeccao/rascunho/novo', methods=['POST'])
 def rascunho_novo():
     data = dict(request.form)
