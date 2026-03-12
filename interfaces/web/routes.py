@@ -101,6 +101,7 @@ def rascunho_novo():
             segmento=segmento_str,
             maps_place_id=(request.form.get("maps_place_id") or "").strip() or None,
             maps_url=(request.form.get("maps_url") or "").strip() or None,
+            site=(request.form.get("site") or "").strip() or None,
         ),
         prospeccao_repository(),
     )
@@ -165,6 +166,7 @@ def leads_create():
             cnpj=(request.form.get("cnpj") or "").strip() or None,
             telefone=(request.form.get("telefone") or "").strip() or None,
             whatsapp=(request.form.get("whatsapp") or "").strip() or None,
+            site=(request.form.get("site") or "").strip() or None,
             email=(request.form.get("email") or "").strip() or None,
             endereco=(request.form.get("endereco") or "").strip() or None,
             responsavel=(request.form.get("responsavel") or "").strip() or None,

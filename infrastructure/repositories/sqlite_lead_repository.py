@@ -95,9 +95,9 @@ class SqliteLeadRepository(LeadRepository):
         c.execute(
             """
             INSERT INTO leads (
-                nome_loja, cnpj, telefone, whatsapp, email, cidade, estado, endereco, responsavel, status, observacoes, maps_place_id, maps_url
+                nome_loja, cnpj, telefone, whatsapp, email, cidade, estado, endereco, responsavel, status, observacoes, maps_place_id, maps_url, site
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 (data.get("nome_loja") or "").strip(),
@@ -113,6 +113,7 @@ class SqliteLeadRepository(LeadRepository):
                 (data.get("observacoes") or data.get("observacao") or "").strip() or None,
                 (data.get("maps_place_id") or "").strip() or None,
                 (data.get("maps_url") or "").strip() or None,
+                (data.get("site") or "").strip() or None,
             ),
         )
         conn.commit()

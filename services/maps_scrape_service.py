@@ -34,6 +34,24 @@ def _clean_phone(v: str) -> str:
     return re.sub(r'^[^0-9+]+', '', v).strip()
 
 
+def _clean_website(v: str) -> str:
+    v = _safe_text(v).replace('\n', ' ').strip()
+    if not v:
+        return ''
+    v = re.sub(r'\s+', ' ', v).strip()
+
+    m = re.search(r'(https?://[^\s]+)', v, flags=re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+
+    m = re.search(r'([a-z0-9][a-z0-9\-\.]+\.[a-z]{2,})(/[^\s]*)?', v, flags=re.IGNORECASE)
+    if m:
+        return (m.group(1) + (m.group(2) or '')).strip()
+
+    v = re.sub(r'^[^A-Za-z0-9]+', '', v).strip()
+    return v
+
+
 def derive_maps_place_id(maps_url: str) -> str:
     maps_url = _safe_text(maps_url)
     if not maps_url:
@@ -76,6 +94,38 @@ def _extract_labeled_button_value(page, data_item_id_contains: str) -> str:
     return ''
 
 
+def _extract_labeled_link_value(page, data_item_id_contains: str) -> str:
+    try:
+        a = page.locator(f'a[data-item-id*="{data_item_id_contains}"]')
+        txt = _get_first_text(a)
+        if txt:
+            return txt
+    except Exception:
+        pass
+    return ''
+
+
+def _extract_external_website_fallback(page) -> str:
+    try:
+        anchors = page.locator('a[href^="http"]')
+        n = anchors.count()
+        for i in range(min(n, 60)):
+            a = anchors.nth(i)
+            href = _safe_text(a.get_attribute('href') or '')
+            txt = _safe_text(a.inner_text() or '')
+            if not href:
+                continue
+            href_l = href.lower()
+            if 'google.' in href_l or '/maps' in href_l:
+                continue
+            if not txt or '.' not in txt:
+                continue
+            return txt
+    except Exception:
+        pass
+    return ''
+
+
 def scrape_maps_place_details(maps_url: str, headless: bool = True):
     maps_url = _safe_text(maps_url)
     if not maps_url:
@@ -97,6 +147,10 @@ def scrape_maps_place_details(maps_url: str, headless: bool = True):
             endereco = _extract_labeled_button_value(page, "address")
             telefone = _extract_labeled_button_value(page, "phone")
             website = _extract_labeled_button_value(page, "authority")
+            if not website:
+                website = _extract_labeled_link_value(page, "authority")
+            if not website:
+                website = _extract_external_website_fallback(page)
 
             if not telefone:
                 telefone = _extract_labeled_button_value(page, "phone:tel")
@@ -104,7 +158,7 @@ def scrape_maps_place_details(maps_url: str, headless: bool = True):
             return {
                 "endereco": _clean_address(endereco),
                 "telefone": _clean_phone(telefone),
-                "website": _safe_text(website).replace('\n', ' ').strip(),
+                "website": _clean_website(website),
             }
 
         finally:

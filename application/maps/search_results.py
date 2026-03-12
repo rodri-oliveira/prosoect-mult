@@ -53,10 +53,16 @@ def search_maps_results_with_repo(
         segs = [s for s in (segmentos or []) if (s or "").strip()]
         endereco_base = cidade + (f"/{estado}" if estado else "")
 
-        query_real = query
+        query_base = query
+        if segs and query.strip().lower() in {"lojas", "loja"}:
+            query_base = ", ".join(segs)
+        elif segs and not query_base:
+            query_base = ", ".join(segs)
+
+        query_real = query_base
         if cidade or estado:
             local = ", ".join([p for p in [cidade, estado] if p])
-            query_real = f"{query} em {local}" if local else query
+            query_real = f"{query_base} em {local}" if local else query_base
 
         try:
             from services.maps_scrape_service import scrape_maps_results

@@ -37,6 +37,8 @@ def init_db():
         c.execute('ALTER TABLE leads ADD COLUMN maps_place_id TEXT')
     if 'maps_url' not in lead_cols:
         c.execute('ALTER TABLE leads ADD COLUMN maps_url TEXT')
+    if 'site' not in lead_cols:
+        c.execute('ALTER TABLE leads ADD COLUMN site TEXT')
     
     # Tabela segmentos_loja
     c.execute('''
@@ -123,6 +125,8 @@ def init_db():
         c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_place_id TEXT')
     if 'maps_url' not in cols:
         c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_url TEXT')
+    if 'site' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN site TEXT')
     
     conn.commit()
     conn.close()

@@ -14,6 +14,7 @@ class CreateLeadRequest:
     cnpj: str | None
     telefone: str | None
     whatsapp: str | None
+    site: str | None
     email: str | None
     endereco: str | None
     responsavel: str | None
@@ -41,6 +42,7 @@ def create_lead_with_repo(req: CreateLeadRequest, repo: LeadRepository) -> Creat
         "cnpj": req.cnpj,
         "telefone": req.telefone,
         "whatsapp": req.whatsapp,
+        "site": req.site,
         "email": req.email,
         "endereco": req.endereco,
         "responsavel": req.responsavel,

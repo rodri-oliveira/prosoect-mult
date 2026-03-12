@@ -128,6 +128,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         maps_place_id = (dados.get("maps_place_id") or "").strip() or None
         maps_url = (dados.get("maps_url") or "").strip() or None
         cnpj = (dados.get("cnpj") or "").strip() or None
+        site = (dados.get("site") or dados.get("website") or "").strip() or None
 
         existente_id = None
         if maps_place_id:
@@ -184,25 +185,28 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         c.execute(
             """
-            INSERT INTO prospeccao_temp (nome_loja, cnpj, telefone, whatsapp, endereco, cidade, estado, segmento, observacao, data_prospeccao, status_prospeccao, data_retorno, hora_retorno, maps_place_id, maps_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, DATE('now')), COALESCE(?, 'Não contatado'), ?, ?, ?, ?)
+            INSERT INTO prospeccao_temp (nome_loja, cnpj, telefone, whatsapp, endereco, cidade, estado, segmento, status_prospeccao, observacao, data_retorno, data_primeiro_agendamento, tentativas_retorno, data_ultima_tentativa, hora_retorno, maps_place_id, maps_url, site)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
-                dados.get("nome_loja"),
+                (dados.get("nome_loja") or "").strip(),
                 cnpj,
-                dados.get("telefone"),
-                dados.get("whatsapp"),
-                dados.get("endereco"),
-                dados.get("cidade"),
-                dados.get("estado"),
-                dados.get("segmento"),
-                obs,
-                dados.get("data_prospeccao"),
+                (dados.get("telefone") or "").strip() or None,
+                (dados.get("whatsapp") or "").strip() or None,
+                (dados.get("endereco") or "").strip() or None,
+                (dados.get("cidade") or "").strip() or None,
+                (dados.get("estado") or "").strip() or None,
+                (dados.get("segmento") or "").strip() or None,
                 status,
+                (obs or "").strip() or None,
                 data_retorno,
+                dados.get("data_primeiro_agendamento"),
+                dados.get("tentativas_retorno") or 0,
+                dados.get("data_ultima_tentativa"),
                 hora_retorno,
                 maps_place_id,
                 maps_url,
+                site,
             ),
         )
         conn.commit()
@@ -291,25 +295,26 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         observacao = (prospeccao.get("observacao") or "").strip()
         maps_place_id = (prospeccao.get("maps_place_id") or "").strip()
         maps_url = (prospeccao.get("maps_url") or "").strip()
+        site = (prospeccao.get("site") or "").strip()
 
         c.execute(
             """
-            INSERT INTO leads (nome, cidade, estado, cnpj, telefone, whatsapp, endereco, segmento, observacao, maps_place_id, maps_url, status, data_criacao)
+            INSERT INTO leads (nome_loja, cidade, estado, cnpj, telefone, whatsapp, endereco, status, observacoes, maps_place_id, maps_url, site, data_criacao)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE('now'))
         """,
             (
                 nome,
-                cidade,
-                estado,
-                cnpj,
-                telefone,
-                whatsapp,
-                endereco,
-                segmento,
-                observacao,
-                maps_place_id,
-                maps_url,
-                "Novo",
+                cidade or None,
+                estado or None,
+                cnpj or None,
+                telefone or None,
+                whatsapp or None,
+                endereco or None,
+                "Novo Lead",
+                observacao or None,
+                maps_place_id or None,
+                maps_url or None,
+                site or None,
             ),
         )
         conn.commit()

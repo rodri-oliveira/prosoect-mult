@@ -21,6 +21,7 @@
 ## Em Andamento
 
 - [/] Relatório Diário — formatando para layout profissional para a gestora
+- [/] Leads — adicionar campo Site (exibir como link clicável no detalhe)
 
 ## Arquitetura (DDD / Clean) — Plano
 

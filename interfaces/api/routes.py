@@ -135,6 +135,7 @@ def api_rascunho_novo():
 
     data["maps_place_id"] = (data.get("maps_place_id") or "").strip()
     data["maps_url"] = (data.get("maps_url") or "").strip()
+    data["site"] = (data.get("site") or data.get("website") or "").strip()
 
     try:
         res = create_prospeccao_draft_with_repo(
@@ -149,6 +150,7 @@ def api_rascunho_novo():
                 segmento=(data.get("segmento") or "").strip() or None,
                 maps_place_id=(data.get("maps_place_id") or "").strip() or None,
                 maps_url=(data.get("maps_url") or "").strip() or None,
+                site=(data.get("site") or "").strip() or None,
             ),
             prospeccao_repository(),
         )
