@@ -81,7 +81,6 @@ dashboard.html
 leads.html
 lead_detalhe.html
 prospeccao.html
-fila_prospeccao.html
 relatorio.html
 
 /static

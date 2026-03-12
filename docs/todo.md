@@ -22,6 +22,14 @@
 
 - [/] Relatório Diário — formatando para layout profissional para a gestora
 
+## Arquitetura (DDD / Clean) — Plano
+
+- [ ] Migrar dashboard/resumo_hoje para Application + Repository (remover uso de services.relatorio_service em interfaces/web)
+- [ ] Extrair integrações externas para Gateways (Domain) + Implementações (Infrastructure): CNPJ (BrasilAPI) e Maps scraping
+- [ ] Migrar geração de PDF para Infrastructure/reporting (ou gateway) e manter use cases de PDF na camada Application sem imports diretos de services
+- [ ] Padronizar DTOs/Responses e reduzir dict solto nos use cases (contratos claros entre Application e Interfaces)
+- [ ] Criar testes de unidade para use cases principais e testes de integração para repositories SQLite (para garantir evolução segura)
+
 ## Backlog (Futuro)
 
 - [ ] Filtro de leads por status na listagem (tabs ou dropdown)
