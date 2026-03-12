@@ -128,37 +128,65 @@ def api_maps_resultados():
 
     existing_keys = []
     try:
-        keys = [str(it.get('maps_place_id') or it.get('id') or '').strip() for it in (itens or [])]
-        keys = [k for k in keys if k]
-        urls = [str(it.get('maps_url') or '').strip() for it in (itens or [])]
-        urls = [u for u in urls if u]
+        from services.maps_scrape_service import derive_maps_place_id
 
-        if keys or urls:
+        def _key_from_item(it):
+            k = str(it.get('maps_place_id') or it.get('id') or '').strip()
+            if k:
+                return k
+            u = str(it.get('maps_url') or '').strip()
+            return derive_maps_place_id(u) if u else ''
+
+        incoming_keys = []
+        for it in (itens or []):
+            k = _key_from_item(it)
+            if k:
+                incoming_keys.append(k)
+
+        incoming_set = set(incoming_keys)
+        if incoming_set:
             import sqlite3
             from database import DB_PATH
+
             conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
             c = conn.cursor()
 
-            existing_urls = []
+            existing_set = set()
 
-            if keys:
-                placeholders = ','.join(['?'] * len(keys))
-                c.execute(f'SELECT maps_place_id FROM prospeccao_temp WHERE maps_place_id IN ({placeholders})', keys)
-                existing_keys = [row[0] for row in (c.fetchall() or []) if row and row[0]]
+            # Prospecção (rascunho)
+            c.execute("SELECT maps_place_id, maps_url FROM prospeccao_temp WHERE (maps_place_id IS NOT NULL AND maps_place_id != '') OR (maps_url IS NOT NULL AND maps_url != '')")
+            for row in c.fetchall() or []:
+                mpid = (row['maps_place_id'] or '').strip()
+                if mpid:
+                    existing_set.add(mpid)
+                mu = (row['maps_url'] or '').strip()
+                dk = derive_maps_place_id(mu) if mu else ''
+                if dk:
+                    existing_set.add(dk)
 
-            if urls:
-                placeholders = ','.join(['?'] * len(urls))
-                c.execute(f'SELECT maps_url FROM prospeccao_temp WHERE maps_url IN ({placeholders})', urls)
-                existing_urls = [row[0] for row in (c.fetchall() or []) if row and row[0]]
+            # Leads (caso já tenha sido convertido)
+            try:
+                c.execute("SELECT maps_place_id, maps_url FROM leads WHERE (maps_place_id IS NOT NULL AND maps_place_id != '') OR (maps_url IS NOT NULL AND maps_url != '')")
+                for row in c.fetchall() or []:
+                    mpid = (row['maps_place_id'] or '').strip()
+                    if mpid:
+                        existing_set.add(mpid)
+                    mu = (row['maps_url'] or '').strip()
+                    dk = derive_maps_place_id(mu) if mu else ''
+                    if dk:
+                        existing_set.add(dk)
+            except Exception:
+                pass
 
             conn.close()
 
-            existing_set = set(existing_keys)
-            existing_url_set = set(existing_urls)
+            matched = incoming_set.intersection(existing_set)
+            existing_keys = sorted(matched)
+
             for it in itens or []:
-                k = str(it.get('maps_place_id') or it.get('id') or '').strip()
-                u = str(it.get('maps_url') or '').strip()
-                if (k and k in existing_set) or (u and u in existing_url_set):
+                k = _key_from_item(it)
+                if k and k in matched:
                     it['already_added'] = True
     except Exception:
         existing_keys = []

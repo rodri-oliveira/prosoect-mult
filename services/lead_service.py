@@ -88,9 +88,9 @@ def create_lead(data):
     status = data.get('status') or 'Novo Lead'
     c.execute('''
         INSERT INTO leads (
-            nome_loja, cnpj, telefone, whatsapp, email, cidade, estado, endereco, responsavel, status, observacoes
+            nome_loja, cnpj, telefone, whatsapp, email, cidade, estado, endereco, responsavel, status, observacoes, maps_place_id, maps_url
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('nome_loja'),
         data.get('cnpj'),
@@ -102,7 +102,9 @@ def create_lead(data):
         data.get('endereco'),
         data.get('responsavel'),
         status,
-        data.get('observacoes') or data.get('observacao')
+        data.get('observacoes') or data.get('observacao'),
+        (data.get('maps_place_id') or '').strip() or None,
+        (data.get('maps_url') or '').strip() or None,
     ))
     lead_id = c.lastrowid
 

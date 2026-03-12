@@ -43,7 +43,7 @@
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                 <div class="p-4 bg-gray-50 border-b border-gray-200">
                     <div class="flex items-end gap-3">
-                        <div class="flex-1 relative" x-data="segmentoSelector()" @click.away="open = false">
+                        <div class="flex-1 relative" id="segmentoSelector" x-data="segmentoSelector()" @click.away="open = false">
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Segmentos</label>
                             <button type="button" @click="open = !open" class="w-full rounded-md border border-gray-300 shadow-sm bg-white px-3 py-2 text-left sm:text-sm flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 min-h-[38px]">
                                 <span class="flex flex-wrap gap-1 flex-1" x-show="selecionados.length > 0">
@@ -77,7 +77,7 @@
                                     x-ref="input"
                                     x-model="search"
                                     @focus="open = true; ensureLoaded()"
-                                    @blur="setTimeout(() => { open = false }, 150)"
+                                    @blur="open = false"
                                     @keydown.escape="open = false"
                                     @keydown.arrow-down.prevent="moveDown()"
                                     @keydown.arrow-up.prevent="moveUp()"
@@ -94,7 +94,7 @@
                                 >
                                     <template x-for="(cidade, index) in filteredCidades" :key="cidade">
                                         <div 
-                                            @click="select(cidade)"
+                                            @mousedown.prevent="select(cidade)"
                                             :class="{'bg-brand-50': index === highlightedIndex, 'hover:bg-gray-50': index !== highlightedIndex}"
                                             class="px-3 py-2 cursor-pointer text-sm text-gray-700"
                                             x-text="cidade"
@@ -570,8 +570,8 @@ function updateBtnBuscarCnpjGoogle() {
 window.lastQuery = 'lojas';
 
 function searchMap() {
-    const segWrapper = document.querySelector('[x-data]');
-    const segmentosSelecionados = segWrapper ? Alpine.$data(segWrapper).selecionados : [];
+    const segWrapper = document.getElementById('segmentoSelector');
+    const segmentosSelecionados = segWrapper ? (Alpine.$data(segWrapper).selecionados || []) : [];
     const cidade = document.getElementById('mapCidade').value;
     const estado = document.getElementById('mapEstado').value;
     
@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mapCidade && !mapCidade.value && cidadeSalva) mapCidade.value = cidadeSalva;
         if (mapEstado && estadoSalvo) mapEstado.value = estadoSalvo;
 
-        const segWrapper = document.querySelector('[x-data]');
+        const segWrapper = document.getElementById('segmentoSelector');
         if (segWrapper && Array.isArray(segmentosSalvos) && segmentosSalvos.length > 0) {
             Alpine.$data(segWrapper).selecionados = segmentosSalvos;
         }
@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildQueryPayload = () => {
-        const segWrapper = document.querySelector('[x-data]');
+        const segWrapper = document.getElementById('segmentoSelector');
         const segmentosSelecionados = segWrapper ? (Alpine.$data(segWrapper).selecionados || []) : [];
         const cidade = (document.getElementById('mapCidade')?.value || '').trim();
         const estado = (document.getElementById('mapEstado')?.value || '').trim();
@@ -872,23 +872,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.value = val || '';
         };
 
-        let enriched = it;
-        const needsDetails = (!enriched.endereco && !enriched.telefone && !enriched.website) && !!enriched.maps_url;
-        if (needsDetails) {
-            try {
-                if (statusEl) statusEl.textContent = 'Buscando detalhes...';
-                const resp = await fetch('/api/maps/detalhe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ maps_url: enriched.maps_url })
-                });
-                const data = await resp.json();
-                if (resp.ok && data && data.ok && data.item) {
-                    enriched = { ...enriched, ...data.item };
-                }
-            } catch (e) {}
-        }
+        const currentKey = String(it.maps_place_id || it.id || '').trim();
+        window.__mapsUseCurrentKey = currentKey;
 
+        let enriched = it;
         setVal('f_nome', enriched.nome || '');
         setVal('f_endereco', enriched.endereco || '');
         setVal('f_telefone', enriched.telefone || '');
@@ -907,6 +894,39 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const needsDetails = (!enriched.endereco && !enriched.telefone && !enriched.website) && !!enriched.maps_url;
+        if (needsDetails) {
+            try {
+                if (statusEl) statusEl.textContent = 'Buscando detalhes...';
+                fetch('/api/maps/detalhe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ maps_url: enriched.maps_url })
+                })
+                    .then(async (resp) => ({ ok: resp.ok, data: await resp.json().catch(() => null) }))
+                    .then(({ ok, data }) => {
+                        if (window.__mapsUseCurrentKey !== currentKey) return;
+                        if (!ok || !data || !data.ok || !data.item) return;
+                        const d = data.item;
+                        if (d.endereco) setVal('f_endereco', d.endereco);
+                        if (d.telefone) {
+                            setVal('f_telefone', d.telefone);
+                            const curWa = (document.getElementById('f_whatsapp')?.value || '').trim();
+                            if (!curWa) setVal('f_whatsapp', d.telefone);
+                        }
+                        if (statusEl) statusEl.textContent = 'OK';
+                        try { updateBtnBuscarCnpjGoogle(); } catch (e) {}
+                    })
+                    .catch(() => {});
+            } catch (e) {}
+        }
+
+        // Fecha o drawer para revelar o formulário (evita sensação de congelado)
+        // mas mantém os resultados em memória para reabrir sem precisar pesquisar de novo
+        try {
+            window.__mapsResultsCache = Array.isArray(lastMapsItems) ? lastMapsItems : [];
+            window.__mapsLastPayloadCache = buildQueryPayload();
+        } catch (e) {}
         closeDrawer();
     };
 
@@ -934,12 +954,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    if (openBtn) {
-        openBtn.addEventListener('click', () => {
-            openDrawer();
-            loadResults();
-        });
-    }
+    const isSamePayload = (a, b) => {
+        try {
+            if (!a || !b) return false;
+            const aSeg = Array.isArray(a.segmentosSelecionados) ? a.segmentosSelecionados.slice().sort().join('|') : '';
+            const bSeg = Array.isArray(b.segmentosSelecionados) ? b.segmentosSelecionados.slice().sort().join('|') : '';
+            return String(a.cidade || '').trim() === String(b.cidade || '').trim()
+                && String(a.estado || '').trim() === String(b.estado || '').trim()
+                && String(a.query || '').trim() === String(b.query || '').trim()
+                && aSeg === bSeg;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    // Event delegation para botão Resultados (beta) - mais robusto que listener direto
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btnResultadosMaps');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openDrawer();
+
+        const cachedItems = window.__mapsResultsCache;
+        const cachedPayload = window.__mapsLastPayloadCache;
+        const nowPayload = buildQueryPayload();
+        if (Array.isArray(cachedItems) && cachedItems.length > 0 && isSamePayload(cachedPayload, nowPayload)) {
+            if (statusEl) statusEl.textContent = 'OK';
+            renderResults(cachedItems);
+            return;
+        }
+        loadResults();
+    });
+
+    // Listeners diretos mantidos para compatibilidade
     if (reloadBtn) reloadBtn.addEventListener('click', loadResults);
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     if (overlay) overlay.addEventListener('click', closeDrawer);

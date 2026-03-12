@@ -34,7 +34,7 @@ def _clean_phone(v: str) -> str:
     return re.sub(r'^[^0-9+]+', '', v).strip()
 
 
-def _derive_maps_place_id(maps_url: str) -> str:
+def derive_maps_place_id(maps_url: str) -> str:
     maps_url = _safe_text(maps_url)
     if not maps_url:
         return ''
@@ -178,7 +178,7 @@ def scrape_maps_results(query: str, limit: int = 20, headless: bool = False, cac
                         continue
 
                     seen.add(href)
-                    maps_place_id = _derive_maps_place_id(href)
+                    maps_place_id = derive_maps_place_id(href)
                     place_key = maps_place_id or hashlib.sha1(href.encode("utf-8")).hexdigest()[:16]
                     items.append({
                         "id": place_key,

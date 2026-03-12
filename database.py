@@ -30,6 +30,13 @@ def init_db():
             data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    c.execute("PRAGMA table_info(leads)")
+    lead_cols = [row[1] for row in c.fetchall()]
+    if 'maps_place_id' not in lead_cols:
+        c.execute('ALTER TABLE leads ADD COLUMN maps_place_id TEXT')
+    if 'maps_url' not in lead_cols:
+        c.execute('ALTER TABLE leads ADD COLUMN maps_url TEXT')
     
     # Tabela segmentos_loja
     c.execute('''

@@ -314,7 +314,9 @@ def converter_para_lead(prospeccao_id):
         'estado': prospeccao['estado'],
         'segmentos': prospeccao['segmento'],
         'observacoes': prospeccao['observacao'] or 'Convertido da prospecção',
-        'status': 'Interessado' if prospeccao['status_prospeccao'] == 'Interessado' else 'Novo Lead'
+        'status': 'Interessado' if prospeccao['status_prospeccao'] == 'Interessado' else 'Novo Lead',
+        'maps_place_id': prospeccao.get('maps_place_id') if hasattr(prospeccao, 'get') else prospeccao['maps_place_id'],
+        'maps_url': prospeccao.get('maps_url') if hasattr(prospeccao, 'get') else prospeccao['maps_url'],
     }
     
     lead_id = create_lead(dados_lead)
