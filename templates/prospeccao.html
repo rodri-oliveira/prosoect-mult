@@ -473,6 +473,12 @@ function searchMap() {
     
     if(cidade) document.getElementById('f_cidade').value = cidade;
     if(estado) document.getElementById('f_estado').value = estado;
+
+    try {
+        localStorage.setItem('prospeccao_mapCidade', cidade || '');
+        localStorage.setItem('prospeccao_mapEstado', estado || '');
+        localStorage.setItem('prospeccao_mapSegmentos', JSON.stringify(segmentosSelecionados || []));
+    } catch (e) {}
     
     const form = document.getElementById('formLead');
     if (form) {
@@ -603,6 +609,23 @@ async function loadCities(uf, datalistId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const cidadeSalva = localStorage.getItem('prospeccao_mapCidade') || '';
+        const estadoSalvo = localStorage.getItem('prospeccao_mapEstado') || '';
+        const segmentosSalvosRaw = localStorage.getItem('prospeccao_mapSegmentos') || '[]';
+        const segmentosSalvos = JSON.parse(segmentosSalvosRaw);
+
+        const mapCidade = document.getElementById('mapCidade');
+        const mapEstado = document.getElementById('mapEstado');
+        if (mapCidade && !mapCidade.value && cidadeSalva) mapCidade.value = cidadeSalva;
+        if (mapEstado && estadoSalvo) mapEstado.value = estadoSalvo;
+
+        const segWrapper = document.querySelector('[x-data]');
+        if (segWrapper && Array.isArray(segmentosSalvos) && segmentosSalvos.length > 0) {
+            Alpine.$data(segWrapper).selecionados = segmentosSalvos;
+        }
+    } catch (e) {}
+
     ['f_nome', 'f_cidade', 'f_estado', 'f_endereco'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', updateBtnBuscarCnpjGoogle);
