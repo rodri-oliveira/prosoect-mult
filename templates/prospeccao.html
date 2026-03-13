@@ -820,7 +820,163 @@ async function loadCities(uf, datalistId) {
     return;
 }
 
+// Instalação robusta do listener de delegação do drawer
+// Funciona em: carga inicial, bfcache (back-forward), e navegação SPA
+function installDrawerDelegation() {
+    if (window.__MAPS_DRAWER_DELEGATION_INSTALLED) return;
+    window.__MAPS_DRAWER_DELEGATION_INSTALLED = true;
+    
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('#btnResultadosMaps') : null;
+        if (!btn) return;
+        
+        try {
+            if (window.__MAPS_DRAWER_OPEN_GUARD) return;
+            window.__MAPS_DRAWER_OPEN_GUARD = true;
+            setTimeout(() => { try { window.__MAPS_DRAWER_OPEN_GUARD = false; } catch (err) {} }, 0);
+        } catch (err) {}
+        
+        try {
+            if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] drawer:click', { id: btn.id || null });
+        } catch (err) {}
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Chamar openDrawer global se disponível
+        if (typeof window.__openMapsDrawer === 'function') {
+            window.__openMapsDrawer();
+        } else {
+            console.error('[MAPS_DEBUG] drawer:click:__openMapsDrawer_not_found');
+        }
+    });
+    
+    try {
+        if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] drawer:delegation:installed');
+    } catch (e) {}
+}
+
+// Instalar imediatamente se body já existe, senão aguardar
+if (document.body) {
+    installDrawerDelegation();
+} else {
+    // Se body ainda não existe, instalar no DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', installDrawerDelegation, { once: true });
+}
+
+// Listener de pageshow para bfcache (back-forward cache)
+if (!window.__MAPS_PAGESHOW_INSTALLED) {
+    window.__MAPS_PAGESHOW_INSTALLED = true;
+    window.addEventListener('pageshow', (ev) => {
+        // Re-instalar delegação do drawer
+        installDrawerDelegation();
+        // Restaurar filtros
+        if (typeof window.__restoreMapFilters === 'function') {
+            window.__restoreMapFilters();
+        }
+    });
+}
+window.__restoreMapFilters = function() {
+    try {
+        let cidadeSalva = '';
+        let estadoSalvo = '';
+        let segmentosSalvos = [];
+        let querySalva = '';
+
+        // Tentar ler do ProspeccaoState unificado
+        try {
+            const rawState = localStorage.getItem('prospeccao_state_v1');
+            if (rawState) {
+                const s = JSON.parse(rawState);
+                cidadeSalva = s.mapCidade || '';
+                estadoSalvo = s.mapEstado || '';
+                segmentosSalvos = Array.isArray(s.mapSegmentos) ? s.mapSegmentos : [];
+                querySalva = s.mapQuery || '';
+            }
+        } catch (e) {}
+
+        // Fallback para chaves legadas
+        if (!cidadeSalva && !estadoSalvo && !querySalva) {
+            try {
+                cidadeSalva = localStorage.getItem('prospeccao_mapCidade') || '';
+                estadoSalvo = localStorage.getItem('prospeccao_mapEstado') || '';
+                const legacySegRaw = localStorage.getItem('prospeccao_mapSegmentos') || '[]';
+                querySalva = localStorage.getItem('prospeccao_lastQuery') || '';
+                try { segmentosSalvos = JSON.parse(legacySegRaw); } catch (e) { segmentosSalvos = []; }
+                if (!Array.isArray(segmentosSalvos)) segmentosSalvos = [];
+            } catch (e) {}
+        }
+
+        // Aplicar aos campos de texto (cidade, estado)
+        const mapCidade = document.getElementById('mapCidade');
+        const mapEstado = document.getElementById('mapEstado');
+        
+        if (mapCidade) mapCidade.value = cidadeSalva;
+        if (mapEstado) mapEstado.value = estadoSalvo;
+
+        // Restaurar segmentos no Alpine com retry (Alpine pode reinicializar e limpar valores)
+        const segWrapper = document.getElementById('segmentoSelector');
+        
+        if (segWrapper && Array.isArray(segmentosSalvos) && segmentosSalvos.length > 0) {
+            const maxAttempts = 30;
+            const attemptInterval = 100;
+            
+            const tryRestore = (attempt) => {
+                try {
+                    const alpineData = Alpine.$data(segWrapper);
+                    if (alpineData) {
+                        const currentSelected = alpineData.selecionados || [];
+                        const needsRestore = currentSelected.length === 0 || 
+                            JSON.stringify(currentSelected.sort()) !== JSON.stringify(segmentosSalvos.sort());
+                        
+                        if (needsRestore) {
+                            alpineData.selecionados = segmentosSalvos;
+                        }
+                        
+                        if (attempt < maxAttempts) {
+                            setTimeout(() => tryRestore(attempt + 1), attemptInterval);
+                        }
+                    } else if (attempt < maxAttempts) {
+                        setTimeout(() => tryRestore(attempt + 1), attemptInterval);
+                    }
+                } catch (e) {
+                    if (attempt < maxAttempts) {
+                        setTimeout(() => tryRestore(attempt + 1), attemptInterval);
+                    }
+                }
+            };
+            tryRestore(0);
+        }
+
+        // Restaurar query do mapa
+        if (querySalva && cidadeSalva) {
+            window.lastQuery = querySalva;
+            const mapFrame = document.getElementById('mapFrame');
+            const openGoogleMaps = document.getElementById('openGoogleMaps');
+            if (mapFrame) {
+                mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(querySalva)}&output=embed`;
+            }
+            if (openGoogleMaps) {
+                openGoogleMaps.href = `https://www.google.com/maps/search/${encodeURIComponent(querySalva)}`;
+            }
+        }
+
+        if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] filters:restore:done', { cidade: cidadeSalva, estado: estadoSalvo, segmentos: segmentosSalvos.length });
+    } catch (e) {
+        if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] filters:restore_error', { error: String(e && e.message ? e.message : e) });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Restaurar filtros ao carregar a página
+    if (typeof window.__restoreMapFilters === 'function') {
+        window.__restoreMapFilters();
+    }
+    
+    try {
+        if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] DOMContentLoaded:start');
+    } catch (e) {}
+
     try {
         if (!window.__MAPS_GLOBAL_ERR_INSTALLED) {
             window.__MAPS_GLOBAL_ERR_INSTALLED = true;
@@ -848,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) {}
 
+    // ProspeccaoState e resto da inicialização...
     try {
         window.ProspeccaoState = window.ProspeccaoState || {
             KEY: 'prospeccao_state_v1',
@@ -985,81 +1142,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             },
         };
-    } catch (e) {}
-
-    try {
-        let cidadeSalva = '';
-        let estadoSalvo = '';
-        let segmentosSalvos = [];
-        let querySalva = '';
-
-        try {
-            if (window.ProspeccaoState && typeof window.ProspeccaoState.getMapFilters === 'function') {
-                const f = window.ProspeccaoState.getMapFilters();
-                cidadeSalva = f.cidade || '';
-                estadoSalvo = f.estado || '';
-                segmentosSalvos = Array.isArray(f.segmentos) ? f.segmentos : [];
-                querySalva = f.query || '';
-            }
-        } catch (e) {}
-
-        if (!cidadeSalva && !estadoSalvo && !querySalva) {
-            const legacyCidade = localStorage.getItem('prospeccao_mapCidade') || '';
-            const legacyEstado = localStorage.getItem('prospeccao_mapEstado') || '';
-            const legacySegRaw = localStorage.getItem('prospeccao_mapSegmentos') || '[]';
-            const legacyQuery = localStorage.getItem('prospeccao_lastQuery') || '';
-            let legacySeg = [];
-            try { legacySeg = JSON.parse(legacySegRaw); } catch (e) { legacySeg = []; }
-            cidadeSalva = legacyCidade;
-            estadoSalvo = legacyEstado;
-            segmentosSalvos = Array.isArray(legacySeg) ? legacySeg : [];
-            querySalva = legacyQuery;
-
-            try {
-                if (window.ProspeccaoState && typeof window.ProspeccaoState.saveMapFilters === 'function') {
-                    window.ProspeccaoState.saveMapFilters({
-                        cidade: cidadeSalva,
-                        estado: estadoSalvo,
-                        segmentos: segmentosSalvos,
-                        query: querySalva,
-                    });
-                }
-            } catch (e) {}
-        }
-
-        const mapCidade = document.getElementById('mapCidade');
-        const mapEstado = document.getElementById('mapEstado');
-        if (mapCidade) mapCidade.value = cidadeSalva;
-        if (mapEstado) mapEstado.value = estadoSalvo;
-
-        const segWrapper = document.getElementById('segmentoSelector');
-        if (segWrapper && Array.isArray(segmentosSalvos) && segmentosSalvos.length > 0) {
-            const tryRestore = (attempts) => {
-                try {
-                    if (Alpine.$data(segWrapper)) {
-                        Alpine.$data(segWrapper).selecionados = segmentosSalvos;
-                        return;
-                    }
-                } catch (e) {}
-                if ((attempts || 0) < 10) {
-                    setTimeout(() => tryRestore((attempts || 0) + 1), 100);
-                }
-            };
-            tryRestore(0);
-        }
-        
-        // Restaurar a query do mapa se existir
-        if (querySalva && cidadeSalva) {
-            window.lastQuery = querySalva;
-            const mapFrame = document.getElementById('mapFrame');
-            const openGoogleMaps = document.getElementById('openGoogleMaps');
-            if (mapFrame) {
-                mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(querySalva)}&output=embed`;
-            }
-            if (openGoogleMaps) {
-                openGoogleMaps.href = `https://www.google.com/maps/search/${encodeURIComponent(querySalva)}`;
-            }
-        }
     } catch (e) {}
 
     ['f_nome', 'f_cidade', 'f_estado', 'f_endereco'].forEach((id) => {
@@ -1203,626 +1285,629 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Ao voltar para a página (bfcache/back-forward), re-sincroniza o cache/status
+const writeMapsCache = (items, payload) => {
+    mapsLog('cache:write:start', { items: Array.isArray(items) ? items.length : null, hasPayload: !!payload });
     try {
-        if (!window.__MAPS_PAGESHOW_INSTALLED) {
-            window.__MAPS_PAGESHOW_INSTALLED = true;
-            window.addEventListener('pageshow', (ev) => {
-                try {
-                    if (window.MAPS_DEBUG) {
-                        console.log('[MAPS_DEBUG] page:pageshow', { persisted: !!(ev && ev.persisted) });
-                    }
-                } catch (e) {}
-                try { readMapsCache(); } catch (e) {}
-                try { updateMapsCacheStatus('Cache'); } catch (e) {}
+        window.__mapsResultsCache = Array.isArray(items) ? items : [];
+        window.__mapsLastPayloadCache = payload || null;
+    } catch (e) {}
+    try {
+        if (window.ProspeccaoState && typeof window.ProspeccaoState.saveMapResults === 'function') {
+            window.ProspeccaoState.saveMapResults(Array.isArray(items) ? items : [], payload || null);
+        } else {
+            localStorage.setItem('mapsResultsCache', JSON.stringify(Array.isArray(items) ? items : []));
+            localStorage.setItem('mapsLastPayloadCache', JSON.stringify(payload || null));
+        }
+    } catch (e) {}
+    updateMapsCacheStatus('Cache salvo');
+    mapsLog('cache:write:done', { memItems: Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache.length : null });
+};
+
+const clearMapsCache = () => {
+    mapsLog('cache:clear', {});
+    try {
+        window.__mapsResultsCache = [];
+        window.__mapsLastPayloadCache = null;
+    } catch (e) {}
+    try {
+        if (window.ProspeccaoState && typeof window.ProspeccaoState.clearMapResults === 'function') {
+            window.ProspeccaoState.clearMapResults();
+        } else {
+            localStorage.removeItem('mapsResultsCache');
+            localStorage.removeItem('mapsLastPayloadCache');
+        }
+    } catch (e) {}
+    updateMapsCacheStatus('Cache limpo');
+};
+
+try {
+    window.__clearMapsCache = clearMapsCache;
+} catch (e) {}
+
+const readMapsCache = () => {
+    mapsLog('cache:read:start', {});
+    try {
+        let items = [];
+        let payload = null;
+        try {
+            if (window.MAPS_DEBUG) {
+                const rawState = localStorage.getItem('prospeccao_state_v1');
+                console.log('[MAPS_DEBUG] state:raw_snapshot', {
+                    exists: rawState !== null,
+                    bytes: rawState ? String(rawState).length : 0,
+                });
+            }
+        } catch (e) {}
+        if (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function') {
+            items = window.ProspeccaoState.getMapItems();
+            payload = (typeof window.ProspeccaoState.getMapPayload === 'function') ? window.ProspeccaoState.getMapPayload() : null;
+        } else {
+            const rawItems = localStorage.getItem('mapsResultsCache') || '';
+            const rawPayload = localStorage.getItem('mapsLastPayloadCache') || '';
+            items = rawItems ? JSON.parse(rawItems) : [];
+            payload = rawPayload ? JSON.parse(rawPayload) : null;
+        }
+        
+        window.__mapsResultsCache = Array.isArray(items) ? items : [];
+        window.__mapsLastPayloadCache = payload || null;
+    } catch (e) {}
+    updateMapsCacheStatus('Cache lido');
+    mapsLog('cache:read:done', { items: Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache.length : null, hasPayload: !!window.__mapsLastPayloadCache });
+};
+
+readMapsCache();
+
+const openDrawer = () => {
+    const drawerNow = document.getElementById('mapsDrawer');
+    if (!drawerNow) return;
+    mapsLog('drawer:open', { path: window.location && window.location.pathname ? window.location.pathname : '' });
+    drawerNow.classList.remove('hidden');
+    drawerNow.setAttribute('aria-hidden', 'false');
+    
+    // Sempre tenta restaurar do cache ao abrir
+    readMapsCache();
+    const cachedItems = window.__mapsResultsCache;
+    const cachedPayload = window.__mapsLastPayloadCache;
+    mapsLog('drawer:cache_snapshot', { cachedItems: Array.isArray(cachedItems) ? cachedItems.length : null, hasPayload: !!cachedPayload });
+    try {
+        if (window.MAPS_DEBUG) {
+            console.log('[MAPS_DEBUG] state:drawer_snapshot', {
+                mapsItems: (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
+                    ? window.ProspeccaoState.getMapItems().length
+                    : null,
+                pending: (window.ProspeccaoState && typeof window.ProspeccaoState.isSearchPending === 'function')
+                    ? window.ProspeccaoState.isSearchPending()
+                    : null,
             });
         }
     } catch (e) {}
 
-    const writeMapsCache = (items, payload) => {
-        mapsLog('cache:write:start', { items: Array.isArray(items) ? items.length : null, hasPayload: !!payload });
-        try {
-            window.__mapsResultsCache = Array.isArray(items) ? items : [];
-            window.__mapsLastPayloadCache = payload || null;
-        } catch (e) {}
-        try {
-            if (window.ProspeccaoState && typeof window.ProspeccaoState.saveMapResults === 'function') {
-                window.ProspeccaoState.saveMapResults(Array.isArray(items) ? items : [], payload || null);
-            } else {
-                localStorage.setItem('mapsResultsCache', JSON.stringify(Array.isArray(items) ? items : []));
-                localStorage.setItem('mapsLastPayloadCache', JSON.stringify(payload || null));
-            }
-        } catch (e) {}
-        updateMapsCacheStatus('Cache salvo');
-        mapsLog('cache:write:done', { memItems: Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache.length : null });
-    };
-
-    const clearMapsCache = () => {
-        mapsLog('cache:clear', {});
-        try {
-            window.__mapsResultsCache = [];
-            window.__mapsLastPayloadCache = null;
-        } catch (e) {}
-        try {
-            if (window.ProspeccaoState && typeof window.ProspeccaoState.clearMapResults === 'function') {
-                window.ProspeccaoState.clearMapResults();
-            } else {
-                localStorage.removeItem('mapsResultsCache');
-                localStorage.removeItem('mapsLastPayloadCache');
-            }
-        } catch (e) {}
-        updateMapsCacheStatus('Cache limpo');
-    };
-
+    let pending = false;
     try {
-        window.__clearMapsCache = clearMapsCache;
-    } catch (e) {}
-
-    const readMapsCache = () => {
-        mapsLog('cache:read:start', {});
-        try {
-            let items = [];
-            let payload = null;
-            try {
-                if (window.MAPS_DEBUG) {
-                    const rawState = localStorage.getItem('prospeccao_state_v1');
-                    console.log('[MAPS_DEBUG] state:raw_snapshot', {
-                        exists: rawState !== null,
-                        bytes: rawState ? String(rawState).length : 0,
-                    });
-                }
-            } catch (e) {}
-            if (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function') {
-                items = window.ProspeccaoState.getMapItems();
-                payload = (typeof window.ProspeccaoState.getMapPayload === 'function') ? window.ProspeccaoState.getMapPayload() : null;
-            } else {
-                const rawItems = localStorage.getItem('mapsResultsCache') || '';
-                const rawPayload = localStorage.getItem('mapsLastPayloadCache') || '';
-                items = rawItems ? JSON.parse(rawItems) : [];
-                payload = rawPayload ? JSON.parse(rawPayload) : null;
-            }
-            
-            window.__mapsResultsCache = Array.isArray(items) ? items : [];
-            window.__mapsLastPayloadCache = payload || null;
-        } catch (e) {}
-        updateMapsCacheStatus('Cache lido');
-        mapsLog('cache:read:done', { items: Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache.length : null, hasPayload: !!window.__mapsLastPayloadCache });
-    };
-
-    readMapsCache();
-
-    const openDrawer = () => {
-        const drawerNow = document.getElementById('mapsDrawer');
-        if (!drawerNow) return;
-        mapsLog('drawer:open', { path: window.location && window.location.pathname ? window.location.pathname : '' });
-        drawerNow.classList.remove('hidden');
-        drawerNow.setAttribute('aria-hidden', 'false');
-        
-        // Sempre tenta restaurar do cache ao abrir
-        readMapsCache();
-        const cachedItems = window.__mapsResultsCache;
-        const cachedPayload = window.__mapsLastPayloadCache;
-        mapsLog('drawer:cache_snapshot', { cachedItems: Array.isArray(cachedItems) ? cachedItems.length : null, hasPayload: !!cachedPayload });
-        try {
-            if (window.MAPS_DEBUG) {
-                console.log('[MAPS_DEBUG] state:drawer_snapshot', {
-                    mapsItems: (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
-                        ? window.ProspeccaoState.getMapItems().length
-                        : null,
-                    pending: (window.ProspeccaoState && typeof window.ProspeccaoState.isSearchPending === 'function')
-                        ? window.ProspeccaoState.isSearchPending()
-                        : null,
-                });
-            }
-        } catch (e) {}
-
-        let pending = false;
-        try {
-            if (window.ProspeccaoState && typeof window.ProspeccaoState.isSearchPending === 'function') {
-                pending = !!window.ProspeccaoState.isSearchPending();
-            } else {
-                pending = (localStorage.getItem('mapsSearchPending') || '') === '1';
-            }
-        } catch (e) {
-            pending = false;
-        }
-        mapsLog('drawer:pending', { pending });
-        
-        if (Array.isArray(cachedItems) && cachedItems.length > 0) {
-            const statusNow = document.getElementById('mapsDrawerStatus');
-            if (statusNow) statusNow.textContent = pending ? 'OK (cache). Há uma busca pendente — clique em Atualizar para buscar novamente.' : 'OK (cache)';
-            renderResults(cachedItems);
-            return;
-        }
-
-        // Sem cache: precisa buscar
-        loadResults();
-    };
-    const closeDrawer = () => {
-        const drawerNow = document.getElementById('mapsDrawer');
-        if (!drawerNow) return;
-        drawerNow.classList.add('hidden');
-        drawerNow.setAttribute('aria-hidden', 'true');
-    };
-
-    try {
-        const raw = sessionStorage.getItem('mapsDrawerRestore') || '';
-        if (raw) {
-            pendingRestore = JSON.parse(raw);
-            sessionStorage.removeItem('mapsDrawerRestore');
+        if (window.ProspeccaoState && typeof window.ProspeccaoState.isSearchPending === 'function') {
+            pending = !!window.ProspeccaoState.isSearchPending();
+        } else {
+            pending = (localStorage.getItem('mapsSearchPending') || '') === '1';
         }
     } catch (e) {
-        pendingRestore = null;
-        try { sessionStorage.removeItem('mapsDrawerRestore'); } catch (err) {}
+        pending = false;
+    }
+    mapsLog('drawer:pending', { pending });
+    
+    if (Array.isArray(cachedItems) && cachedItems.length > 0) {
+        const statusNow = document.getElementById('mapsDrawerStatus');
+        if (statusNow) statusNow.textContent = pending ? 'OK (cache). Há uma busca pendente — clique em Atualizar para buscar novamente.' : 'OK (cache)';
+        renderResults(cachedItems);
+        return;
     }
 
-    const removeItemByKey = (key) => {
-        const k = String(key || '').trim();
-        if (!k) return;
-        lastMapsItems = (lastMapsItems || []).filter((it) => {
-            const itKey = String(it.maps_place_id || it.id || '').trim();
-            return itKey !== k;
-        });
-        writeMapsCache(lastMapsItems, buildQueryPayload());
-        renderResults(lastMapsItems);
-    };
+    // Sem cache: precisa buscar
+    loadResults();
+};
+// Expor globalmente para o listener de delegação
+window.__openMapsDrawer = openDrawer;
+const closeDrawer = () => {
+    const drawerNow = document.getElementById('mapsDrawer');
+    if (!drawerNow) return;
+    drawerNow.classList.add('hidden');
+    drawerNow.setAttribute('aria-hidden', 'true');
+};
 
-    const buildQueryPayload = () => {
-        const segWrapper = document.getElementById('segmentoSelector');
-        const segmentosSelecionados = segWrapper ? (Alpine.$data(segWrapper).selecionados || []) : [];
-        const cidade = (document.getElementById('mapCidade')?.value || '').trim();
-        const estado = (document.getElementById('mapEstado')?.value || '').trim();
-        const query = (window.lastQuery || '').trim();
-        return { segmentosSelecionados, cidade, estado, query };
-    };
+try {
+    const raw = sessionStorage.getItem('mapsDrawerRestore') || '';
+    if (raw) {
+        pendingRestore = JSON.parse(raw);
+        sessionStorage.removeItem('mapsDrawerRestore');
+    }
+} catch (e) {
+    pendingRestore = null;
+    try { sessionStorage.removeItem('mapsDrawerRestore'); } catch (err) {}
+}
 
-    const renderResults = (items) => {
-        const resultsNow = document.getElementById('mapsResults');
-        const emptyNow = document.getElementById('mapsEmpty');
-        if (!resultsNow || !emptyNow) {
-            mapsLog('renderResults:missing_elements', { hasResultsEl: !!resultsNow, hasEmptyEl: !!emptyNow });
-            return;
-        }
-        resultsNow.innerHTML = '';
-        const list = Array.isArray(items) ? items : [];
-        const normalized = list.map((it) => {
-            const key = String(it.maps_place_id || it.id || '').trim();
-            const already = !!it.already_added;
-            return { ...it, __key: key, __already: already };
-        });
+const removeItemByKey = (key) => {
+    const k = String(key || '').trim();
+    if (!k) return;
+    lastMapsItems = (lastMapsItems || []).filter((it) => {
+        const itKey = String(it.maps_place_id || it.id || '').trim();
+        return itKey !== k;
+    });
+    writeMapsCache(lastMapsItems, buildQueryPayload());
+    renderResults(lastMapsItems);
+};
 
-        lastMapsItems = normalized;
-        if (normalized.length === 0) {
-            emptyNow.classList.remove('hidden');
-            return;
-        }
-        emptyNow.classList.add('hidden');
+const buildQueryPayload = () => {
+    const segWrapper = document.getElementById('segmentoSelector');
+    const segmentosSelecionados = segWrapper ? (Alpine.$data(segWrapper).selecionados || []) : [];
+    const cidade = (document.getElementById('mapCidade')?.value || '').trim();
+    const estado = (document.getElementById('mapEstado')?.value || '').trim();
+    const query = (window.lastQuery || '').trim();
+    return { segmentosSelecionados, cidade, estado, query };
+};
 
-        normalized.forEach((it) => {
-            const card = document.createElement('div');
-            card.className = 'border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50';
-            card.dataset.id = it.id || '';
+const renderResults = (items) => {
+    const resultsNow = document.getElementById('mapsResults');
+    const emptyNow = document.getElementById('mapsEmpty');
+    if (!resultsNow || !emptyNow) {
+        mapsLog('renderResults:missing_elements', { hasResultsEl: !!resultsNow, hasEmptyEl: !!emptyNow });
+        return;
+    }
+    resultsNow.innerHTML = '';
+    const list = Array.isArray(items) ? items : [];
+    const normalized = list.map((it) => {
+        const key = String(it.maps_place_id || it.id || '').trim();
+        const already = !!it.already_added;
+        return { ...it, __key: key, __already: already };
+    });
 
-            const nome = it.nome || '';
-            const endereco = it.endereco || '';
-            const telefone = it.telefone || '';
-            const website = it.website || '';
-            const mapsUrl = it.maps_url || '';
-            const already = !!it.__already;
+    lastMapsItems = normalized;
+    if (normalized.length === 0) {
+        emptyNow.classList.remove('hidden');
+        return;
+    }
+    emptyNow.classList.add('hidden');
 
-            const websiteHref = (website && (website.startsWith('http://') || website.startsWith('https://')))
-                ? website
-                : (website ? `https://${website}` : '');
+    normalized.forEach((it) => {
+        const card = document.createElement('div');
+        card.className = 'border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50';
+        card.dataset.id = it.id || '';
 
-            card.innerHTML = `
-                <div class="flex items-start justify-between gap-3">
-                    <label class="flex items-start gap-2 flex-1">
-                        <input type="checkbox" name="mapsPick" value="${(it.id || '').replace(/"/g, '')}" class="mt-1 rounded border-gray-300 text-brand-600 focus:ring-brand-500" ${already ? 'disabled' : ''}>
-                        <div class="min-w-0">
-                            <div class="text-sm font-semibold text-gray-900 truncate">${nome}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">${endereco || '-'}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">${telefone ? '📞 ' + telefone : ''}${website ? (telefone ? ' • ' : '') + `<a href="${websiteHref}" target="_blank" class="hover:underline text-brand-700">${website}</a>` : ''}</div>
-                            ${already ? '<div class="text-[11px] text-green-700 mt-1">Já adicionado</div>' : ''}
-                        </div>
-                    </label>
-                    <div class="flex flex-col gap-2 items-end">
-                        ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="text-xs text-brand-700 hover:underline">Maps</a>` : ''}
-                        <button type="button" class="btnUseOne text-xs px-3 py-1.5 rounded-md bg-gray-800 text-white hover:bg-gray-900">Usar</button>
+        const nome = it.nome || '';
+        const endereco = it.endereco || '';
+        const telefone = it.telefone || '';
+        const website = it.website || '';
+        const mapsUrl = it.maps_url || '';
+        const already = !!it.__already;
+
+        const websiteHref = (website && (website.startsWith('http://') || website.startsWith('https://')))
+            ? website
+            : (website ? `https://${website}` : '');
+
+        card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+                <label class="flex items-start gap-2 flex-1">
+                    <input type="checkbox" name="mapsPick" value="${(it.id || '').replace(/"/g, '')}" class="mt-1 rounded border-gray-300 text-brand-600 focus:ring-brand-500" ${already ? 'disabled' : ''}>
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 truncate">${nome}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">${endereco || '-'}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">${telefone ? '📞 ' + telefone : ''}${website ? (telefone ? ' • ' : '') + `<a href="${websiteHref}" target="_blank" class="hover:underline text-brand-700">${website}</a>` : ''}</div>
+                        ${already ? '<div class="text-[11px] text-green-700 mt-1">Já adicionado</div>' : ''}
                     </div>
+                </label>
+                <div class="flex flex-col gap-2 items-end">
+                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="text-xs text-brand-700 hover:underline">Maps</a>` : ''}
+                    <button type="button" class="btnUseOne text-xs px-3 py-1.5 rounded-md bg-gray-800 text-white hover:bg-gray-900">Usar</button>
                 </div>
-            `;
+            </div>
+        `;
 
-            const useBtn = card.querySelector('.btnUseOne');
-            if (useBtn) {
-                useBtn.addEventListener('click', () => {
-                    useItem(it);
-                });
+        const useBtn = card.querySelector('.btnUseOne');
+        if (useBtn) {
+            useBtn.addEventListener('click', () => {
+                useItem(it);
+            });
+        }
+
+        resultsNow.appendChild(card);
+    });
+};
+
+if (pendingRestore) {
+    try {
+        const restore = pendingRestore;
+        pendingRestore = null;
+        
+        // Tenta ler do localStorage primeiro, se falhar usa o que veio no restore
+        readMapsCache();
+        let items = window.__mapsResultsCache;
+        let payload = window.__mapsLastPayloadCache;
+
+        if (!items || items.length === 0) {
+            if (restore && restore.items && Array.isArray(restore.items)) {
+                items = restore.items;
             }
+        }
 
-            resultsNow.appendChild(card);
-        });
+        if (!payload) {
+            if (restore && restore.payload) {
+                payload = restore.payload;
+            }
+        }
+
+        if (restore && restore.remove_key) {
+            const k = String(restore.remove_key || '').trim();
+            if (k && Array.isArray(items)) {
+                items = items.filter((it) => String(it.maps_place_id || it.id || '').trim() !== k);
+            }
+        }
+
+        window.__mapsResultsCache = items;
+        window.__mapsLastPayloadCache = payload;
+        writeMapsCache(items, payload);
+
+        openDrawer();
+        if (statusEl) statusEl.textContent = 'Restaurado';
+        renderResults(items);
+    } catch (e) {
+        console.error("Erro na restauração:", e);
+        pendingRestore = null;
+    }
+}
+
+const useItem = async (it) => {
+    const form = document.getElementById('formLead');
+    if (!form) return;
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+        if (id === 'f_site') {
+            try { updateSiteLink(); } catch (e) {}
+        }
     };
 
-    if (pendingRestore) {
-        try {
-            const restore = pendingRestore;
-            pendingRestore = null;
-            
-            // Tenta ler do localStorage primeiro, se falhar usa o que veio no restore
-            readMapsCache();
-            let items = window.__mapsResultsCache;
-            let payload = window.__mapsLastPayloadCache;
+    const updateSiteLink = () => {
+        const input = document.getElementById('f_site');
+        const btn = document.getElementById('f_site_btn');
+        if (!input || !btn) return;
 
-            if (!items || items.length === 0) {
-                if (restore && restore.items && Array.isArray(restore.items)) {
-                    items = restore.items;
-                }
-            }
-            if (!payload) {
-                if (restore && restore.payload) {
-                    payload = restore.payload;
-                }
-            }
+        const normalizeWebsite = (value) => {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const cleaned = raw.replace(/\s+/g, ' ').trim();
+        const urlMatch = cleaned.match(/(https?:\/\/[^\s]+)/i);
+        if (urlMatch && urlMatch[1]) return urlMatch[1].trim();
+        const domainMatch = cleaned.match(/([a-z0-9][a-z0-9\-.]+\.[a-z]{2,})(\/[^\s]*)?/i);
+        if (domainMatch && domainMatch[0]) return domainMatch[0].trim();
+        return cleaned.replace(/^[^a-z0-9]+/i, '').trim();
+    };
 
-            if (restore && restore.remove_key) {
-                const k = String(restore.remove_key || '').trim();
-                if (k && Array.isArray(items)) {
-                    items = items.filter((it) => String(it.maps_place_id || it.id || '').trim() !== k);
-                }
-            }
-
-            window.__mapsResultsCache = items;
-            window.__mapsLastPayloadCache = payload;
-            writeMapsCache(items, payload);
-
-            openDrawer();
-            if (statusEl) statusEl.textContent = 'Restaurado';
-            renderResults(items);
-        } catch (e) {
-            console.error("Erro na restauração:", e);
-            pendingRestore = null;
-        }
+    const normalized = normalizeWebsite(input.value);
+    if (!normalized) {
+        btn.classList.add('hidden');
+        btn.onclick = null;
+        return;
     }
 
-    const useItem = async (it) => {
-        const form = document.getElementById('formLead');
-        if (!form) return;
+    const href = (normalized.startsWith('http://') || normalized.startsWith('https://')) ? normalized : `https://${normalized}`;
+    btn.classList.remove('hidden');
+    btn.onclick = () => {
+        window.open(href, '_blank', 'noopener,noreferrer');
+    };
+};
 
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.value = val || '';
-            if (id === 'f_site') {
-                try { updateSiteLink(); } catch (e) {}
-            }
-        };
+const currentKey = String(it.maps_place_id || it.id || '').trim();
+window.__mapsUseCurrentKey = currentKey;
 
-        const updateSiteLink = () => {
-            const input = document.getElementById('f_site');
-            const btn = document.getElementById('f_site_btn');
-            if (!input || !btn) return;
+let enriched = it;
+setVal('f_nome', enriched.nome || '');
+setVal('f_endereco', enriched.endereco || '');
+setVal('f_telefone', enriched.telefone || '');
+setVal('f_whatsapp', enriched.whatsapp || enriched.telefone || '');
+setVal('f_site', enriched.website || enriched.site || '');
+setVal('f_maps_place_id', enriched.maps_place_id || enriched.id || '');
+setVal('f_maps_url', enriched.maps_url || '');
+setVal('f_cidade', it.cidade || (document.getElementById('mapCidade')?.value || ''));
+setVal('f_estado', it.estado || (document.getElementById('mapEstado')?.value || ''));
 
-            const normalizeWebsite = (value) => {
-                const raw = String(value || '').trim();
-                if (!raw) return '';
-                const cleaned = raw.replace(/\s+/g, ' ').trim();
-                const urlMatch = cleaned.match(/(https?:\/\/[^\s]+)/i);
-                if (urlMatch && urlMatch[1]) return urlMatch[1].trim();
-                const domainMatch = cleaned.match(/([a-z0-9][a-z0-9\-.]+\.[a-z]{2,})(\/[^\s]*)?/i);
-                if (domainMatch && domainMatch[0]) return domainMatch[0].trim();
-                return cleaned.replace(/^[^a-z0-9]+/i, '').trim();
-            };
+try {
+    const inputSite = document.getElementById('f_site');
+    if (inputSite) inputSite.addEventListener('input', updateSiteLink);
+    updateSiteLink();
+} catch (e) {}
 
-            const normalized = normalizeWebsite(input.value);
-            if (!normalized) {
-                btn.classList.add('hidden');
-                btn.onclick = null;
+try { updateBtnBuscarCnpjGoogle(); } catch (e) {}
+
+const checks = form.querySelectorAll('input[name="segmento"]');
+if (checks && enriched.segmentos && Array.isArray(enriched.segmentos)) {
+    checks.forEach((el) => {
+        el.checked = enriched.segmentos.includes(el.value);
+    });
+}
+
+const needsDetails = (!enriched.website) && !!enriched.maps_url;
+if (needsDetails) {
+    try {
+        if (statusEl) statusEl.textContent = 'Buscando detalhes...';
+        fetch('/api/maps/detalhe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maps_url: enriched.maps_url })
+        })
+            .then(async (resp) => ({ ok: resp.ok, data: await resp.json().catch(() => null) }))
+            .then(({ ok, data }) => {
+                if (window.__mapsUseCurrentKey !== currentKey) return;
+                if (!ok || !data || !data.ok || !data.item) return;
+                const d = data.item;
+                if (d.endereco) setVal('f_endereco', d.endereco);
+                if (d.telefone) {
+                    setVal('f_telefone', d.telefone);
+                    const curWa = (document.getElementById('f_whatsapp')?.value || '').trim();
+                    if (!curWa) setVal('f_whatsapp', d.telefone);
+                }
+                if (d.website) setVal('f_site', d.website);
+                if (statusEl) statusEl.textContent = 'OK';
+                try { updateBtnBuscarCnpjGoogle(); } catch (e) {}
+            })
+            .catch(() => {});
+    } catch (e) {}
+}
+
+// Fecha o drawer para revelar o formulário (evita sensação de congelado)
+// mas mantém os resultados em memória para reabrir sem precisar pesquisar de novo
+try {
+    window.__mapsResultsCache = Array.isArray(lastMapsItems) ? lastMapsItems : [];
+    window.__mapsLastPayloadCache = buildQueryPayload();
+} catch (e) {}
+closeDrawer();
+};
+
+const formLead = document.getElementById('formLead');
+if (formLead) {
+    formLead.addEventListener('submit', async (e) => {
+        try {
+            const mapsPlaceId = (document.getElementById('f_maps_place_id')?.value || '').trim();
+            const mapsUrl = (document.getElementById('f_maps_url')?.value || '').trim();
+            const fromMaps = !!mapsPlaceId || !!mapsUrl;
+            mapsLog('form:submit', { fromMaps, mapsPlaceId: mapsPlaceId || null, hasMapsUrl: !!mapsUrl });
+            if (!fromMaps) return;
+
+            e.preventDefault();
+            const res = await submitLeadFormAsJsonIfFromMaps();
+            if (!res || !res.handled) return;
+
+            mapsLog('form:submit:api_done', { created: res.data ? res.data.created : null, maps_place_id: res.data ? res.data.maps_place_id : null });
+
+            if (res.data && res.data.created === false) {
+                if (statusEl) statusEl.textContent = 'Já existia na sua lista.';
+                alert('Este item já existe na sua lista de prospecção.');
                 return;
             }
 
-            const href = (normalized.startsWith('http://') || normalized.startsWith('https://')) ? normalized : `https://${normalized}`;
-            btn.classList.remove('hidden');
-            btn.onclick = () => {
-                window.open(href, '_blank', 'noopener,noreferrer');
-            };
-        };
+            const mpid = (res.data && res.data.maps_place_id) ? String(res.data.maps_place_id).trim() : '';
+            if (mpid) removeItemByKey(mpid);
 
-        const currentKey = String(it.maps_place_id || it.id || '').trim();
-        window.__mapsUseCurrentKey = currentKey;
+            mapsLog('form:submit:remove_item', { mpid: mpid || null, remaining: Array.isArray(lastMapsItems) ? lastMapsItems.length : null });
 
-        let enriched = it;
-        setVal('f_nome', enriched.nome || '');
-        setVal('f_endereco', enriched.endereco || '');
-        setVal('f_telefone', enriched.telefone || '');
-        setVal('f_whatsapp', enriched.whatsapp || enriched.telefone || '');
-        setVal('f_site', enriched.website || enriched.site || '');
-        setVal('f_maps_place_id', enriched.maps_place_id || enriched.id || '');
-        setVal('f_maps_url', enriched.maps_url || '');
-        setVal('f_cidade', it.cidade || (document.getElementById('mapCidade')?.value || ''));
-        setVal('f_estado', it.estado || (document.getElementById('mapEstado')?.value || ''));
+            const elMpid = document.getElementById('f_maps_place_id');
+            const elMurl = document.getElementById('f_maps_url');
+            const elCnpj = document.getElementById('f_cnpj');
+            const elCnpjStatus = document.getElementById('cnpjStatus');
+            if (elMpid) elMpid.value = '';
+            if (elMurl) elMurl.value = '';
+            if (elCnpj) elCnpj.value = '';
+            if (elCnpjStatus) elCnpjStatus.textContent = '';
 
-        try {
-            const inputSite = document.getElementById('f_site');
-            if (inputSite) inputSite.addEventListener('input', updateSiteLink);
-            updateSiteLink();
-        } catch (e) {}
-
-        try { updateBtnBuscarCnpjGoogle(); } catch (e) {}
-
-        const checks = form.querySelectorAll('input[name="segmento"]');
-        if (checks && enriched.segmentos && Array.isArray(enriched.segmentos)) {
-            checks.forEach((el) => {
-                el.checked = enriched.segmentos.includes(el.value);
-            });
-        }
-
-        const needsDetails = (!enriched.website) && !!enriched.maps_url;
-        if (needsDetails) {
             try {
-                if (statusEl) statusEl.textContent = 'Buscando detalhes...';
-                fetch('/api/maps/detalhe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ maps_url: enriched.maps_url })
-                })
-                    .then(async (resp) => ({ ok: resp.ok, data: await resp.json().catch(() => null) }))
-                    .then(({ ok, data }) => {
-                        if (window.__mapsUseCurrentKey !== currentKey) return;
-                        if (!ok || !data || !data.ok || !data.item) return;
-                        const d = data.item;
-                        if (d.endereco) setVal('f_endereco', d.endereco);
-                        if (d.telefone) {
-                            setVal('f_telefone', d.telefone);
-                            const curWa = (document.getElementById('f_whatsapp')?.value || '').trim();
-                            if (!curWa) setVal('f_whatsapp', d.telefone);
-                        }
-                        if (d.website) setVal('f_site', d.website);
-                        if (statusEl) statusEl.textContent = 'OK';
-                        try { updateBtnBuscarCnpjGoogle(); } catch (e) {}
-                    })
-                    .catch(() => {});
+                const restore = {
+                    items: Array.isArray(lastMapsItems) ? lastMapsItems : [],
+                    payload: buildQueryPayload(),
+                    remove_key: mpid,
+                };
+                sessionStorage.setItem('mapsDrawerRestore', JSON.stringify(restore));
+                mapsLog('restore:write_sessionStorage', { items: restore.items.length, hasPayload: !!restore.payload, remove_key: restore.remove_key || null });
             } catch (e) {}
-        }
 
-        // Fecha o drawer para revelar o formulário (evita sensação de congelado)
-        // mas mantém os resultados em memória para reabrir sem precisar pesquisar de novo
-        try {
-            window.__mapsResultsCache = Array.isArray(lastMapsItems) ? lastMapsItems : [];
-            window.__mapsLastPayloadCache = buildQueryPayload();
-        } catch (e) {}
-        closeDrawer();
-    };
-
-    const formLead = document.getElementById('formLead');
-    if (formLead) {
-        formLead.addEventListener('submit', async (e) => {
             try {
-                const mapsPlaceId = (document.getElementById('f_maps_place_id')?.value || '').trim();
-                const mapsUrl = (document.getElementById('f_maps_url')?.value || '').trim();
-                const fromMaps = !!mapsPlaceId || !!mapsUrl;
-                mapsLog('form:submit', { fromMaps, mapsPlaceId: mapsPlaceId || null, hasMapsUrl: !!mapsUrl });
-                if (!fromMaps) return;
-
-                e.preventDefault();
-                const res = await submitLeadFormAsJsonIfFromMaps();
-                if (!res || !res.handled) return;
-
-                mapsLog('form:submit:api_done', { created: res.data ? res.data.created : null, maps_place_id: res.data ? res.data.maps_place_id : null });
-
-                if (res.data && res.data.created === false) {
-                    if (statusEl) statusEl.textContent = 'Já existia na sua lista.';
-                    alert('Este item já existe na sua lista de prospecção.');
-                    return;
-                }
-
-                const mpid = (res.data && res.data.maps_place_id) ? String(res.data.maps_place_id).trim() : '';
-                if (mpid) removeItemByKey(mpid);
-
-                mapsLog('form:submit:remove_item', { mpid: mpid || null, remaining: Array.isArray(lastMapsItems) ? lastMapsItems.length : null });
-
-                const elMpid = document.getElementById('f_maps_place_id');
-                const elMurl = document.getElementById('f_maps_url');
-                const elCnpj = document.getElementById('f_cnpj');
-                const elCnpjStatus = document.getElementById('cnpjStatus');
+                formLead.reset();
                 if (elMpid) elMpid.value = '';
                 if (elMurl) elMurl.value = '';
-                if (elCnpj) elCnpj.value = '';
                 if (elCnpjStatus) elCnpjStatus.textContent = '';
-
-                try {
-                    const restore = {
-                        items: Array.isArray(lastMapsItems) ? lastMapsItems : [],
-                        payload: buildQueryPayload(),
-                        remove_key: mpid,
-                    };
-                    sessionStorage.setItem('mapsDrawerRestore', JSON.stringify(restore));
-                    mapsLog('restore:write_sessionStorage', { items: restore.items.length, hasPayload: !!restore.payload, remove_key: restore.remove_key || null });
-                } catch (e) {}
-
-                try {
-                    formLead.reset();
-                    if (elMpid) elMpid.value = '';
-                    if (elMurl) elMurl.value = '';
-                    if (elCnpjStatus) elCnpjStatus.textContent = '';
-                } catch (e) {}
-
-                if (statusEl) statusEl.textContent = 'Adicionado.';
-                window.location.reload();
-            } catch (err) {
-                e.preventDefault();
-                mapsLog('form:submit:error', { error: String(err && err.message ? err.message : err) });
-                alert(err && err.message ? err.message : 'Erro ao adicionar');
-            }
-        });
-    }
-
-    const loadResults = async () => {
-        if (!statusEl || !subEl) return;
-        const { segmentosSelecionados, cidade, estado, query } = buildQueryPayload();
-        subEl.textContent = query ? query : '';
-
-        mapsLog('loadResults:start', { query, cidade, estado, segmentosSelecionados });
-
-        statusEl.textContent = 'Carregando...';
-        try {
-            const params = new URLSearchParams();
-            if (query) params.set('query', query);
-            if (cidade) params.set('cidade', cidade);
-            if (estado) params.set('estado', estado);
-            params.set('limit', '50');
-            (segmentosSelecionados || []).forEach((s) => params.append('segmentos', s));
-            const resp = await fetch(`/api/maps/resultados?${params.toString()}`);
-            const data = await resp.json();
-            if (!resp.ok || !data.ok) throw new Error(data.message || 'Erro');
-            statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : 'OK';
-            mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, existing_keys: (data.existing_keys || []).length });
-            const nextItems = Array.isArray(data.items) ? data.items : [];
-            const currentCached = (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
-                ? window.ProspeccaoState.getMapItems()
-                : (Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : []);
-            const shouldPreserve = nextItems.length === 0 && Array.isArray(currentCached) && currentCached.length > 0;
-            if (!shouldPreserve) {
-                writeMapsCache(nextItems, buildQueryPayload());
-                renderResults(nextItems);
-            } else {
-                try { readMapsCache(); } catch (e) {}
-                statusEl.textContent = '0 resultados. Mantendo últimos resultados.';
-                renderResults(currentCached);
-            }
-            try {
-                if (window.ProspeccaoState && typeof window.ProspeccaoState.save === 'function') {
-                    window.ProspeccaoState.save({ mapsSearchPending: false });
-                } else {
-                    localStorage.setItem('mapsSearchPending', '0');
-                }
             } catch (e) {}
-        } catch (e) {
-            mapsLog('loadResults:error', { error: String(e && e.message ? e.message : e) });
-            try {
-                const cached = Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : [];
-                if (cached.length > 0) {
-                    statusEl.textContent = 'Erro ao buscar. Mantendo últimos resultados.';
-                    renderResults(cached);
-                    return;
-                }
-            } catch (err) {}
-            statusEl.textContent = 'Erro ao carregar resultados.';
-            renderResults([]);
-        }
-    };
 
-    const isSamePayload = (a, b) => {
-        try {
-            if (!a || !b) return false;
-            const aSeg = Array.isArray(a.segmentosSelecionados) ? a.segmentosSelecionados.slice().sort().join('|') : '';
-            const bSeg = Array.isArray(b.segmentosSelecionados) ? b.segmentosSelecionados.slice().sort().join('|') : '';
-            return String(a.cidade || '').trim() === String(b.cidade || '').trim()
-                && String(a.estado || '').trim() === String(b.estado || '').trim()
-                && String(a.query || '').trim() === String(b.query || '').trim()
-                && aSeg === bSeg;
-        } catch (e) {
-            return false;
-        }
-    };
-
-    try {
-        if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] drawer:listener:install', { mode: 'delegation' });
-    } catch (e) {}
-
-    // Listener único por delegação: sobrevive a re-render/substituição do botão no DOM
-    if (!window.__MAPS_DRAWER_DELEGATION_INSTALLED) {
-        window.__MAPS_DRAWER_DELEGATION_INSTALLED = true;
-        document.body.addEventListener('click', (e) => {
-            const btn = e.target && e.target.closest ? e.target.closest('#btnResultadosMaps') : null;
-            if (!btn) return;
-            try {
-                if (window.__MAPS_DRAWER_OPEN_GUARD) return;
-                window.__MAPS_DRAWER_OPEN_GUARD = true;
-                setTimeout(() => { try { window.__MAPS_DRAWER_OPEN_GUARD = false; } catch (err) {} }, 0);
-            } catch (err) {}
-            try {
-                if (window.MAPS_DEBUG) console.log('[MAPS_DEBUG] drawer:click', { id: btn.id || null });
-            } catch (err) {}
+            if (statusEl) statusEl.textContent = 'Adicionado.';
+            window.location.reload();
+        } catch (err) {
             e.preventDefault();
-            e.stopPropagation();
-            openDrawer();
-        });
-    }
+            mapsLog('form:submit:error', { error: String(err && err.message ? err.message : err) });
+            alert(err && err.message ? err.message : 'Erro ao adicionar');
+        }
+    });
+}
 
-    // Atualizar = limpa cache e busca novo
-    if (reloadBtn) reloadBtn.addEventListener('click', () => {
+const loadResults = async () => {
+    if (!statusEl || !subEl) return;
+    const { segmentosSelecionados, cidade, estado, query } = buildQueryPayload();
+    subEl.textContent = query ? query : '';
+
+    mapsLog('loadResults:start', { query, cidade, estado, segmentosSelecionados });
+
+    statusEl.textContent = 'Carregando...';
+    try {
+        const params = new URLSearchParams();
+        if (query) params.set('query', query);
+        if (cidade) params.set('cidade', cidade);
+        if (estado) params.set('estado', estado);
+        params.set('limit', '50');
+        (segmentosSelecionados || []).forEach((s) => params.append('segmentos', s));
+        const resp = await fetch(`/api/maps/resultados?${params.toString()}`);
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) throw new Error(data.message || 'Erro');
+        statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : 'OK';
+        mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, existing_keys: (data.existing_keys || []).length });
+        const nextItems = Array.isArray(data.items) ? data.items : [];
+        const currentCached = (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
+            ? window.ProspeccaoState.getMapItems()
+            : (Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : []);
+        const shouldPreserve = nextItems.length === 0 && Array.isArray(currentCached) && currentCached.length > 0;
+        if (!shouldPreserve) {
+            writeMapsCache(nextItems, buildQueryPayload());
+            renderResults(nextItems);
+        } else {
+            try { readMapsCache(); } catch (e) {}
+            statusEl.textContent = '0 resultados. Mantendo últimos resultados.';
+            renderResults(currentCached);
+        }
+        try {
+            if (window.ProspeccaoState && typeof window.ProspeccaoState.save === 'function') {
+                window.ProspeccaoState.save({ mapsSearchPending: false });
+            } else {
+                localStorage.setItem('mapsSearchPending', '0');
+            }
+        } catch (e) {}
+    } catch (e) {
+        mapsLog('loadResults:error', { error: String(e && e.message ? e.message : e) });
+        try {
+            const cached = Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : [];
+            if (cached.length > 0) {
+                statusEl.textContent = 'Erro ao buscar. Mantendo últimos resultados.';
+                renderResults(cached);
+                return;
+            }
+        } catch (err) {}
+        statusEl.textContent = 'Erro ao carregar resultados.';
+        renderResults([]);
+    }
+};
+
+const isSamePayload = (a, b) => {
+    try {
+        if (!a || !b) return false;
+        const aSeg = Array.isArray(a.segmentosSelecionados) ? a.segmentosSelecionados.slice().sort().join('|') : '';
+        const bSeg = Array.isArray(b.segmentosSelecionados) ? b.segmentosSelecionados.slice().sort().join('|') : '';
+        return String(a.cidade || '').trim() === String(b.cidade || '').trim()
+            && String(a.estado || '').trim() === String(b.estado || '').trim()
+            && String(a.query || '').trim() === String(b.query || '').trim()
+            && aSeg === bSeg;
+    } catch (e) {
+        return false;
+    }
+};
+
+// Listener de delegação JÁ FOI INSTALADO no início do DOMContentLoaded
+// (ver trecho window.__MAPS_DRAWER_DELEGATION_INSTALLED acima)
+// NÃO instalar duplicado aqui para evitar logs duplos
+
+// Atualizar = limpa cache e busca novo (delegação para sobreviver a navegação)
+if (!window.__MAPS_RELOAD_DELEGATION_INSTALLED) {
+    window.__MAPS_RELOAD_DELEGATION_INSTALLED = true;
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('#mapsDrawerReload') : null;
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        mapsLog('reload:click', {});
         clearMapsCache();
         loadResults();
     });
-    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-    if (overlay) overlay.addEventListener('click', closeDrawer);
+}
+// Fechar = fecha drawer (delegação para sobreviver a navegação)
+if (!window.__MAPS_CLOSE_DELEGATION_INSTALLED) {
+    window.__MAPS_CLOSE_DELEGATION_INSTALLED = true;
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('#mapsDrawerClose') : null;
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        mapsLog('close:click', {});
+        closeDrawer();
+    });
+}
+// Overlay = fecha drawer (delegação)
+if (!window.__MAPS_OVERLAY_DELEGATION_INSTALLED) {
+    window.__MAPS_OVERLAY_DELEGATION_INSTALLED = true;
+    document.body.addEventListener('click', (e) => {
+        const el = e.target && e.target.closest ? e.target.closest('#mapsDrawerOverlay') : null;
+        if (!el) return;
+        mapsLog('overlay:click', {});
+        closeDrawer();
+    });
+}
 
-    if (useSelectedBtn) {
-        useSelectedBtn.addEventListener('click', () => {
-            const picked = document.querySelector('input[name="mapsPick"]:checked');
-            if (!picked) return;
-            const id = picked.value;
-            const it = (lastMapsItems || []).find((x) => String(x.id || '') === String(id));
-            if (!it) return;
-            useItem(it);
-        });
-    }
+if (useSelectedBtn) {
+    useSelectedBtn.addEventListener('click', () => {
+        const picked = document.querySelector('input[name="mapsPick"]:checked');
+        if (!picked) return;
+        const id = picked.value;
+        const it = (lastMapsItems || []).find((x) => String(x.id || '') === String(id));
+        if (!it) return;
+        useItem(it);
+    });
+}
 
-    const getPickedItems = () => {
-        const picked = Array.from(document.querySelectorAll('input[name="mapsPick"]:checked'));
-        const ids = picked.map((el) => String(el.value || '')).filter(Boolean);
-        const items = (lastMapsItems || []).filter((x) => ids.includes(String(x.id || '')));
-        return items;
-    };
+const getPickedItems = () => {
+    const picked = Array.from(document.querySelectorAll('input[name="mapsPick"]:checked'));
+    const ids = picked.map((el) => String(el.value || '')).filter(Boolean);
+    const items = (lastMapsItems || []).filter((x) => ids.includes(String(x.id || '')));
+    return items;
+};
 
-    if (addSelectedBtn) {
-        addSelectedBtn.addEventListener('click', async () => {
-            const items = getPickedItems();
-            if (!items || items.length === 0) return;
+if (addSelectedBtn) {
+    addSelectedBtn.addEventListener('click', async () => {
+        const items = getPickedItems();
+        if (!items || items.length === 0) return;
 
-            if (statusEl) statusEl.textContent = 'Adicionando...';
-            try {
-                const resp = await fetch('/api/maps/adicionar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items })
-                });
-                const data = await resp.json();
-                if (!resp.ok || !data.ok) throw new Error(data.message || 'Erro');
+        if (statusEl) statusEl.textContent = 'Adicionando...';
+        try {
+            const resp = await fetch('/api/maps/adicionar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items })
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data.ok) throw new Error(data.message || 'Erro');
 
-                if (statusEl) statusEl.textContent = `Adicionados: ${data.added_count} | Já existiam: ${data.duplicate_count}`;
+            if (statusEl) statusEl.textContent = `Adicionados: ${data.added_count} | Já existiam: ${data.duplicate_count}`;
 
-                const addedKeySet = new Set([].concat(data.added_keys || [], data.duplicate_keys || []).map((k) => String(k || '').trim()).filter(Boolean));
-                lastMapsItems = (lastMapsItems || []).map((it) => {
-                    const key = String(it.maps_place_id || it.id || '').trim();
-                    if (key && addedKeySet.has(key)) return { ...it, already_added: true };
-                    return it;
-                });
-                renderResults(lastMapsItems);
-            } catch (e) {
-                if (statusEl) statusEl.textContent = 'Erro ao adicionar selecionados.';
-            }
-        });
-    }
+            const addedKeySet = new Set([].concat(data.added_keys || [], data.duplicate_keys || []).map((k) => String(k || '').trim()).filter(Boolean));
+            lastMapsItems = (lastMapsItems || []).map((it) => {
+                const key = String(it.maps_place_id || it.id || '').trim();
+                if (key && addedKeySet.has(key)) return { ...it, already_added: true };
+                return it;
+            });
+            renderResults(lastMapsItems);
+        } catch (e) {
+            if (statusEl) statusEl.textContent = 'Erro ao adicionar selecionados.';
+        }
+    });
+}
 
-    // Mostrar/esconder campo de data de retorno
-    const statusSelect = document.querySelector('select[name="status_prospeccao"]');
-    if (statusSelect) {
-        statusSelect.addEventListener('change', function() {
-            const campoData = document.getElementById('campo-data-retorno');
-            const campoHora = document.getElementById('campo-hora-retorno');
-            if (this.value === 'Pediu para retornar' || this.value === 'Em negociacao') {
-                if (campoData) campoData.classList.remove('hidden');
-                if (campoHora) campoHora.classList.remove('hidden');
-            } else {
-                if (campoData) campoData.classList.add('hidden');
-                if (campoHora) campoHora.classList.add('hidden');
-                const d = document.querySelector('input[name="data_retorno"]');
-                if (d) d.value = '';
-                const h = document.querySelector('input[name="hora_retorno"]');
-                if (h) h.value = '';
-            }
-        });
-    }
+// Mostrar/esconder campo de data de retorno
+const statusSelect = document.querySelector('select[name="status_prospeccao"]');
+if (statusSelect) {
+    statusSelect.addEventListener('change', function() {
+        const campoData = document.getElementById('campo-data-retorno');
+        const campoHora = document.getElementById('campo-hora-retorno');
+        if (this.value === 'Pediu para retornar' || this.value === 'Em negociacao') {
+            if (campoData) campoData.classList.remove('hidden');
+            if (campoHora) campoHora.classList.remove('hidden');
+        } else {
+            if (campoData) campoData.classList.add('hidden');
+            if (campoHora) campoHora.classList.add('hidden');
+            const d = document.querySelector('input[name="data_retorno"]');
+            if (d) d.value = '';
+            const h = document.querySelector('input[name="hora_retorno"]');
+            if (h) h.value = '';
+        }
+    });
+}
+
 });
+
+// Garantir restauração de filtros mesmo com cache do navegador
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (typeof window.__restoreMapFilters === 'function') {
+        window.__restoreMapFilters();
+    }
+}
 </script>
 {% endblock %}
