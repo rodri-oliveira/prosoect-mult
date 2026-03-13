@@ -180,6 +180,36 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                         break
 
         if existente_id:
+            update_parts: list[str] = []
+            update_params: list = []
+
+            def _add_update(col: str, val) -> None:
+                if val is None:
+                    return
+                if isinstance(val, str) and not val.strip():
+                    return
+                update_parts.append(f"{col} = ?")
+                update_params.append(val)
+
+            _add_update("observacao", (obs or "").strip() or None)
+            _add_update("status_prospeccao", (status or "").strip() or None)
+            _add_update("data_retorno", data_retorno)
+            _add_update("hora_retorno", hora_retorno)
+            _add_update("cnpj", cnpj)
+            _add_update("telefone", (dados.get("telefone") or "").strip() or None)
+            _add_update("whatsapp", (dados.get("whatsapp") or "").strip() or None)
+            _add_update("endereco", (dados.get("endereco") or "").strip() or None)
+            _add_update("segmento", (dados.get("segmento") or "").strip() or None)
+            _add_update("maps_place_id", maps_place_id)
+            _add_update("maps_url", maps_url)
+            _add_update("site", site)
+
+            if update_parts:
+                c.execute(
+                    f"UPDATE prospeccao_temp SET {', '.join(update_parts)} WHERE id = ?",
+                    tuple(update_params + [existente_id]),
+                )
+                conn.commit()
             conn.close()
             return existente_id, False
 
@@ -248,6 +278,21 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         )
         conn.commit()
         affected = c.rowcount
+
+        # Registrar evento no histórico
+        if affected > 0:
+            detalhe = novo_status
+            if observacao:
+                detalhe = f"{novo_status} | {observacao}"
+            c.execute(
+                """
+                INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
+                VALUES (?, ?, ?)
+            """,
+                (prospeccao_id, "STATUS_CHANGE", detalhe),
+            )
+            conn.commit()
+
         conn.close()
         return affected > 0
 
@@ -356,3 +401,19 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         total = int(c.fetchone()[0])
         conn.close()
         return total
+
+    def get_eventos(self, prospeccao_id: int) -> list[dict]:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(
+            """
+            SELECT * FROM prospeccao_eventos
+            WHERE prospeccao_id = ?
+            ORDER BY data_evento DESC
+        """,
+            (prospeccao_id,),
+        )
+        rows = c.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]

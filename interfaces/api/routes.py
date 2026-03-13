@@ -155,6 +155,10 @@ def api_rascunho_novo():
                 maps_place_id=(data.get("maps_place_id") or "").strip() or None,
                 maps_url=(data.get("maps_url") or "").strip() or None,
                 site=(data.get("site") or "").strip() or None,
+                observacoes=(data.get("observacoes") or "").strip() or None,
+                status_prospeccao=(data.get("status_prospeccao") or "").strip() or None,
+                data_retorno=(data.get("data_retorno") or "").strip() or None,
+                hora_retorno=(data.get("hora_retorno") or "").strip() or None,
             ),
             prospeccao_repository(),
         )

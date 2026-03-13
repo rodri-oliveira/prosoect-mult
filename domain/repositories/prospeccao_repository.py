@@ -65,3 +65,7 @@ class ProspeccaoRepository(Protocol):
     def get_total_retornos_hoje(self) -> int:
         """Retorna quantidade de retornos agendados para hoje (somente não arquivados)."""
         raise NotImplementedError
+
+    def get_eventos(self, prospeccao_id: int) -> list[dict]:
+        """Retorna histórico de eventos de uma prospecção."""
+        raise NotImplementedError

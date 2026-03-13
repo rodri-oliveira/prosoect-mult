@@ -52,6 +52,11 @@ def build_prospeccao_list_view_with_repo(
         data_fim=data_fim,
         mostrar_arquivados=req.mostrar_arquivados,
     )
+
+    # Adicionar eventos em cada prospecção
+    for p in prospeccoes:
+        p["eventos"] = repo.get_eventos(p["id"])
+
     resumo = repo.get_summary(data_inicio, data_fim, req.mostrar_arquivados)
     resumo_prospeccao = {
         "total": resumo.total,

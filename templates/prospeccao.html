@@ -15,26 +15,6 @@
         </div>
     </div>
 
-    <!-- Resumo de Status -->
-    {% if resumo_prospeccao %}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-        <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-sm font-semibold text-gray-600 mr-2">Filtros:</span>
-            <a href="/prospeccao" 
-               class="px-3 py-1 rounded-full text-xs font-medium transition {% if not filtro_status %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
-                Todos ({{ resumo_prospeccao.total }})
-            </a>
-            {% for status, total in resumo_prospeccao.por_status %}
-            <a href="/prospeccao?status={{ status }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}" 
-               class="px-3 py-1 rounded-full text-xs font-medium transition
-                      {% if filtro_status == status %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
-                {{ status }}: {{ total }}
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
     <!-- Interface Dividida -->
     <div class="flex flex-1 gap-4 min-h-[600px]">
         <!-- Lado Esquerdo: Mapa + Lista -->
@@ -140,6 +120,26 @@
                 <iframe id="mapFrame" class="w-full h-[300px]" src="https://www.google.com/maps?q=lojas&output=embed" frameborder="0" allowfullscreen></iframe>
             </div>
 
+            <!-- Filtros de Status -->
+            {% if resumo_prospeccao %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-sm font-semibold text-gray-600 mr-2">Filtros:</span>
+                    <a href="/prospeccao" 
+                       class="px-3 py-1 rounded-full text-xs font-medium transition {% if not filtro_status %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                        Todos ({{ resumo_prospeccao.total }})
+                    </a>
+                    {% for status, total in resumo_prospeccao.por_status %}
+                    <a href="/prospeccao?status={{ status }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}" 
+                       class="px-3 py-1 rounded-full text-xs font-medium transition
+                              {% if filtro_status == status %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                        {{ status }}: {{ total }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Lista de Rascunho -->
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
                 <div class="px-5 py-3 border-b border-gray-200 bg-brand-50 flex justify-between items-center">
@@ -239,6 +239,26 @@
                                     <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-500 hover:bg-gray-200">🗑️ Arquivar</button>
                                 </form>
                             </div>
+                            
+                            <!-- Histórico de Eventos (colapsável) -->
+                            {% if item.eventos %}
+                            <div class="mt-2 pt-2 border-t border-gray-100" x-data="{ open: false }">
+                                <button type="button" @click="open = !open" class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
+                                    <svg class="w-4 h-4 transition" :class="{ 'rotate-90': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    <span>Histórico ({{ item.eventos|length }})</span>
+                                </button>
+                                <div x-show="open" x-collapse class="mt-2 space-y-1">
+                                    {% for evento in item.eventos %}
+                                    <div class="flex items-start gap-2 text-xs p-2 bg-gray-50 rounded">
+                                        <span class="text-gray-400 whitespace-nowrap">{{ evento.data_evento[:16] }}</span>
+                                        <span class="text-gray-600">{{ evento.detalhe }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

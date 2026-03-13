@@ -20,6 +20,10 @@ class CreateProspecctionDraftRequest:
     maps_place_id: str | None
     maps_url: str | None
     site: str | None
+    observacoes: str | None = None
+    status_prospeccao: str | None = None
+    data_retorno: str | None = None
+    hora_retorno: str | None = None
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,10 @@ def create_prospeccao_draft_with_repo(
         "maps_place_id": req.maps_place_id,
         "maps_url": req.maps_url,
         "site": req.site,
+        "observacoes": req.observacoes,
+        "status_prospeccao": req.status_prospeccao,
+        "data_retorno": req.data_retorno,
+        "hora_retorno": req.hora_retorno,
     }
 
     prospeccao_id, created = repo.add(dados)
