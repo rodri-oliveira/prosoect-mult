@@ -201,7 +201,7 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
         FROM prospeccao_eventos e
         JOIN prospeccao_temp p ON p.id = e.prospeccao_id
         WHERE date(e.data_evento) BETWEEN ? AND ?
-          AND e.tipo_evento IN ('RETORNO_TENTATIVA', 'RETORNO_REAGENDADO_AUTO', 'RETORNO_RESULTADO', 'STATUS_ATUALIZADO')
+          AND e.tipo_evento IN ('RETORNO_TENTATIVA', 'RETORNO_REAGENDADO_AUTO', 'RETORNO_RESULTADO', 'STATUS_ATUALIZADO', 'STATUS_CHANGE')
         ORDER BY e.data_evento DESC
     ''', (data_inicio, data_fim))
     detalhes_eventos_prospeccao = c.fetchall()

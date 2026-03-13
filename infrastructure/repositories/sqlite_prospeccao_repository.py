@@ -366,7 +366,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         lead_id = c.lastrowid
 
         c.execute(
-            "UPDATE prospeccao_temp SET convertido_lead_id = ? WHERE id = ?",
+            "UPDATE prospeccao_temp SET convertido_lead_id = ?, arquivado = 1 WHERE id = ?",
             (lead_id, prospeccao_id),
         )
         conn.commit()

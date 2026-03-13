@@ -89,6 +89,12 @@ def rascunho_novo():
     cnpj_norm = normalize_cnpj(cnpj_raw) if cnpj_raw else None
     cnpj_valid = cnpj_norm if (cnpj_norm and is_valid_cnpj(cnpj_norm)) else None
 
+    status_prospeccao = (request.form.get("status_prospeccao") or "").strip()
+    
+    # Validar status obrigatório
+    if not status_prospeccao:
+        return redirect(url_for("prospeccao_view"))
+
     result = create_prospeccao_draft_with_repo(
         CreateProspecctionDraftRequest(
             nome_loja=(request.form.get("nome_loja") or "").strip(),
@@ -102,6 +108,10 @@ def rascunho_novo():
             maps_place_id=(request.form.get("maps_place_id") or "").strip() or None,
             maps_url=(request.form.get("maps_url") or "").strip() or None,
             site=(request.form.get("site") or "").strip() or None,
+            observacoes=(request.form.get("observacoes") or "").strip() or None,
+            status_prospeccao=status_prospeccao,
+            data_retorno=(request.form.get("data_retorno") or "").strip() or None,
+            hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
         ),
         prospeccao_repository(),
     )

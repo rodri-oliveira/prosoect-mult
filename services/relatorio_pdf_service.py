@@ -130,14 +130,18 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
     detalhes_prosp = relatorio.get('detalhes_prospeccao') or []
     elements.append(Paragraph(f"Prospecção - Detalhes ({len(detalhes_prosp)})", section_style))
 
-    prosp_data = [["Loja", "CNPJ", "Cidade/UF", "Segmento", "Status", "Próximo Passo"]]
+    prosp_data = [["Loja", "CNPJ", "Cidade/UF", "Segmento", "Status", "Retorno", "Observação"]]
     for item in detalhes_prosp:
         retorno = str(_row_get(item, 'data_retorno', ''))
         hora_retorno = str(_row_get(item, 'hora_retorno', ''))
         if retorno and hora_retorno:
-            proximo_passo = f"Retorno: {retorno} {hora_retorno}"
+            retorno_str = f"{retorno} {hora_retorno}"
+        elif retorno:
+            retorno_str = retorno
         else:
-            proximo_passo = str(_row_get(item, 'status_prospeccao', ''))
+            retorno_str = '-'
+        
+        observacao = str(_row_get(item, 'observacao', '')) or '-'
 
         cidade = str(_row_get(item, 'cidade', ''))
         uf = str(_row_get(item, 'estado', ''))
@@ -151,19 +155,21 @@ def build_relatorio_pdf_bytes(relatorio: dict, data_inicio: str, data_fim: str) 
                 _p(cidade_uf),
                 _p(_row_get(item, 'segmento', '')),
                 _p(_row_get(item, 'status_prospeccao', '')),
-                _p(proximo_passo),
+                _p(retorno_str),
+                _p(observacao),
             ]
         )
 
     prosp_table = Table(
         prosp_data,
         colWidths=[
-            5.0 * cm,  # Loja
-            3.0 * cm,  # CNPJ
-            2.5 * cm,  # Cidade/UF
-            2.5 * cm,  # Segmento
-            3.0 * cm,  # Status
-            3.0 * cm,  # Próximo Passo
+            4.5 * cm,  # Loja
+            2.8 * cm,  # CNPJ
+            2.2 * cm,  # Cidade/UF
+            2.2 * cm,  # Segmento
+            2.5 * cm,  # Status
+            2.5 * cm,  # Retorno
+            3.0 * cm,  # Observação
         ],
         repeatRows=1,
     )
