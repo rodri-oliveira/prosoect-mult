@@ -323,32 +323,24 @@
                                 <span>Celulares</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Eletrônicos" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Eletrônicos</span>
+                                <input type="checkbox" name="segmento" value="Áudio e Vídeo" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Áudio e Vídeo</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Pet Shop" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Pet Shop</span>
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Farmácia" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Farmácia</span>
+                                <input type="checkbox" name="segmento" value="Eletroportáteis" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Eletroportáteis</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
                                 <input type="checkbox" name="segmento" value="Gamer" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
                                 <span>Gamer</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Loja de Brinquedos" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Loja de Brinquedos</span>
+                                <input type="checkbox" name="segmento" value="Brinquedos" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Brinquedos</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Loja Infantil" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Loja Infantil</span>
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Loja de Bebê" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Loja de Bebê</span>
+                                <input type="checkbox" name="segmento" value="Drones e Câmeras" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Drones e Câmeras</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
                                 <input type="checkbox" name="segmento" value="Ortopédica" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
@@ -359,20 +351,16 @@
                                 <span>Fitness</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Assistência Técnica" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Assistência Técnica</span>
+                                <input type="checkbox" name="segmento" value="Pet" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Pet</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Papelaria" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Papelaria</span>
+                                <input type="checkbox" name="segmento" value="Redes" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Redes</span>
                             </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Loja de Presentes" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Loja de Presentes</span>
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="segmento" value="Agropecuária" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                <span>Agropecuária</span>
+                                <input type="checkbox" name="segmento" value="Mobilidade Elétrica" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Mobilidade Elétrica</span>
                             </label>
                         </div>
                     </div>
@@ -477,9 +465,9 @@
 function segmentoSelector() {
     return {
         open: false,
-        segmentos: ['Informática', 'Celulares', 'Eletrônicos', 'Pet Shop', 'Farmácia', 'Gamer', 
-                     'Loja de Brinquedos', 'Loja Infantil', 'Loja de Bebê', 'Ortopédica', 
-                     'Fitness', 'Assistência Técnica', 'Papelaria', 'Loja de Presentes', 'Agropecuária'],
+        segmentos: ['Informática', 'Celulares', 'Áudio e Vídeo', 'Eletroportáteis', 'Gamer',
+                     'Brinquedos', 'Drones e Câmeras', 'Ortopédica',
+                     'Fitness', 'Pet', 'Redes', 'Mobilidade Elétrica'],
         selecionados: [],
         toggle(seg) {
             if(this.selecionados.includes(seg)) {
@@ -1139,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (query) params.set('query', query);
             if (cidade) params.set('cidade', cidade);
             if (estado) params.set('estado', estado);
-            params.set('limit', '20');
+            params.set('limit', '50');
             (segmentosSelecionados || []).forEach((s) => params.append('segmentos', s));
             const resp = await fetch(`/api/maps/resultados?${params.toString()}`);
             const data = await resp.json();

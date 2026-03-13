@@ -39,6 +39,10 @@ def api_maps_resultados():
             "message": res.message,
             "existing_keys": res.existing_keys,
             "items": res.items,
+            "executed_queries": res.executed_queries,
+            "query_stats": res.query_stats,
+            "merged_before_dedupe": res.merged_before_dedupe,
+            "merged_after_dedupe": res.merged_after_dedupe,
         }
     )
 
