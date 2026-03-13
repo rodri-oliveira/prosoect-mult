@@ -120,9 +120,9 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         status = dados.get("status_prospeccao") if dados.get("status_prospeccao") else "Não contatado"
         if status == "Pediu portfólio":
-            status = "Envio do portfólio"
+            status = "Em negociação"
 
-        data_retorno = dados.get("data_retorno") if status in ("Pediu para retornar", "Envio do portfólio") else None
+        data_retorno = dados.get("data_retorno") if status in ("Pediu para retornar", "Em negociação") else None
         hora_retorno = dados.get("hora_retorno") if data_retorno else None
 
         maps_place_id = (dados.get("maps_place_id") or "").strip() or None

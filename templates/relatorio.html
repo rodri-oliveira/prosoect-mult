@@ -110,8 +110,12 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Loja</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Telefone</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">CNPJ</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Cidade/UF</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Segmento</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Retorno</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Observação</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -119,13 +123,17 @@
                     <tr>
                         <td class="px-6 py-4">
                             <div class="text-sm font-bold text-gray-900">{{ item.nome_loja }}</div>
-                            <div class="text-xs text-gray-500">{{ item.cidade }}</div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.telefone or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.cnpj or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.cidade }}{% if item.estado %}/{{ item.estado }}{% endif %}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.segmento or '-' }}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100">{{ item.status_prospeccao }}</span>
-                            {% if item.data_retorno %}<div class="text-xs text-yellow-600 mt-1">📅 {{ item.data_retorno }}</div>{% endif %}
                         </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {% if item.data_retorno %}{{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.observacao or '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

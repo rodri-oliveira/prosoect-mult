@@ -47,8 +47,8 @@ def add_lead_contato_with_repo(req: AddLeadContatoRequest, repo: LeadRepository)
                 redirect_kwargs={"lead_id": req.lead_id, "erro": "Informe o horário de retorno."},
             )
 
-    # Validação de segmento para envio do portfólio
-    if resultado == "Envio do portifólio":
+    # Validação de segmento para início de negociação
+    if resultado == "Em negociação":
         row = repo.get_by_id(req.lead_id)
         if not row:
             return AddLeadContatoResult(
@@ -62,7 +62,7 @@ def add_lead_contato_with_repo(req: AddLeadContatoRequest, repo: LeadRepository)
             return AddLeadContatoResult(
                 ok=False,
                 redirect_to="lead_detail",
-                redirect_kwargs={"lead_id": req.lead_id, "erro": "Informe o segmento do lead antes de registrar o envio do portifólio."},
+                redirect_kwargs={"lead_id": req.lead_id, "erro": "Informe o segmento do lead antes de registrar o início de negociação."},
             )
 
     # Adicionar contato

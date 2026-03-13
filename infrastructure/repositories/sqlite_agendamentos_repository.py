@@ -19,7 +19,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             WHERE data_retorno < ?
               AND data_retorno IS NOT NULL
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Envio do portfólio')
+              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
         """,
             (data_limite,),
         )
@@ -51,7 +51,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             WHERE data_retorno < ?
               AND data_retorno IS NOT NULL
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Envio do portfólio')
+              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
             ORDER BY data_retorno, hora_retorno
         """,
             (data,),

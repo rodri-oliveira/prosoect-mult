@@ -97,7 +97,16 @@
                         <tr class="{% if loop.index % 2 == 0 %}bg-gray-50{% else %}bg-white{% endif %}">
                             <td class="px-4 py-2 text-sm text-gray-700">
                                 {% if status == 'Pediu para retornar' %}Agendar retorno
-                                {% elif status == 'Pediu portfólio' %}Envio do portfólio
+                                {% elif status == 'Em negociação' %}Em negociação
+                                {% elif status == 'Descartado' %}Descartado
+                                {% elif status == 'Não contatado' %}Não contatado
+                                {% elif status == 'Não atendeu' %}Não atendeu
+                                {% elif status == 'Caixa postal' %}Caixa postal
+                                {% elif status == 'Pediu portfólio' %}Em negociação
+                                {% elif status == 'Em negociação' %}Em negociação
+                                {% elif status == 'Interessado' %}Interessado
+                                {% elif status == 'Descartado' %}Descartado
+                                {% elif status == 'Convertido em Lead' %}Convertido em Lead
                                 {% else %}{{ status }}{% endif %}
                             </td>
                             <td class="px-4 py-2 text-sm font-bold text-gray-900 text-right">{{ total }}</td>
@@ -122,7 +131,16 @@
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-gray-600">
                             {% if item.status_prospeccao == 'Pediu para retornar' %}Agendar retorno
-                            {% elif item.status_prospeccao == 'Pediu portfólio' %}Envio do portfólio
+                            {% elif item.status_prospeccao == 'Em negociação' %}Em negociação
+                            {% elif item.status_prospeccao == 'Descartado' %}Descartado
+                            {% elif item.status_prospeccao == 'Não contatado' %}Não contatado
+                            {% elif item.status_prospeccao == 'Não atendeu' %}Não atendeu
+                            {% elif item.status_prospeccao == 'Caixa postal' %}Caixa postal
+                            {% elif item.status_prospeccao == 'Pediu portfólio' %}Em negociação
+                            {% elif item.status_prospeccao == 'Em negociação' %}Em negociação
+                            {% elif item.status_prospeccao == 'Interessado' %}Interessado
+                            {% elif item.status_prospeccao == 'Descartado' %}Descartado
+                            {% elif item.status_prospeccao == 'Convertido em Lead' %}Convertido em Lead
                             {% else %}{{ item.status_prospeccao }}{% endif %}
                         </span>
                         <span class="font-medium text-gray-900">{{ item.total }}</span>
@@ -152,7 +170,8 @@
                         <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Cidade/UF</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Segmento</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Status</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Próximo Passo</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Retorno</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-white uppercase">Observação</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -169,23 +188,25 @@
                                 {% elif item.status_prospeccao == 'Não atendeu' %}bg-red-100 text-red-700
                                 {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
                                 {% elif item.status_prospeccao == 'Pediu para retornar' %}bg-yellow-100 text-yellow-800
-                                {% elif item.status_prospeccao == 'Envio do portfólio' or item.status_prospeccao == 'Pediu portfólio' %}bg-blue-100 text-blue-800
-                                {% elif item.status_prospeccao == 'Interessado' %}bg-green-100 text-green-800
-                                {% elif item.status_prospeccao == 'Sem interesse' %}bg-red-50 text-red-600
+                                {% elif item.status_prospeccao == 'Em negociação' %}bg-blue-100 text-blue-800
+                                {% elif item.status_prospeccao == 'Descartado' %}bg-red-50 text-red-600
                                 {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
                                 {% else %}bg-gray-100 text-gray-600{% endif %}">
                                 {% if item.status_prospeccao == 'Pediu para retornar' %}Agendar retorno
-                                {% elif item.status_prospeccao == 'Pediu portfólio' %}Envio do portfólio
+                                {% elif item.status_prospeccao == 'Pediu portfólio' %}Em negociação
+                                {% elif item.status_prospeccao == 'Em negociação' %}Em negociação
+                                {% elif item.status_prospeccao == 'Descartado' %}Descartado
+                                {% elif item.status_prospeccao == 'Interessado' %}Interessado
+                                {% elif item.status_prospeccao == 'Convertido em Lead' %}Convertido em Lead
                                 {% else %}{{ item.status_prospeccao }}{% endif %}
                             </span>
                         </td>
                         <td class="px-3 py-2 text-xs text-gray-600">
                             {% if item.data_retorno %}
-                                Retorno: {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
-                            {% else %}
-                                {{ item.observacao or '-' }}
-                            {% endif %}
+                                {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
+                            {% else %}-{% endif %}
                         </td>
+                        <td class="px-3 py-2 text-xs text-gray-600">{{ item.observacao or '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

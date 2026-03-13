@@ -459,7 +459,8 @@ def build_relatorio_prospeccao_pdf_bytes(relatorio: dict, data_inicio: str, data
         Paragraph("Cidade/UF", cell_style_bold),
         Paragraph("Segmento", cell_style_bold),
         Paragraph("Status", cell_style_bold),
-        Paragraph("Próximo Passo", cell_style_bold)
+        Paragraph("Retorno", cell_style_bold),
+        Paragraph("Observação", cell_style_bold)
     ]]
 
     for item in items:
@@ -471,9 +472,10 @@ def build_relatorio_prospeccao_pdf_bytes(relatorio: dict, data_inicio: str, data
         
         data_retorno = str(_row_get(item, 'data_retorno', ''))
         hora_retorno = str(_row_get(item, 'hora_retorno', ''))
-        proximo_passo = data_retorno if data_retorno else str(_row_get(item, 'observacao', ''))
-        if data_retorno and hora_retorno:
-            proximo_passo = f"Retorno: {data_retorno} {hora_retorno}"
+        retorno = "-"
+        if data_retorno:
+            retorno = f"{data_retorno} {hora_retorno}" if hora_retorno else data_retorno
+        observacao = str(_row_get(item, 'observacao', '')) or '-'
 
         itens_data.append([
             Paragraph(str(_row_get(item, 'data_prospeccao', '')), cell_style),
@@ -482,12 +484,13 @@ def build_relatorio_prospeccao_pdf_bytes(relatorio: dict, data_inicio: str, data
             Paragraph(cidade_uf, cell_style),
             Paragraph(str(_row_get(item, 'segmento', '') or '-'), cell_style),
             Paragraph(str(_row_get(item, 'status_prospeccao', '')), cell_style),
-            Paragraph(proximo_passo, cell_style)
+            Paragraph(retorno, cell_style),
+            Paragraph(observacao, cell_style)
         ])
 
     itens_table = Table(
         itens_data,
-        colWidths=[1.6 * cm, 3.8 * cm, 2.4 * cm, 2.5 * cm, 2.5 * cm, 2.2 * cm, 3.0 * cm],
+        colWidths=[1.4 * cm, 3.0 * cm, 2.0 * cm, 2.2 * cm, 2.0 * cm, 2.0 * cm, 2.0 * cm, 2.5 * cm],
         repeatRows=1
     )
     itens_table.setStyle(

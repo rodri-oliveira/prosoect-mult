@@ -138,10 +138,10 @@
                                     <option>Não atendeu</option>
                                     <option>Caixa postal</option>
                                     <option>Sem contato</option>
-                                    <option>Envio do portifólio</option>
+                                    <option>Em negociação</option>
                                     <option>Agendar retorno</option>
                                     <option>Pediu preço</option>
-                                    <option>Sem interesse</option>
+                                    <option>Descartado</option>
                                     <option>Apresentação feita</option>
                                     <option>Pediu catálogo</option>
                                 </select>
@@ -150,7 +150,7 @@
                         <div id="campo-data-retorno" class="hidden">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Data de retorno *</label>
                             <input type="date" name="data_retorno" id="data_retorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
-                            <p class="text-xs text-gray-500 mt-1">Obrigatório quando houver próximo passo (ex.: envio do portifólio).</p>
+                            <p class="text-xs text-gray-500 mt-1">Obrigatório quando houver próximo passo (ex.: início de negociação).</p>
                         </div>
                         <div id="campo-hora-retorno" class="hidden">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Horário de retorno *</label>
@@ -231,12 +231,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function shouldRequireObs(value) {
         if (!value) return false;
         const v = value.toLowerCase();
-        return v.includes('agendar retorno') || v.includes('envio do portif') || v.includes('pediu') || v.includes('preço');
+        return v.includes('agendar retorno') || v.includes('em negociação') || v.includes('pediu') || v.includes('preço');
     }
 
     function shouldRequireReturnDate(value) {
         if (!value) return false;
-        return value === 'Envio do portifólio' || value === 'Agendar retorno';
+        const v = value.toLowerCase();
+        return v === 'em negociação' || v === 'agendar retorno';
     }
 
     function shouldRequireReturnTime(value) {

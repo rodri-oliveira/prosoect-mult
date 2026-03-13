@@ -52,7 +52,7 @@ def registrar_tentativa_with_repo(
         )
 
     resultados_tentativa = ("Não atendeu", "Caixa postal", "Sem contato")
-    resultados_proximo_passo = ("Envio do portfólio", "Agendar retorno", "Pediu preço")
+    resultados_proximo_passo = ("Em negociação", "Agendar retorno", "Pediu preço")
 
     if resultado in resultados_proximo_passo and not req.observacao:
         return RegistrarTentativaResult(
@@ -61,28 +61,28 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={"erro": "Observação obrigatória para registrar o próximo passo."},
         )
 
-    if resultado in ("Envio do portfólio", "Agendar retorno") and not req.data_retorno:
+    if resultado in ("Em negociação", "Agendar retorno") and not req.data_retorno:
         return RegistrarTentativaResult(
             ok=False,
             redirect_to="agendamentos_view",
             redirect_kwargs={"erro": "Informe a data de retorno para continuar."},
         )
-    if resultado in ("Envio do portfólio", "Agendar retorno") and req.data_retorno and not req.hora_retorno:
+    if resultado in ("Em negociação", "Agendar retorno") and req.data_retorno and not req.hora_retorno:
         return RegistrarTentativaResult(
             ok=False,
             redirect_to="agendamentos_view",
             redirect_kwargs={"erro": "Informe o horário de retorno para continuar."},
         )
 
-    # Validação de segmento para envio do portfólio
-    if resultado == "Envio do portfólio":
+    # Validação de segmento para início de negociação
+    if resultado == "Em negociação":
         if not req.segmento:
             prospeccao = prospeccao_repo.get_by_id(req.prospeccao_id)
             if not prospeccao or not prospeccao.get("segmento"):
                 return RegistrarTentativaResult(
                     ok=False,
                     redirect_to="agendamentos_view",
-                    redirect_kwargs={"erro": "Informe o segmento antes de registrar envio do portfólio."},
+                    redirect_kwargs={"erro": "Informe o segmento antes de registrar início de negociação."},
                 )
         else:
             agendamentos_repo.update_segmento(req.prospeccao_id, req.segmento)
@@ -99,9 +99,9 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={},
         )
 
-    if resultado == "Sem interesse":
-        prospeccao_repo.update_status(req.prospeccao_id, "Sem interesse", observacao=req.observacao)
-        agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, "Sem interesse", observacao=req.observacao)
+    if resultado == "Descartado":
+        prospeccao_repo.update_status(req.prospeccao_id, "Descartado", observacao=req.observacao)
+        agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, "Descartado", observacao=req.observacao)
         prospeccao_repo.arquivar(req.prospeccao_id)
         return RegistrarTentativaResult(
             ok=True,
@@ -126,7 +126,7 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={},
         )
 
-    if resultado in ("Envio do portfólio", "Agendar retorno"):
+    if resultado in ("Em negociação", "Agendar retorno"):
         prospeccao_repo.update_status(
             req.prospeccao_id,
             "Pediu para retornar",

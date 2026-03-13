@@ -63,7 +63,7 @@ def update_prospecction_status_with_repo(
     )
 
     # Ações derivadas por status
-    if novo_status in ("Envio do portfólio", "Interessado"):
+    if novo_status == "Interessado":
         prospeccao = repo.get_by_id(req.prospeccao_id)
 
         if not prospeccao:
@@ -96,7 +96,7 @@ def update_prospecction_status_with_repo(
                 redirect_kwargs={"lead_id": lead_id},
             )
 
-    if novo_status == "Sem interesse":
+    if novo_status == "Descartado":
         repo.arquivar(req.prospeccao_id)
 
     return UpdateProspecctionStatusResult(

@@ -173,8 +173,9 @@
                                     {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
                                     {% elif item.status_prospeccao == 'Pediu para retornar' %}bg-yellow-100 text-yellow-800
                                     {% elif item.status_prospeccao == 'Pediu portfólio' %}bg-blue-100 text-blue-800
+                                    {% elif item.status_prospeccao == 'Em negociação' %}bg-blue-100 text-blue-800
                                     {% elif item.status_prospeccao == 'Interessado' %}bg-green-100 text-green-800
-                                    {% elif item.status_prospeccao == 'Sem interesse' %}bg-red-50 text-red-600
+                                    {% elif item.status_prospeccao == 'Descartado' %}bg-red-50 text-red-600
                                     {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
                                     {% else %}bg-gray-100 text-gray-600{% endif %}">
                                     {{ item.status_prospeccao }}
@@ -216,16 +217,16 @@
                                     <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">🔄 Retornar</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Pediu portfólio">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">📄 Portfólio</button>
+                                    <input type="hidden" name="status" value="Em negociação">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">📄 Negociação</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Interessado">
                                     <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-800 hover:bg-green-100">✅ Interessado</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Sem interesse">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100">⛔ S/ Interesse</button>
+                                    <input type="hidden" name="status" value="Descartado">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100">⛔ Descartado</button>
                                 </form>
                                 
                                 {% if not item.convertido_lead_id %}
@@ -377,9 +378,9 @@
                             <option value="Não atendeu">❌ Não atendeu</option>
                             <option value="Caixa postal">📮 Caixa postal</option>
                             <option value="Pediu para retornar">🔄 Agendar retorno</option>
-                            <option value="Envio do portfólio">📄 Envio do portfólio</option>
+                            <option value="Em negociação">📄 Em negociação</option>
                             <option value="Interessado">✅ Interessado</option>
-                            <option value="Sem interesse">⛔ Sem interesse</option>
+                            <option value="Descartado">⛔ Descartado</option>
                         </select>
                         <p class="text-xs text-gray-500 mt-1">Já ligou? Marque o resultado para economizar tempo</p>
                     </div>
@@ -813,6 +814,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastMapsItems = [];
     let pendingRestore = null;
 
+    const writeMapsCache = (items, payload) => {
+        try {
+            window.__mapsResultsCache = Array.isArray(items) ? items : [];
+            window.__mapsLastPayloadCache = payload || null;
+        } catch (e) {}
+        try {
+            sessionStorage.setItem('mapsResultsCache', JSON.stringify(Array.isArray(items) ? items : []));
+            sessionStorage.setItem('mapsLastPayloadCache', JSON.stringify(payload || null));
+        } catch (e) {}
+    };
+
+    const readMapsCache = () => {
+        try {
+            if (Array.isArray(window.__mapsResultsCache) && window.__mapsResultsCache.length > 0) {
+                return;
+            }
+        } catch (e) {}
+
+        try {
+            const rawItems = sessionStorage.getItem('mapsResultsCache') || '';
+            const rawPayload = sessionStorage.getItem('mapsLastPayloadCache') || '';
+            const items = rawItems ? JSON.parse(rawItems) : [];
+            const payload = rawPayload ? JSON.parse(rawPayload) : null;
+            if (Array.isArray(items) && items.length > 0) {
+                writeMapsCache(items, payload);
+            }
+        } catch (e) {}
+    };
+
+    readMapsCache();
+
     const openDrawer = () => {
         if (!drawer) return;
         drawer.classList.remove('hidden');
@@ -842,9 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itKey = String(it.maps_place_id || it.id || '').trim();
             return itKey !== k;
         });
-        try {
-            window.__mapsResultsCache = lastMapsItems;
-        } catch (e) {}
+        writeMapsCache(lastMapsItems, buildQueryPayload());
         renderResults(lastMapsItems);
     };
 
@@ -868,6 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         lastMapsItems = normalized;
+        writeMapsCache(normalized, buildQueryPayload());
         if (normalized.length === 0) {
             emptyEl.classList.remove('hidden');
             return;
@@ -1075,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (res.data && res.data.created === false) {
                     if (statusEl) statusEl.textContent = 'Já existia na sua lista.';
-                    openDrawer();
+                    alert('Este item já existe na sua lista de prospecção.');
                     return;
                 }
 
@@ -1173,6 +1204,25 @@ document.addEventListener('DOMContentLoaded', () => {
         loadResults();
     });
 
+    // Listener direto no botão como fallback
+    if (openBtn) {
+        openBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openDrawer();
+
+            const cachedItems = window.__mapsResultsCache;
+            const cachedPayload = window.__mapsLastPayloadCache;
+            const nowPayload = buildQueryPayload();
+            if (Array.isArray(cachedItems) && cachedItems.length > 0 && isSamePayload(cachedPayload, nowPayload)) {
+                if (statusEl) statusEl.textContent = 'OK';
+                renderResults(cachedItems);
+                return;
+            }
+            loadResults();
+        });
+    }
+
     // Listeners diretos mantidos para compatibilidade
     if (reloadBtn) reloadBtn.addEventListener('click', loadResults);
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
@@ -1232,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusSelect.addEventListener('change', function() {
             const campoData = document.getElementById('campo-data-retorno');
             const campoHora = document.getElementById('campo-hora-retorno');
-            if (this.value === 'Pediu para retornar' || this.value === 'Envio do portfólio') {
+            if (this.value === 'Pediu para retornar' || this.value === 'Em negociação') {
                 if (campoData) campoData.classList.remove('hidden');
                 if (campoHora) campoHora.classList.remove('hidden');
             } else {
