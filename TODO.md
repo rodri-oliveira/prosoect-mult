@@ -9,25 +9,32 @@
 - [x] Corrigir erro `window.open` em botões
 - [x] Logs detalhados com estatísticas de lojas únicas
 - [x] UI com contador de lojas únicas no drawer
+- [x] Corrigir autocomplete de cidade - Alpine.js
+- [x] Otimizar query Maps - remover termos B2B redundantes
 
-## Próximos Passos 📋
-- [ ] Analisar logs de busca para identificar:
-  - Quais termos B2B trazem mais lojas únicas
-  - Quais termos são redundantes (new_unique=0)
-  - Tempo por query para otimizar performance
+## Análise de Logs (16/03/2026)
 
-## Discussão Registrada
-Ver memória: "Otimização de Query Maps - Discussão Pendente"
+### Resultados originais (32 queries)
+- 900 lojas encontradas → 138 únicas (15% aproveitamento)
+- ~8 minutos de busca
 
-### Dados para coletar
-Após algumas buscas, verificar nos logs:
-- `new_unique` por query → termos que trazem lojas novas
-- `total_unique` acumulado → cobertura total
-- `ms` por query → tempo de execução
+### Eficiência por termo B2B
+| Termo | Lojas únicas | % |
+|-------|-------------|---|
+| distribuidor | 119 | 86% |
+| loja | 9 | 7% |
+| representante | 7 | 5% |
+| revenda | 5 | 4% |
+| atacadista | 3 | 2% |
+| fornecedor | 3 | 2% |
 
-### Termos B2B atuais
-- distribuidor, atacadista, representante, revenda, fornecedor
-- loja (varejo)
+### Otimização implementada
+- Manter: `distribuidor`, `loja`
+- Remover: `atacadista`, `revenda`, `fornecedor`
+- Adicionar: marcas relevantes (Multilaser, Lenovo, Dell...)
+- Adicionar: exclusão `-fechado`
 
-### Decisão pendente
-Com dados reais, decidir quais termos manter/remover.
+### Resultado esperado
+- ~16 queries (50% redução)
+- ~4 minutos de busca
+- Cobertura similar ou maior (marcas)

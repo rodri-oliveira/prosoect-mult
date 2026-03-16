@@ -250,8 +250,19 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         if _norm_key(extra_clean) != _norm_key(segs[0] if segs else ""):
             extra_suffix = f" {extra_clean}"
 
-    # Termos B2B expandidos para máxima cobertura de revenda
-    b2b_terms = ["distribuidor", "atacadista", "representante", "revenda", "fornecedor"]
+    # Termos B2B otimizados baseados em análise de logs
+    # "distribuidor" traz 86% das lojas únicas
+    # "loja" captura varejo (7%)
+    # Removidos: atacadista, revenda, fornecedor (redundantes, <8% combinados)
+    b2b_terms = ["distribuidor", "loja"]
+    
+    # Marcas relevantes para capturar revendedores específicos
+    # Multilaser + marcas complementares que indicam potencial B2B
+    brand_terms = ["Multilaser", "Lenovo", "Dell", "Samsung", "LG", "Positivo"]
+    
+    # Termos de exclusão para evitar resultados irrelevantes
+    # Serão usados como "-fechado" na query do Google
+    exclude_terms = ["fechado", "extinto", "falência"]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
@@ -303,15 +314,25 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             anchors_part = f" {anchors}" if anchors else ""
             
             for b2b_term in b2b_terms:
-                queries.append(f"{b2b_term} de {seg_clean}{anchors_part}{extra_suffix}{local}".strip())
+                q = f"{b2b_term} de {seg_clean}{anchors_part}{extra_suffix}{local}".strip()
+                queries.append(q)
         
-        # Query varejo abrangente (sem âncoras específicas para capturar todas as lojas)
-        queries.append(f"loja de {seg_clean}{extra_suffix}{local}".strip())
+        # Query varejo abrangente (sem âncoras específicas)
+        q = f"loja de {seg_clean}{extra_suffix}{local}".strip()
+        queries.append(q)
         
         # Query varejo com âncoras combinadas (primeiras 2 âncoras)
         first_anchors = " ".join(anchor_lists[:2]) if len(anchor_lists) >= 2 else (anchor_lists[0] if anchor_lists else "")
         if first_anchors:
             queries.append(f"loja de {seg_clean} {first_anchors}{extra_suffix}{local}".strip())
+        
+        # Queries com marcas relevantes (captura revendedores autorizados)
+        for brand in brand_terms[:2]:  # Limitar a 2 marcas por segmento
+            queries.append(f"{brand} {seg_clean}{local}".strip())
+    
+    # Adicionar query com exclusão apenas para a mais genérica (evita multiplicar)
+    if queries:
+        queries[0] = f"{queries[0]} -fechado"
 
     # Remover duplicatas mantendo ordem
     seen = set()
