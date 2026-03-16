@@ -78,15 +78,54 @@ def search_maps_results_with_repo(
 
             merged: list[dict[str, Any]] = []
             per_query_limit = min(50, limit)
+            
+            # Rastrear lojas únicas por query para análise de overlap
+            seen_keys_total: set[str] = set()
+            
             for q in queries:
                 t0 = time.time()
                 got = scrape_maps_results(q, limit=per_query_limit, headless=True)
                 dt_ms = int((time.time() - t0) * 1000)
-                logger.warning("maps_query ms=%s limit=%s items=%s q=%s", dt_ms, per_query_limit, len(got or []), q)
-                query_stats.append({"q": q, "ms": dt_ms, "items": len(got or [])})
+                
+                # Calcular lojas únicas desta query
+                new_keys: set[str] = set()
+                for it in (got or []):
+                    k = _key_from_item(it)
+                    if k and k not in seen_keys_total:
+                        new_keys.add(k)
+                
+                # Atualizar total de lojas únicas
+                seen_keys_total.update(new_keys)
+                
+                # Log detalhado com estatísticas
+                logger.warning(
+                    "maps_query ms=%s items=%s new_unique=%s total_unique=%s q=%s",
+                    dt_ms,
+                    len(got or []),
+                    len(new_keys),
+                    len(seen_keys_total),
+                    q
+                )
+                
+                query_stats.append({
+                    "q": q,
+                    "ms": dt_ms,
+                    "items": len(got or []),
+                    "new_unique": len(new_keys),
+                    "total_unique": len(seen_keys_total),
+                })
                 merged.extend(got)
 
             merged_before_dedupe = len(merged)
+            
+            # Log final com resumo
+            logger.warning(
+                "maps_summary total_queries=%s before_dedupe=%s after_dedupe=%s total_unique_keys=%s",
+                len(queries),
+                merged_before_dedupe,
+                len(seen_keys_total),
+                len(seen_keys_total)
+            )
 
             merged = _dedupe_items(merged)
             merged_after_dedupe = len(merged)

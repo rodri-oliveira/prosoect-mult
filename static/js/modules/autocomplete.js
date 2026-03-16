@@ -55,16 +55,29 @@ export function cidadeAutocomplete() {
         search: '',
         cidades: [],
         highlightedIndex: -1,
+        loading: false,
         get filteredCidades() {
             if (!this.search) return this.cidades;
             const term = this.search.toLowerCase();
             return this.cidades.filter(c => c.toLowerCase().includes(term));
         },
         async ensureLoaded() {
-            if (this.cidades.length === 0) {
-                const uf = (document.getElementById('mapEstado')?.value || 'SP').toUpperCase();
+            // Sempre carrega ao focar
+            const uf = (document.getElementById('mapEstado')?.value || 'SP').toUpperCase();
+            if (!uf) return;
+            
+            this.loading = true;
+            try {
                 this.cidades = await loadCidadesArray(uf);
+                // Reabrir dropdown após carregar se ainda está focado
+                const input = document.getElementById('mapCidade');
+                if (input && document.activeElement === input) {
+                    this.open = true;
+                }
+            } catch (e) {
+                console.error('Erro ao carregar cidades:', e);
             }
+            this.loading = false;
         },
         select(cidade) {
             this.search = cidade;

@@ -216,6 +216,8 @@ const useItem = async (it) => {
 export const loadResults = async () => {
     const statusEl = document.getElementById('mapsDrawerStatus');
     const subEl = document.getElementById('mapsDrawerSub');
+    const statsEl = document.getElementById('mapsDrawerStats');
+    const statsUniqueEl = document.getElementById('mapsStatsUnique');
     if (!statusEl || !subEl) return;
 
     const { segmentosSelecionados, cidade, estado, query } = buildQueryPayload();
@@ -224,6 +226,8 @@ export const loadResults = async () => {
     mapsLog('loadResults:start', { query, cidade, estado, segmentosSelecionados });
 
     statusEl.textContent = 'Carregando...';
+    if (statsEl) statsEl.classList.add('hidden');
+    
     try {
         const params = new URLSearchParams();
         if (query) params.set('query', query);
@@ -234,8 +238,22 @@ export const loadResults = async () => {
         const resp = await fetch(`/api/maps/resultados?${params.toString()}`);
         const data = await resp.json();
         if (!resp.ok || !data.ok) throw new Error(data.message || 'Erro');
-        statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : 'OK';
-        mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, existing_keys: (data.existing_keys || []).length });
+        
+        // Atualizar status e estatísticas
+        const totalQueries = (data.executed_queries || []).length;
+        const mergedBefore = data.merged_before_dedupe || 0;
+        const mergedAfter = data.merged_after_dedupe || 0;
+        
+        statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : `OK - ${totalQueries} queries`;
+        
+        // Mostrar estatísticas de lojas únicas
+        if (statsEl && statsUniqueEl && mergedAfter > 0) {
+            statsUniqueEl.textContent = mergedAfter;
+            statsEl.classList.remove('hidden');
+            statsEl.title = `${mergedBefore} encontradas, ${mergedAfter} únicas após deduplicação`;
+        }
+        
+        mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, mergedBefore, mergedAfter, totalQueries });
         const nextItems = Array.isArray(data.items) ? data.items : [];
         const currentCached = (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
             ? window.ProspeccaoState.getMapItems()

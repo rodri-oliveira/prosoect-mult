@@ -18,6 +18,33 @@ window.segmentoSelector = segmentoSelector;
 window.cidadeAutocomplete = cidadeAutocomplete;
 window.loadCidadesArray = loadCidadesArray;
 
+// Carregar Alpine.js e registrar componentes
+function initAlpine() {
+    if (window.Alpine) {
+        // Alpine já carregou, registrar componentes
+        Alpine.data('segmentoSelector', segmentoSelector);
+        Alpine.data('cidadeAutocomplete', cidadeAutocomplete);
+        return;
+    }
+    
+    // Carregar Alpine.js dinamicamente
+    const script = document.createElement('script');
+    script.src = '/static/js/alpine.min.js';
+    script.onload = () => {
+        // Registrar componentes após Alpine carregar
+        Alpine.data('segmentoSelector', segmentoSelector);
+        Alpine.data('cidadeAutocomplete', cidadeAutocomplete);
+    };
+    document.head.appendChild(script);
+}
+
+// Inicializar Alpine após DOM carregar
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAlpine);
+} else {
+    initAlpine();
+}
+
 /**
  * Log de debug
  */

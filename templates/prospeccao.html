@@ -57,7 +57,6 @@
                                     x-ref="input"
                                     x-model="search"
                                     @focus="open = true; ensureLoaded()"
-                                    @blur="open = false"
                                     @keydown.escape="open = false"
                                     @keydown.arrow-down.prevent="moveDown()"
                                     @keydown.arrow-up.prevent="moveUp()"
@@ -67,11 +66,12 @@
                                     autocomplete="off"
                                 >
                                 <div 
-                                    x-show="open && filteredCidades.length > 0" 
+                                    x-show="open && (filteredCidades.length > 0 || loading)" 
                                     x-transition
                                     :class="open ? 'pointer-events-auto' : 'pointer-events-none'"
                                     class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto py-1"
                                 >
+                                    <div x-show="loading" class="px-3 py-2 text-sm text-gray-500">Carregando...</div>
                                     <template x-for="(cidade, index) in filteredCidades" :key="cidade">
                                         <div 
                                             @mousedown.prevent="select(cidade)"
@@ -464,7 +464,12 @@
 
         <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <div class="text-xs text-gray-600" id="mapsDrawerStatus">Pronto.</div>
-            <button type="button" id="mapsDrawerReload" class="px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-xs font-medium">Atualizar</button>
+            <div class="flex items-center gap-3">
+                <div id="mapsDrawerStats" class="text-xs text-gray-500 hidden">
+                    <span id="mapsStatsUnique">0</span> únicas
+                </div>
+                <button type="button" id="mapsDrawerReload" class="px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-xs font-medium">Atualizar</button>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4">
