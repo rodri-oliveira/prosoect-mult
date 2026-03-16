@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from application.relatorios.relatorio_completo import RelatorioCompletoRequest, get_relatorio_completo_with_repo
 from domain.repositories.relatorio_repository import RelatorioRepository
 from infrastructure.repositories.sqlite_relatorio_repository import SqliteRelatorioRepository
+from infrastructure.reporting import build_relatorio_pdf_bytes
 
 
 @dataclass(frozen=True)
@@ -29,8 +30,6 @@ def build_relatorio_completo_pdf_with_repo(
     repo: RelatorioRepository,
 ) -> RelatorioCompletoPdfResponse:
     view = get_relatorio_completo_with_repo(RelatorioCompletoRequest(req.data_inicio, req.data_fim), repo)
-
-    from services.relatorio_pdf_service import build_relatorio_pdf_bytes
 
     pdf_bytes = build_relatorio_pdf_bytes(view.relatorio, view.data_inicio, view.data_fim)
     return RelatorioCompletoPdfResponse(pdf_bytes=pdf_bytes, data_inicio=view.data_inicio, data_fim=view.data_fim)

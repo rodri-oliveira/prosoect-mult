@@ -25,11 +25,13 @@
 
 ## Arquitetura (DDD / Clean) — Plano
 
-- [ ] Migrar dashboard/resumo_hoje para Application + Repository (remover uso de services.relatorio_service em interfaces/web)
-- [ ] Extrair integrações externas para Gateways (Domain) + Implementações (Infrastructure): CNPJ (BrasilAPI) e Maps scraping
-- [ ] Migrar geração de PDF para Infrastructure/reporting (ou gateway) e manter use cases de PDF na camada Application sem imports diretos de services
-- [ ] Padronizar DTOs/Responses e reduzir dict solto nos use cases (contratos claros entre Application e Interfaces)
-- [ ] Criar testes de unidade para use cases principais e testes de integração para repositories SQLite (para garantir evolução segura)
+- [x] Migrar dashboard/resumo_hoje para Application + Repository (remover uso de services.relatorio_service em interfaces/web)
+- [x] Extrair integrações externas para Gateways (Domain) + Implementações (Infrastructure): CNPJ (BrasilAPI)
+- [x] Criar módulos ES6 para JavaScript do prospeccao.html (autocomplete, state, maps-drawer, filters, maps-search, cnpj)
+- [x] Migrar geração de PDF para Infrastructure/reporting (ou gateway) e manter use cases de PDF na camada Application sem imports diretos de services
+- [x] Implementar tratamento de erros global robusto (error handlers, logging, try/except em rotas)
+- [x] Criar testes de unidade para use cases principais (30 testes passando)
+- [x] Padronizar DTOs/Responses - LeadItem tipado criado
 
 ## Backlog (Futuro)
 

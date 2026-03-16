@@ -241,6 +241,21 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         )
         conn.commit()
         new_id = c.lastrowid
+
+        # Registrar evento no histórico se status não for o padrão
+        if status != "Não contatado" and new_id:
+            detalhe = status
+            if obs:
+                detalhe = f"{status} | {obs}"
+            c.execute(
+                """
+                INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
+                VALUES (?, ?, ?)
+            """,
+                (new_id, "STATUS_CHANGE", detalhe),
+            )
+            conn.commit()
+
         conn.close()
 
         return new_id, True
@@ -364,6 +379,16 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         )
         conn.commit()
         lead_id = c.lastrowid
+
+        # Inserir segmentos na tabela segmentos_loja
+        if segmento:
+            segmentos_list = [s.strip() for s in segmento.split(",") if s.strip()]
+            for seg in segmentos_list:
+                c.execute(
+                    "INSERT INTO segmentos_loja (lead_id, segmento) VALUES (?, ?)",
+                    (lead_id, seg),
+                )
+            conn.commit()
 
         c.execute(
             "UPDATE prospeccao_temp SET convertido_lead_id = ?, arquivado = 1 WHERE id = ?",
