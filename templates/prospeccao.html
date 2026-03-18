@@ -142,16 +142,54 @@
 
             <!-- Lista de Rascunho -->
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
-                <div class="px-5 py-3 border-b border-gray-200 bg-brand-50 flex justify-between items-center">
-                    <h3 class="text-base font-semibold text-brand-800">
-                        📋 Lista de Prospecção ({{ resumo_prospeccao.total }})
-                    </h3>
-                    <div class="flex gap-2">
-                        <a href="/prospeccao?arquivados=1" class="text-xs px-3 py-1 rounded-full {% if mostrar_arquivados %}bg-brand-600 text-white{% else %}bg-gray-200 text-gray-600 hover:bg-gray-300{% endif %}">
-                            Ver Arquivados
-                        </a>
-                        <span class="text-xs text-brand-600">{{ data_inicio|default('Hoje') }}</span>
+                <div class="px-5 py-3 border-b border-gray-200 bg-brand-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-base font-semibold text-brand-800">
+                            📋 Lista de Prospecção ({{ resumo_prospeccao.total }})
+                        </h3>
+                        <div class="flex gap-2">
+                            <a href="/prospeccao?arquivados=1" class="text-xs px-3 py-1 rounded-full {% if mostrar_arquivados %}bg-brand-600 text-white{% else %}bg-gray-200 text-gray-600 hover:bg-gray-300{% endif %}">
+                                Ver Arquivados
+                            </a>
+                        </div>
                     </div>
+                    
+                    <!-- Filtros -->
+                    <form method="GET" action="/prospeccao" class="flex flex-wrap items-end gap-2">
+                        <div class="flex-1 min-w-[120px]">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Data Início</label>
+                            <input type="date" name="data_inicio" value="{{ data_inicio or '' }}" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                        </div>
+                        <div class="flex-1 min-w-[120px]">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Data Fim</label>
+                            <input type="date" name="data_fim" value="{{ data_fim or '' }}" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                        </div>
+                        <div class="flex-1 min-w-[140px]">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                            <select name="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                                <option value="">Todos</option>
+                                <option value="Não contatado" {% if filtro_status == 'Não contatado' %}selected{% endif %}>Não contatado</option>
+                                <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
+                                <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
+                                <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Pediu para retornar</option>
+                                <option value="Pediu portfólio" {% if filtro_status == 'Pediu portfólio' %}selected{% endif %}>Pediu portfólio</option>
+                                <option value="Em negociação" {% if filtro_status == 'Em negociação' %}selected{% endif %}>Em negociação</option>
+                                <option value="Interessado" {% if filtro_status == 'Interessado' %}selected{% endif %}>Interessado</option>
+                                <option value="Descartado" {% if filtro_status == 'Descartado' %}selected{% endif %}>Descartado</option>
+                                <option value="Convertido em Lead" {% if filtro_status == 'Convertido em Lead' %}selected{% endif %}>Convertido em Lead</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-1">
+                            <button type="submit" class="px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-xs font-medium">
+                                Filtrar
+                            </button>
+                            <a href="/prospeccao" class="px-3 py-1.5 rounded-md bg-gray-200 text-gray-600 hover:bg-gray-300 text-xs font-medium">
+                                Limpar
+                            </a>
+                        </div>
+                    </form>
                 </div>
                 
                 <div class="overflow-y-auto flex-1 p-4">

@@ -10,7 +10,9 @@
 - [x] Logs detalhados com estatísticas de lojas únicas
 - [x] UI com contador de lojas únicas no drawer
 - [x] Corrigir autocomplete de cidade - Alpine.js
-- [x] Otimizar query Maps - remover termos B2B redundantes
+- [x] Otimizar termos B2B - 50% menos queries, 98% cobertura
+- [x] Criar script para limpar banco de dados
+- [x] Adicionar filtros de data e status na UI de prospecção
 
 ## Análise de Logs (16/03/2026)
 
