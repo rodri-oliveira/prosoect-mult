@@ -467,5 +467,31 @@
     </div>
 </div>
 
+<!-- Modal de Agendamento -->
+<div id="modalRetorno" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/30"></div>
+    <div class="relative z-10 flex items-center justify-center min-h-full p-4">
+        <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-3 bg-brand-50 border-b border-gray-200">
+                <h3 class="text-base font-semibold text-brand-800">Agendar retorno</h3>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Data *</label>
+                    <input type="date" id="retornoData" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Horário *</label>
+                    <input type="time" id="retornoHora" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="retornoCancelar" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium">Cancelar</button>
+                    <button type="button" id="retornoSalvar" class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="{{ url_for('static', filename='js/modules/agendamentos.js') }}"></script>
 {% endblock %}

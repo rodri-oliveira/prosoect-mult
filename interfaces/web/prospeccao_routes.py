@@ -81,6 +81,10 @@ def rascunho_novo():
         prospeccao_repository(),
     )
 
+    # Redirecionar para agendamentos se status for "Pediu para retornar"
+    if status_prospeccao == "Pediu para retornar":
+        return redirect(url_for("agendamentos_view"))
+
     next_url = request.form.get("next") or request.form.get("next_url")
     return redirect(next_url or url_for("prospeccao_view"))
 

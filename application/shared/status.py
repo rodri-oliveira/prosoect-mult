@@ -8,7 +8,7 @@ STATUS_PROSPECCAO = [
     "Não contatado",
     "Não atendeu",
     "Caixa postal",
-    "Pediu para retornar",
+    "Pediu para retornar",  # Exibido como "Agendamento" na UI
     "Solicitou portfólio",
     "Em negociação",
     "Interessado",

@@ -63,6 +63,13 @@ def update_prospecction_status_with_repo(
     )
 
     # Ações derivadas por status
+    if novo_status == "Pediu para retornar":
+        return UpdateProspecctionStatusResult(
+            ok=True,
+            redirect_to="agendamentos_view",
+            redirect_kwargs={},
+        )
+
     if novo_status == "Interessado":
         prospeccao = repo.get_by_id(req.prospeccao_id)
 

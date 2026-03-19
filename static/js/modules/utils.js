@@ -3,19 +3,6 @@
  */
 
 /**
- * Pede data de retorno via prompt
- * @param {HTMLFormElement} form - Formulário
- * @returns {boolean}
- */
-export function pedirDataRetorno(form) {
-    const data = prompt('Nova data para retornar (AAAA-MM-DD):');
-    if (!data) return false;
-    const input = form.querySelector('.data-retorno-input');
-    if (input) input.value = data;
-    return true;
-}
-
-/**
  * Scroll suave para elemento com destaque
  * @param {string} hash - Seletor CSS (#id)
  */
@@ -66,5 +53,4 @@ export function initScrollLinks() {
     });
 }
 
-// Expõe globalmente para compatibilidade
-window.pedirDataRetorno = pedirDataRetorno;
+// Nota: pedirDataRetorno está definido em form.js e exposto globalmente lá

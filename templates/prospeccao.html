@@ -173,7 +173,7 @@
                                 <option value="Não contatado" {% if filtro_status == 'Não contatado' %}selected{% endif %}>Não contatado</option>
                                 <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
                                 <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
-                                <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Pediu para retornar</option>
+                                <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Agendamento</option>
                                 <option value="Solicitou portfólio" {% if filtro_status == 'Solicitou portfólio' %}selected{% endif %}>Solicitou portfólio</option>
                                 <option value="Em negociação" {% if filtro_status == 'Em negociação' %}selected{% endif %}>Em negociação</option>
                                 <option value="Interessado" {% if filtro_status == 'Interessado' %}selected{% endif %}>Interessado</option>
@@ -220,7 +220,7 @@
                                     {% elif item.status_prospeccao == 'Descartado' %}bg-red-50 text-red-600
                                     {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
                                     {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                    {{ item.status_prospeccao }}
+                                    {% if item.status_prospeccao == 'Pediu para retornar' %}Agendamento{% else %}{{ item.status_prospeccao }}{% endif %}
                                 </span>
                             </div>
                             
@@ -266,7 +266,7 @@
                                     <input type="hidden" name="status" value="Pediu para retornar">
                                     <input type="hidden" name="data_retorno" class="data-retorno-input">
                                     <input type="hidden" name="hora_retorno" class="hora-retorno-input">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">Retornar</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">Agendamento</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Solicitou portfólio">
@@ -462,7 +462,7 @@
                             <option value="Não contatado">Não contatado</option>
                             <option value="Não atendeu">Não atendeu</option>
                             <option value="Caixa postal">Caixa postal</option>
-                            <option value="Pediu para retornar">Pediu para retornar</option>
+                            <option value="Pediu para retornar">Agendamento</option>
                             <option value="Solicitou portfólio">Solicitou portfólio</option>
                             <option value="Em negociação">Em negociação</option>
                             <option value="Interessado">Interessado</option>

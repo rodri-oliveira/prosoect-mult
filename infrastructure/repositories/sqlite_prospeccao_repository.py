@@ -37,6 +37,10 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if not mostrar_arquivados:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
 
+        # Excluir "Pediu para retornar" da lista de prospecção (esses ficam em /agendamentos)
+        if status != "Pediu para retornar":
+            where_parts.append("(status_prospeccao != 'Pediu para retornar' OR status_prospeccao IS NULL)")
+
         if status:
             where_parts.append("status_prospeccao = ?")
             params.append(status)

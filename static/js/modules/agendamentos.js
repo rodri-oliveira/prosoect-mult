@@ -2,7 +2,8 @@
  * Módulo da página de Agendamentos
  */
 
-import { pedirDataRetorno, scrollToHash, initBackToTop, initScrollLinks } from './utils.js';
+import { pedirDataRetorno } from './form.js';
+import { scrollToHash, initBackToTop, initScrollLinks } from './utils.js';
 
 /**
  * Converte hora HH:MM para minutos
