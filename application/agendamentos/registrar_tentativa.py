@@ -120,9 +120,10 @@ def registrar_tentativa_with_repo(
                     redirect_to="lead_detail",
                     redirect_kwargs={"lead_id": lead_id},
                 )
+        # Redirecionar para leads quando status for Interessado
         return RegistrarTentativaResult(
             ok=True,
-            redirect_to="agendamentos_view",
+            redirect_to="leads_view",
             redirect_kwargs={},
         )
 

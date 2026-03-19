@@ -435,7 +435,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao = 'Pediu para retornar'
+              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje,),
