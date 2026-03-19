@@ -71,7 +71,16 @@
                     </div>
                     <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 hover:bg-gray-50 transition">
                         <dt class="text-sm font-medium text-gray-500">CNPJ</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-medium">{{ lead.cnpj or '-' }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-medium flex items-center gap-2">
+                            {{ lead.cnpj or '-' }}
+                            {% if lead.cnpj %}
+                            <a href="https://www.cadesp.fazenda.sp.gov.br/Pages/Cadastro/Consultas/ConsultaPublica/ConsultaPublica.aspx" 
+                               target="_blank" 
+                               class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition">
+                                Sintegra
+                            </a>
+                            {% endif %}
+                        </dd>
                     </div>
                     <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 hover:bg-gray-50 transition">
                         <dt class="text-sm font-medium text-gray-500">WhatsApp</dt>
@@ -97,7 +106,7 @@
                         <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                             <form action="/leads/{{ lead.id }}/status" method="POST" class="flex items-center space-x-2">
                             <select name="status" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-md shadow-sm font-medium text-brand-700" onchange="this.form.submit()">
-                                {% set statuses = ['Novo Lead', 'Tentativa 1', 'Tentativa 2', 'Tentativa 3', 'Sem contato', 'Falou com responsável', 'Apresentação feita', 'Enviar catálogo', 'Interessado', 'Negociação', 'Cliente ativo', 'Sem interesse'] %}
+                                {% set statuses = ['Novo Lead', 'Sem contato', 'Falou com responsável', 'Apresentação feita', 'Solicitou portfólio', 'Interessado', 'Em negociação', 'Já tem consultor atendendo', 'Cliente ativo', 'Sem interesse', 'Descartado'] %}
                                 {% for s in statuses %}
                                 <option value="{{ s }}" {% if lead.status == s %}selected{% endif %}>{{ s }}</option>
                                 {% endfor %}
@@ -138,12 +147,14 @@
                                     <option>Não atendeu</option>
                                     <option>Caixa postal</option>
                                     <option>Sem contato</option>
-                                    <option>Em negociação</option>
                                     <option>Agendar retorno</option>
                                     <option>Pediu preço</option>
-                                    <option>Descartado</option>
+                                    <option>Solicitou portfólio</option>
                                     <option>Apresentação feita</option>
-                                    <option>Pediu catálogo</option>
+                                    <option>Em negociação</option>
+                                    <option>Já tem consultor atendendo</option>
+                                    <option>Sem interesse</option>
+                                    <option>Descartado</option>
                                 </select>
                             </div>
                         </div>

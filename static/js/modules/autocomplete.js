@@ -4,9 +4,10 @@
  */
 
 export const SEGMENTOS = [
-    'Informática', 'Celulares', 'Áudio e Vídeo', 'Eletroportáteis', 'Gamer',
-    'Brinquedos', 'Drones e Câmeras', 'Ortopédica',
-    'Fitness', 'Pet', 'Redes', 'Mobilidade Elétrica'
+    'Informática', 'Celulares', 'Tablets Kids', 'Áudio e Vídeo', 'Eletroportáteis', 'Gamer',
+    'Drones e Câmeras', 'Ortopédica',
+    'Fitness', 'Pet', 'Redes', 'Mobilidade Elétrica',
+    'Health Care', 'Multikids'
 ];
 
 /**

@@ -8,6 +8,10 @@ import { closeDrawer } from './maps-drawer.js';
 import { submitLeadFormAsJsonIfFromMaps } from './form.js';
 import { updateBtnBuscarCnpjGoogle } from './maps-search.js';
 
+const DEFAULT_PAGE_SIZE = 50;
+let currentPage = 1;
+let pageSize = DEFAULT_PAGE_SIZE;
+
 /**
  * Log de debug
  */
@@ -37,13 +41,16 @@ export const renderResults = (items) => {
     });
 
     setLastMapsItems(normalized);
+    const paging = _getPagedItems(normalized);
+    _updatePaginationUI(paging);
+
     if (normalized.length === 0) {
         emptyNow.classList.remove('hidden');
         return;
     }
     emptyNow.classList.add('hidden');
 
-    normalized.forEach((it) => {
+    paging.items.forEach((it) => {
         const card = document.createElement('div');
         card.className = 'border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50';
         card.dataset.id = it.id || '';
@@ -54,6 +61,7 @@ export const renderResults = (items) => {
         const website = it.website || '';
         const mapsUrl = it.maps_url || '';
         const already = !!it.__already;
+        const segmentos = Array.isArray(it.segmentos) ? it.segmentos.join(', ') : '';
 
         const websiteHref = (website && (website.startsWith('http://') || website.startsWith('https://')))
             ? website
@@ -66,6 +74,7 @@ export const renderResults = (items) => {
                     <div class="min-w-0">
                         <div class="text-sm font-semibold text-gray-900 truncate">${nome}</div>
                         <div class="text-xs text-gray-500 mt-0.5">${endereco || '-'}</div>
+                        ${segmentos ? `<div class="text-[11px] text-gray-500 mt-0.5">Segmentos: ${segmentos}</div>` : ''}
                         <div class="text-xs text-gray-500 mt-0.5">${telefone ? '📞 ' + telefone : ''}${website ? (telefone ? ' • ' : '') + `<a href="${websiteHref}" target="_blank" class="hover:underline text-brand-700">${website}</a>` : ''}</div>
                         ${already ? '<div class="text-[11px] text-green-700 mt-1">Já adicionado</div>' : ''}
                     </div>
@@ -233,7 +242,7 @@ export const loadResults = async () => {
         if (query) params.set('query', query);
         if (cidade) params.set('cidade', cidade);
         if (estado) params.set('estado', estado);
-        params.set('limit', '50');
+        params.set('limit', '200');
         (segmentosSelecionados || []).forEach((s) => params.append('segmentos', s));
         const resp = await fetch(`/api/maps/resultados?${params.toString()}`);
         const data = await resp.json();
@@ -243,8 +252,40 @@ export const loadResults = async () => {
         const totalQueries = (data.executed_queries || []).length;
         const mergedBefore = data.merged_before_dedupe || 0;
         const mergedAfter = data.merged_after_dedupe || 0;
-        
+
         statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : `OK - ${totalQueries} queries`;
+        
+        // Alinhar "Abrir no Google Maps" com a query principal executada
+        if (Array.isArray(data.executed_queries) && data.executed_queries.length > 0) {
+            const primaryQuery = data.executed_queries[0];
+            window.__mapsPrimaryQuery = primaryQuery;
+            try {
+                const payload = { cidade, estado, segmentos: segmentosSelecionados || [] };
+                window.__mapsPrimaryPayload = payload;
+                localStorage.setItem('mapsPrimaryQuery', primaryQuery);
+                localStorage.setItem('mapsPrimaryPayload', JSON.stringify(payload));
+            } catch (e) {}
+            if (subEl) subEl.textContent = primaryQuery;
+            const openGoogleMaps = document.getElementById('openGoogleMaps');
+            const mapFrame = document.getElementById('mapFrame');
+            if (openGoogleMaps) {
+                openGoogleMaps.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(primaryQuery)}`;
+                if (!openGoogleMaps.dataset.primaryQueryBound) {
+                    openGoogleMaps.dataset.primaryQueryBound = '1';
+                    openGoogleMaps.addEventListener('click', (ev) => {
+                        const q = window.__mapsPrimaryQuery || primaryQuery;
+                        if (!q) return;
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        const href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+                        window.open(href, '_blank', 'noopener,noreferrer');
+                    });
+                }
+            }
+            if (mapFrame) {
+                mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(primaryQuery)}&output=embed`;
+            }
+        }
         
         // Mostrar estatísticas de lojas únicas
         if (statsEl && statsUniqueEl && mergedAfter > 0) {
@@ -255,16 +296,25 @@ export const loadResults = async () => {
         
         mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, mergedBefore, mergedAfter, totalQueries });
         const nextItems = Array.isArray(data.items) ? data.items : [];
+        if (data.modo !== 'mock') {
+            if (mergedAfter > 0) {
+                statusEl.textContent = `OK - ${nextItems.length}/${mergedAfter} resultados`;
+            } else {
+                statusEl.textContent = `OK - ${totalQueries} queries`;
+            }
+        }
         const currentCached = (window.ProspeccaoState && typeof window.ProspeccaoState.getMapItems === 'function')
             ? window.ProspeccaoState.getMapItems()
             : (Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : []);
         const shouldPreserve = nextItems.length === 0 && Array.isArray(currentCached) && currentCached.length > 0;
         if (!shouldPreserve) {
             writeMapsCache(nextItems, buildQueryPayload());
+            currentPage = 1;
             renderResults(nextItems);
         } else {
             try { readMapsCache(); } catch (e) {}
             statusEl.textContent = '0 resultados. Mantendo últimos resultados.';
+            currentPage = 1;
             renderResults(currentCached);
         }
         try {
@@ -378,7 +428,68 @@ export function initDrawerButtonListeners() {
             }
         });
     }
+
+    const prevBtn = document.getElementById('mapsPagePrev');
+    const nextBtn = document.getElementById('mapsPageNext');
+    const sizeSel = document.getElementById('mapsPageSize');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage -= 1;
+                renderResults(getLastMapsItems());
+            }
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const total = Array.isArray(getLastMapsItems()) ? getLastMapsItems().length : 0;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage < totalPages) {
+                currentPage += 1;
+                renderResults(getLastMapsItems());
+            }
+        });
+    }
+    if (sizeSel) {
+        sizeSel.addEventListener('change', () => {
+            const n = parseInt(sizeSel.value, 10);
+            if (!Number.isNaN(n) && n > 0) {
+                pageSize = n;
+                currentPage = 1;
+                renderResults(getLastMapsItems());
+            }
+        });
+    }
 }
+
+const _getPagedItems = (items) => {
+    const total = Array.isArray(items) ? items.length : 0;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    const start = total === 0 ? 0 : (currentPage - 1) * pageSize;
+    const end = total === 0 ? 0 : Math.min(start + pageSize, total);
+    const slice = Array.isArray(items) ? items.slice(start, end) : [];
+    return { total, totalPages, page: currentPage, start, end, items: slice };
+};
+
+const _updatePaginationUI = (paging) => {
+    const infoEl = document.getElementById('mapsPageInfo');
+    const rangeEl = document.getElementById('mapsPageRange');
+    const prevBtn = document.getElementById('mapsPagePrev');
+    const nextBtn = document.getElementById('mapsPageNext');
+    const sizeSel = document.getElementById('mapsPageSize');
+
+    if (infoEl) infoEl.textContent = `Página ${paging.page} de ${paging.totalPages}`;
+    if (rangeEl) {
+        const from = paging.total === 0 ? 0 : (paging.start + 1);
+        const to = paging.end;
+        rangeEl.textContent = `Mostrando ${from}-${to} de ${paging.total}`;
+    }
+    if (prevBtn) prevBtn.disabled = paging.page <= 1;
+    if (nextBtn) nextBtn.disabled = paging.page >= paging.totalPages;
+    if (sizeSel) sizeSel.value = String(pageSize);
+};
 
 /**
  * Obtém itens selecionados

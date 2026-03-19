@@ -123,6 +123,13 @@ def rascunho_excluir(prospeccao_id: int):
     return redirect(url_for("prospeccao_view"))
 
 
+def rascunho_observacao(prospeccao_id: int):
+    observacao = (request.form.get("observacao") or "").strip() or None
+    repo = prospeccao_repository()
+    repo.update_observacao(prospeccao_id, observacao)
+    return redirect(url_for("prospeccao_view"))
+
+
 def register_prospeccao_routes(app: Flask) -> None:
     app.add_url_rule("/prospeccao", endpoint="prospeccao_view", view_func=prospeccao_view)
     app.add_url_rule(
@@ -147,5 +154,11 @@ def register_prospeccao_routes(app: Flask) -> None:
         "/prospeccao/rascunho/<int:prospeccao_id>/excluir",
         endpoint="rascunho_excluir",
         view_func=rascunho_excluir,
+        methods=["POST"],
+    )
+    app.add_url_rule(
+        "/prospeccao/rascunho/<int:prospeccao_id>/observacao",
+        endpoint="rascunho_observacao",
+        view_func=rascunho_observacao,
         methods=["POST"],
     )

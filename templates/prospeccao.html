@@ -174,9 +174,11 @@
                                 <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
                                 <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
                                 <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Pediu para retornar</option>
-                                <option value="Pediu portfólio" {% if filtro_status == 'Pediu portfólio' %}selected{% endif %}>Pediu portfólio</option>
+                                <option value="Solicitou portfólio" {% if filtro_status == 'Solicitou portfólio' %}selected{% endif %}>Solicitou portfólio</option>
                                 <option value="Em negociação" {% if filtro_status == 'Em negociação' %}selected{% endif %}>Em negociação</option>
                                 <option value="Interessado" {% if filtro_status == 'Interessado' %}selected{% endif %}>Interessado</option>
+                                <option value="Já tem consultor atendendo" {% if filtro_status == 'Já tem consultor atendendo' %}selected{% endif %}>Já tem consultor atendendo</option>
+                                <option value="Sem interesse" {% if filtro_status == 'Sem interesse' %}selected{% endif %}>Sem interesse</option>
                                 <option value="Descartado" {% if filtro_status == 'Descartado' %}selected{% endif %}>Descartado</option>
                                 <option value="Convertido em Lead" {% if filtro_status == 'Convertido em Lead' %}selected{% endif %}>Convertido em Lead</option>
                             </select>
@@ -210,9 +212,11 @@
                                     {% elif item.status_prospeccao == 'Não atendeu' %}bg-red-100 text-red-700
                                     {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
                                     {% elif item.status_prospeccao == 'Pediu para retornar' %}bg-yellow-100 text-yellow-800
-                                    {% elif item.status_prospeccao == 'Pediu portfólio' %}bg-blue-100 text-blue-800
+                                    {% elif item.status_prospeccao == 'Solicitou portfólio' %}bg-blue-100 text-blue-800
                                     {% elif item.status_prospeccao == 'Em negociação' %}bg-blue-100 text-blue-800
                                     {% elif item.status_prospeccao == 'Interessado' %}bg-green-100 text-green-800
+                                    {% elif item.status_prospeccao == 'Já tem consultor atendendo' %}bg-orange-100 text-orange-800
+                                    {% elif item.status_prospeccao == 'Sem interesse' %}bg-gray-300 text-gray-700
                                     {% elif item.status_prospeccao == 'Descartado' %}bg-red-50 text-red-600
                                     {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
                                     {% else %}bg-gray-100 text-gray-600{% endif %}">
@@ -233,48 +237,70 @@
                             {% endif %}
                             
                             {% if item.observacao %}
-                            <div class="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded mb-2">
-                                📝 {{ item.observacao }}
+                            <div class="text-xs text-gray-700 bg-yellow-50 border border-yellow-200 px-2 py-1.5 rounded mb-2">
+                                <span class="font-medium">Obs:</span> {{ item.observacao }}
                             </div>
                             {% endif %}
+                            
+                            <!-- Formulário para adicionar/editar observação -->
+                            <form action="/prospeccao/rascunho/{{ item.id }}/observacao" method="POST" class="mb-2">
+                                <div class="flex gap-1">
+                                    <input type="text" name="observacao" value="{{ item.observacao or '' }}" 
+                                           placeholder="Adicionar observação..." 
+                                           class="flex-1 text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-brand-600 text-white hover:bg-brand-700">Salvar</button>
+                                </div>
+                            </form>
                             
                             <!-- Botões de Classificação -->
                             <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Não atendeu">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100">❌ Não atendeu</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100">Não atendeu</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Caixa postal">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200">📮 Caixa postal</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Caixa postal</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
                                     <input type="hidden" name="status" value="Pediu para retornar">
                                     <input type="hidden" name="data_retorno" class="data-retorno-input">
                                     <input type="hidden" name="hora_retorno" class="hora-retorno-input">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">🔄 Retornar</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">Retornar</button>
+                                </form>
+                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                    <input type="hidden" name="status" value="Solicitou portfólio">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">Portfólio</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Em negociação">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">📄 Negociação</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">Negociação</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Interessado">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-800 hover:bg-green-100">✅ Interessado</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-800 hover:bg-green-100">Interessado</button>
+                                </form>
+                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                    <input type="hidden" name="status" value="Já tem consultor atendendo">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-orange-50 text-orange-800 hover:bg-orange-100">Tem consultor</button>
+                                </form>
+                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                    <input type="hidden" name="status" value="Sem interesse">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Sem interesse</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Descartado">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100">⛔ Descartado</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100">Descartado</button>
                                 </form>
                                 
                                 {% if not item.convertido_lead_id %}
                                 <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline ml-auto">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter Lead</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">Converter Lead</button>
                                 </form>
                                 {% endif %}
                                 
                                 <form action="/prospeccao/rascunho/{{ item.id }}/excluir" method="POST" class="inline" onsubmit="return confirm('Arquivar este item?')">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-500 hover:bg-gray-200">🗑️ Arquivar</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-500 hover:bg-gray-200">Arquivar</button>
                                 </form>
                             </div>
                             
@@ -433,11 +459,15 @@
                         <label class="block text-xs font-medium text-gray-700">Status da Ligação *</label>
                         <select name="status_prospeccao" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
                             <option value="" disabled selected>Selecione um status...</option>
+                            <option value="Não contatado">Não contatado</option>
                             <option value="Não atendeu">Não atendeu</option>
                             <option value="Caixa postal">Caixa postal</option>
                             <option value="Pediu para retornar">Pediu para retornar</option>
+                            <option value="Solicitou portfólio">Solicitou portfólio</option>
                             <option value="Em negociação">Em negociação</option>
                             <option value="Interessado">Interessado</option>
+                            <option value="Já tem consultor atendendo">Já tem consultor atendendo</option>
+                            <option value="Sem interesse">Sem interesse</option>
                             <option value="Descartado">Descartado</option>
                         </select>
                         <p class="text-xs text-gray-500 mt-1">Obrigatório: Marque o resultado do contato</p>
@@ -506,6 +536,17 @@
                 <div id="mapsDrawerStats" class="text-xs text-gray-500 hidden">
                     <span id="mapsStatsUnique">0</span> únicas
                 </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <button type="button" id="mapsPagePrev" class="px-2 py-1 rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
+                    <span id="mapsPageInfo">Página 1 de 1</span>
+                    <button type="button" id="mapsPageNext" class="px-2 py-1 rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Próxima</button>
+                    <select id="mapsPageSize" class="px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-700">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span id="mapsPageRange">Mostrando 0-0 de 0</span>
+                </div>
                 <button type="button" id="mapsDrawerReload" class="px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-xs font-medium">Atualizar</button>
             </div>
         </div>
@@ -525,5 +566,5 @@
     </div>
 </div>
 
-<script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/app.js', v='20260318-1') }}"></script>
 {% endblock %}

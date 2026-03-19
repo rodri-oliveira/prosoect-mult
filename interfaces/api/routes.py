@@ -5,12 +5,45 @@ from flask import Flask, jsonify, request
 
 from application.maps.add_selected import AddMapsItemsRequest, add_maps_items_with_repo
 from application.maps.place_details import GetMapsPlaceDetailsRequest, get_maps_place_details
-from application.maps.search_results import SearchMapsResultsRequest, search_maps_results_with_repo
+from application.maps.search_results import (
+    SearchMapsResultsRequest, 
+    search_maps_results_with_repo,
+    generate_queries_for_segments,
+)
 from application.prospeccao.create_draft import CreateProspecctionDraftRequest, create_prospeccao_draft_with_repo
 from application.shared.cnpj_utils import is_valid_cnpj, normalize_cnpj
 from infrastructure.container import maps_existing_keys_repository, prospeccao_repository, prospeccao_temp_repository
 
 logger = logging.getLogger(__name__)
+
+
+def api_maps_queries():
+    """API: Gerar queries para segmentos (sem executar scraper).
+    
+    Usado pelo botão Buscar para sincronizar com o Resultado Beta.
+    """
+    try:
+        cidade = (request.args.get("cidade") or "").strip()
+        estado = (request.args.get("estado") or "").strip()
+        segmentos = request.args.getlist("segmentos")
+        extra = (request.args.get("extra") or "").strip()
+
+        res = generate_queries_for_segments(
+            segmentos=segmentos,
+            cidade=cidade,
+            estado=estado,
+            extra=extra,
+        )
+
+        return jsonify({
+            "ok": res.ok,
+            "queries": res.queries,
+            "primary_query": res.primary_query,
+            "total_queries": res.total_queries,
+        })
+    except Exception as e:
+        logger.error(f"Erro em api_maps_queries: {e}", exc_info=True)
+        return jsonify({"ok": False, "message": "Erro ao gerar queries"}), 500
 
 
 def api_maps_resultados():
@@ -170,6 +203,12 @@ def api_rascunho_novo():
 
 def register_api_routes(app: Flask) -> None:
     """Registra todas as rotas de API."""
+    app.add_url_rule(
+        "/api/maps/queries",
+        endpoint="api_maps_queries",
+        view_func=api_maps_queries,
+        methods=["GET"],
+    )
     app.add_url_rule(
         "/api/maps/resultados",
         endpoint="api_maps_resultados",

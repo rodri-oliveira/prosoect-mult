@@ -7,8 +7,9 @@ import { ProspeccaoState } from './state.js';
 
 /**
  * Realiza busca no Google Maps
+ * Agora sincronizado com o backend via /api/maps/queries
  */
-export function searchMap() {
+export async function searchMap() {
     const cidade = (document.getElementById('mapCidade')?.value || '').trim();
     const estado = (document.getElementById('mapEstado')?.value || '').trim();
     const segWrapper = document.getElementById('segmentoSelector');
@@ -24,25 +25,62 @@ export function searchMap() {
         return;
     }
 
-    // Montar query
-    const parts = [];
+    let effectiveQuery = '';
+    
+    // Se temos segmentos, buscar queries do backend (sincronizado)
     if (segmentos.length > 0) {
-        parts.push(segmentos.join(' OR '));
+        try {
+            const params = new URLSearchParams();
+            if (cidade) params.set('cidade', cidade);
+            if (estado) params.set('estado', estado);
+            segmentos.forEach((s) => params.append('segmentos', s));
+            
+            const resp = await fetch(`/api/maps/queries?${params.toString()}`);
+            const data = await resp.json();
+            
+            if (data.ok && data.primary_query) {
+                effectiveQuery = data.primary_query;
+                
+                // Salvar queries geradas para o drawer usar depois
+                window.__generatedQueries = data.queries || [];
+                window.__generatedQueriesTimestamp = Date.now();
+                
+                // Salvar no localStorage para persistência
+                try {
+                    localStorage.setItem('mapsGeneratedQueries', JSON.stringify({
+                        queries: data.queries,
+                        primary_query: data.primary_query,
+                        cidade,
+                        estado,
+                        segmentos,
+                        timestamp: Date.now(),
+                    }));
+                } catch (e) {}
+            }
+        } catch (e) {
+            console.error('Erro ao buscar queries:', e);
+            // Fallback: query simples
+            effectiveQuery = `${segmentos.join(' ')} ${cidade} ${estado}`.trim();
+        }
     } else {
-        parts.push('atacadista', 'distribuidor', 'loja');
+        // Sem segmentos: query genérica
+        const parts = ['atacadista', 'distribuidor', 'loja'];
+        if (cidade) parts.push(cidade);
+        if (estado) parts.push(estado);
+        effectiveQuery = parts.join(' ');
     }
-    if (cidade) parts.push(cidade);
-    if (estado) parts.push(estado);
 
-    const query = parts.join(' ');
-    window.lastQuery = query;
+    window.lastQuery = effectiveQuery;
+    
+    // Disponibilizar globalmente para o botão "Abrir no Google Maps"
+    window.__mapsPrimaryQuery = effectiveQuery;
 
     // Salvar filtros
     ProspeccaoState.saveMapFilters({
         cidade,
         estado,
         segmentos,
-        query
+        query: effectiveQuery
     });
 
     // Atualizar iframe
@@ -50,11 +88,27 @@ export function searchMap() {
     const openGoogleMaps = document.getElementById('openGoogleMaps');
 
     if (mapFrame) {
-        mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+        mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(effectiveQuery)}&output=embed`;
     }
     if (openGoogleMaps) {
-        openGoogleMaps.href = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
+        openGoogleMaps.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(effectiveQuery)}`;
     }
+}
+
+/**
+ * Retorna queries geradas pelo backend (se disponíveis)
+ */
+export function getGeneratedQueries() {
+    try {
+        const raw = localStorage.getItem('mapsGeneratedQueries');
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        // Cache válido por 5 minutos
+        if (Date.now() - (data.timestamp || 0) < 5 * 60 * 1000) {
+            return data;
+        }
+    } catch (e) {}
+    return null;
 }
 
 /**

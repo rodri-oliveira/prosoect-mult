@@ -42,7 +42,7 @@ def limpar_banco(confirmar: bool = False) -> dict:
     print("="*50)
     
     # Mostrar contagem atual
-    print("\n📊 Registros atuais:")
+    print("\nRegistros atuais:")
     for tabela, _ in tabelas:
         c.execute(f"SELECT COUNT(*) FROM {tabela}")
         count = c.fetchone()[0]
@@ -50,16 +50,16 @@ def limpar_banco(confirmar: bool = False) -> dict:
         print(f"   {tabela}: {count} registros")
     
     if not confirmar:
-        print("\n⚠️  MODO PREVIEW - Nenhum dado foi removido")
+        print("\n[!] MODO PREVIEW - Nenhum dado foi removido")
         print("   Execute com --confirmar para limpar realmente")
         conn.close()
         return resultado
     
     # Executar limpeza
-    print("\n🧹 Limpando dados...")
+    print("\nLimpando dados...")
     for tabela, _ in tabelas:
         c.execute(f"DELETE FROM {tabela}")
-        print(f"   ✓ {tabela} limpa")
+        print(f"   [OK] {tabela} limpa")
     
     # Resetar autoincrement
     c.execute("DELETE FROM sqlite_sequence")
@@ -67,7 +67,7 @@ def limpar_banco(confirmar: bool = False) -> dict:
     conn.commit()
     conn.close()
     
-    print("\n✅ Banco de dados limpo com sucesso!")
+    print("\n[OK] Banco de dados limpo com sucesso!")
     print("="*50)
     
     return resultado

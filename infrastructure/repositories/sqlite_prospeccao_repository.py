@@ -323,6 +323,19 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
+    def update_observacao(self, prospeccao_id: int, observacao: str | None) -> bool:
+        """Atualiza apenas a observação, sem registrar evento no histórico."""
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            "UPDATE prospeccao_temp SET observacao = ? WHERE id = ?",
+            ((observacao or "").strip() or None, prospeccao_id),
+        )
+        conn.commit()
+        affected = c.rowcount
+        conn.close()
+        return affected > 0
+
     def converter_para_lead(self, prospeccao_id: int) -> int | None:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()

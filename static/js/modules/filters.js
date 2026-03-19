@@ -55,15 +55,31 @@ export function restoreMapFilters() {
         }
 
         // Restaurar query do mapa
-        if (query && cidade) {
-            window.lastQuery = query;
+        let effectiveQuery = query;
+        try {
+            const rawQ = localStorage.getItem('mapsPrimaryQuery') || '';
+            const rawP = localStorage.getItem('mapsPrimaryPayload') || '';
+            if (rawQ && rawP) {
+                const payload = JSON.parse(rawP);
+                const sameCidade = String(payload?.cidade || '').trim() === String(cidade || '').trim();
+                const sameEstado = String(payload?.estado || '').trim() === String(estado || '').trim();
+                const segKey = (arr) => (Array.isArray(arr) ? arr.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean).sort().join('|') : '');
+                const sameSegs = segKey(payload?.segmentos) === segKey(segmentos);
+                if (sameCidade && sameEstado && sameSegs) {
+                    effectiveQuery = String(rawQ || '').trim();
+                }
+            }
+        } catch (e) {}
+
+        if (effectiveQuery && cidade) {
+            window.lastQuery = effectiveQuery;
             const mapFrame = document.getElementById('mapFrame');
             const openGoogleMaps = document.getElementById('openGoogleMaps');
             if (mapFrame) {
-                mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+                mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(effectiveQuery)}&output=embed`;
             }
             if (openGoogleMaps) {
-                openGoogleMaps.href = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
+                openGoogleMaps.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(effectiveQuery)}`;
             }
         }
     } catch (e) {
