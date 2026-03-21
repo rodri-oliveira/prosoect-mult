@@ -159,6 +159,9 @@ def search_maps_results_with_repo(
                         src.append(q)
                     it["query_sources"] = src
                 
+                # Filtrar varejo grande dos resultados (Google Maps não respeita exclusão)
+                got = _filter_large_retail(got or [])
+                
                 # Atualizar total de lojas únicas
                 seen_keys_total.update(new_keys)
                 
@@ -312,6 +315,32 @@ def _build_queries_for_free_text(query: str, cidade: str, estado: str) -> list[s
     return [base]
 
 
+def _filter_large_retail(results: list[dict]) -> list[dict]:
+    """Filtra varejo grande dos resultados (Google Maps não respeita exclusão)."""
+    large_retail_exclusions = [
+        "magazine luiza",
+        "americanas",
+        "casas bahia",
+        "ponto frio",
+        "carrefour",
+        "extra",
+        "walmart",
+        "leroy merlin",
+        "camicado",
+        "madeiramadeira",
+    ]
+    
+    filtered = []
+    for item in results:
+        nome = (item.get("nome", "") or "").lower()
+        # Verificar se o nome contém algum dos termos de exclusão
+        is_large_retail = any(excl in nome for excl in large_retail_exclusions)
+        if not is_large_retail:
+            filtered.append(item)
+    
+    return filtered
+
+
 def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra: str) -> list[dict[str, str]]:
     """Estratégia inteligente de multi-query baseada nas famílias Multilaser (Curva ABC).
     
@@ -354,19 +383,65 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     
     # Termos de exclusão para evitar resultados irrelevantes
     # Serão usados como "-fechado" na query do Google
-    exclude_terms = ["fechado", "extinto", "falência"]
+    exclude_terms = [
+        "fechado",
+        "extinto",
+        "falência",
+        # Varejo grande - não interessam para revenda CNPJ
+        "Magazine Luiza",
+        "Americanas",
+        "Casas Bahia",
+        "Ponto Frio",
+        "Carrefour",
+        "Extra",
+        "Walmart",
+        "Leroy Merlin",
+        "Camicado",
+        "MadeiraMadeira",
+    ]
+    
+    # Varejo grande para filtrar nos resultados (Google Maps não respeita exclusão)
+    large_retail_exclusions = [
+        "magazine luiza",
+        "americanas",
+        "casas bahia",
+        "ponto frio",
+        "carrefour",
+        "extra",
+        "walmart",
+        "leroy merlin",
+        "camicado",
+        "madeiramadeira",
+    ]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
     anchor_groups: dict[str, list[str]] = {
         "Informática": [
+            # Primário - Atacadistas e distribuidores (foco CNPJ)
+            "atacadista informática",
+            "distribuidor informática",
+            "loja de informática atacado",
+            "revenda informática",
+            # Secundário - Lojas de varejo B2B
             "loja de informática",
+            "loja de eletrônicos",
+            "loja de periféricos",
             "informática",
+            # Terciário - Categorias específicas (apenas informática)
+            "periféricos computador",
+            "acessórios informática",
             "mouse teclado",
-            "headset webcam",  
+            "headset webcam",
             "notebook",
             "pendrive",
             "ssd memória",
+            # Energia (apenas nobreak/fonte - informática)
+            "nobreak",
+            "fonte computador",
+            # Impressão (apenas toner - informática)
+            "toner",
+            "impressora",
         ],
         "Celulares": [
             "celular",
@@ -384,16 +459,25 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "som automotivo",
         ],
         "Eletroportáteis": [
+            # Primário - Atacadistas e distribuidores (foco CNPJ)
+            "atacadista eletrodomésticos",
+            "distribuidor eletrodomésticos",
+            "loja de eletrodomésticos atacado",
+            "revenda eletrodomésticos",
+            # Secundário - Lojas de varejo B2B
             "loja de eletrodomésticos",
+            "loja de eletroportáteis",
+            "eletrodomésticos",
+            # Terciário - Categorias específicas (apenas eletroportáteis)
             "air fryer",
-            "sanduicheira grill",
-            "cafeteira",
-            "chaleira elétrica",
             "liquidificador mixer",
-            "secador prancha",
+            "processador alimentos",
+            "sanduicheira grill",
+            "torradeira",
             "aspirador de pó",
-            "ferro de passar",
-            "climatizador",
+            "panela pressão",
+            "fogão elétrico",
+            "cooktop indução",
         ],
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
@@ -543,9 +627,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             seen.add(k)
             out.append({"q": q, "segmento": spec.get("segmento") or ""})
     
-    # Adicionar query com exclusão apenas para a mais genérica (após deduplicação)
-    if out:
-        out[0]["q"] = f"{out[0]['q']} -fechado"
+    # Adicionar termos de exclusão a todas as queries
+    exclude_suffix = " " + " ".join([f'-"{term}"' for term in exclude_terms])
+    for spec in out:
+        spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     
     return out
 
