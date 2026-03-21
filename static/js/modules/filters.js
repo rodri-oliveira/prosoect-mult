@@ -20,15 +20,23 @@ export function restoreMapFilters() {
         if (mapCidade) mapCidade.value = cidade;
         if (mapEstado) mapEstado.value = estado;
 
-        // Restaurar segmentos no Alpine com retry
+        // Restaurar segmentos no Alpine com retry melhorado
         const segWrapper = document.getElementById('segmentoSelector');
 
         if (segWrapper && Array.isArray(segmentos) && segmentos.length > 0) {
-            const maxAttempts = 30;
-            const attemptInterval = 100;
+            const maxAttempts = 50;
+            const attemptInterval = 150;
 
             const tryRestore = (attempt) => {
                 try {
+                    // Verificar se Alpine.js está pronto
+                    if (!window.Alpine) {
+                        if (attempt < maxAttempts) {
+                            setTimeout(() => tryRestore(attempt + 1), attemptInterval);
+                        }
+                        return;
+                    }
+
                     const alpineData = Alpine.$data(segWrapper);
                     if (alpineData) {
                         const currentSelected = alpineData.selecionados || [];
@@ -36,7 +44,7 @@ export function restoreMapFilters() {
                             JSON.stringify(currentSelected.sort()) !== JSON.stringify(segmentos.sort());
 
                         if (needsRestore) {
-                            alpineData.selecionados = segmentos;
+                            alpineData.selecionados = [...segmentos];
                         }
 
                         if (attempt < maxAttempts) {
