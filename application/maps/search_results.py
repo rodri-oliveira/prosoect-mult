@@ -498,16 +498,11 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Redes": ["roteador switch", "cabo rede"],
         "Mobilidade Elétrica": ["patinete elétrico", "scooter"],
         "Health Care": [
-            "loja de produtos médicos",
-            "farmácia",
-            "umidificador",
-            "inalador nebulizador",
-            "monitor de pressão",
-            "oxímetro",
-            "termômetro",
-            "escova elétrica dental",
-            "óleo essencial",
-            "fita kinesio",
+            # Atacadistas e distribuidores (foco CNPJ)
+            "atacadista equipamentos médicos",
+            "distribuidor equipamentos médicos",
+            "loja de equipamentos médicos atacado",
+            "revenda equipamentos médicos",
         ],
         "Tablets Kids": [
             "loja de tablets",
@@ -564,30 +559,15 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         
         # Segmentos especiais que são marcas/linhas (não tipos de loja)
         # Para esses, usar apenas âncoras, não o nome do segmento na query
-        is_brand_segment = seg_clean in ["Multikids"]
+        is_brand_segment = seg_clean in ["Multikids", "Health Care"]
         
         if is_brand_segment:
             # Para segmentos de marca/linha, usar queries com âncoras diretamente
             for anchors in anchor_lists:
                 if not anchors:
                     continue
-                # Evitar duplicação se âncora já contém "loja" ou "distribuidor"
-                anchor_lower = anchors.lower()
-                has_loja = anchor_lower.startswith("loja de ") or anchor_lower.startswith("loja ") or " loja " in anchor_lower
-                has_distribuidor = anchor_lower.startswith("distribuidor ")
-                
-                # Query B2B com âncora
-                if has_distribuidor or has_loja:
-                    q = f"{anchors}{local}".strip()
-                else:
-                    q = f"distribuidor de {anchors}{local}".strip()
-                queries.append({"q": q, "segmento": seg_clean})
-                
-                # Query varejo com âncora
-                if has_loja:
-                    q = f"{anchors}{local}".strip()
-                else:
-                    q = f"loja de {anchors}{local}".strip()
+                # Usar a âncora diretamente sem adicionar prefixos
+                q = f"{anchors}{local}".strip()
                 queries.append({"q": q, "segmento": seg_clean})
         else:
             # Para segmentos normais, usar estratégia mais limpa
