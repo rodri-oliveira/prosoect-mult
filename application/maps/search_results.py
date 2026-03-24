@@ -387,6 +387,11 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "fechado",
         "extinto",
         "falência",
+        # Serviços puros (Oficinas que não compram volume para revenda)
+        "conserto",
+        "manutenção",
+        "assistência técnica",
+        "reparo",
         # Varejo grande - não interessam para revenda CNPJ
         "Magazine Luiza",
         "Americanas",
@@ -418,66 +423,71 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
     anchor_groups: dict[str, list[str]] = {
         "Informática": [
-            # Primário - Atacadistas e distribuidores (foco CNPJ)
+            # O Alto Volume (Atacadistas e distribuidores regionais)
             "atacadista informática",
             "distribuidor informática",
-            "loja de informática atacado",
             "revenda informática",
-            # Secundário - Lojas de varejo B2B
+            # O Médio Comércio (Lojistas que giram estoque)
             "loja de informática",
+            "comércio de informática",
             "loja de eletrônicos",
-            "loja de periféricos",
-            "informática",
-            # Terciário - Categorias específicas (apenas informática)
-            "periféricos computador",
-            "acessórios informática",
-            "mouse teclado",
-            "headset webcam",
-            "notebook",
-            "pendrive",
-            "ssd memória",
-            # Energia (apenas nobreak/fonte - informática)
-            "nobreak",
-            "fonte computador",
-            # Impressão (apenas toner - informática)
-            "toner",
-            "impressora",
+            "suprimentos de informática",
+            "papelaria e informática",
+            # O Novo Nicho (Giro de Lotes e Curva C)
+            "outlet informática",
+            "saldão informática",
+            "informática seminovos",
         ],
         "Celulares": [
-            "celular",
-            "smartphone acessórios",
-            "carregador cabo",
+            # O Alto Volume
+            "atacadista acessórios celular",
+            "distribuidor acessórios celular",
+            "revenda acessórios celular",
+            # O Médio Comércio e Revendedores de Acessórios
+            "loja de capinhas de celular",
+            "acessórios para celular",
+            "comércio de eletrônicos",
+            "loja de eletrônicos",
         ],
         "Áudio e Vídeo": [
+            # O Alto Volume B2B
+            "distribuidor áudio profissional",
+            "loja de instrumentos musicais", # Lojas de música revendem muitas caixas de som e fones pesados
+            "distribuidor som automotivo",
+            # O Médio Comércio
+            "loja de som e acessórios",
             "loja de eletrônicos",
-            "caixa de som",
-            "soundbar",
-            "vitrola",
-            "microfone",
-            "smartwatch",
-            "amplificador",
-            "som automotivo",
+            "acústica e som",
+            "equipamentos de áudio",
+            "instalação de som automotivo", # Compram centrais multimídia aos montes
+        ],
+        "Utilidades e Variedades": [
+            # O Pote de Ouro para produtos de curva B e C Multimarcas
+            "loja de utilidades",
+            "loja de variedades",
+            "bazar e presentes",
+            "comercial importadora",
+            "loja de 1,99",
+            "loja preço único",
+            "loja de utilidades domésticas",
+            "atacadão de utilidades",
         ],
         "Eletroportáteis": [
-            # Primário - Atacadistas e distribuidores (foco CNPJ)
+            # O Alto Volume (Atacadistas e distribuidores regionais)
             "atacadista eletrodomésticos",
             "distribuidor eletrodomésticos",
-            "loja de eletrodomésticos atacado",
             "revenda eletrodomésticos",
-            # Secundário - Lojas de varejo B2B
+            # O Médio Comércio (Lojistas de Utensílios e Médio Varejo)
             "loja de eletrodomésticos",
             "loja de eletroportáteis",
-            "eletrodomésticos",
-            # Terciário - Categorias específicas (apenas eletroportáteis)
-            "air fryer",
-            "liquidificador mixer",
-            "processador alimentos",
-            "sanduicheira grill",
-            "torradeira",
-            "aspirador de pó",
-            "panela pressão",
-            "fogão elétrico",
-            "cooktop indução",
+            "comércio de eletroportáteis",
+            "utilidades domésticas e presentes",
+            "bazar e utilidades",
+            "magazine presentes",
+            # O Novo Nicho (Giro Rápido / Outlets / Saldo)
+            "outlet eletrodomésticos",
+            "saldão eletrodomésticos",
+            "comercial importadora",
         ],
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
