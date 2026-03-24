@@ -25,5 +25,5 @@ def get_maps_place_details(req: GetMapsPlaceDetailsRequest) -> GetMapsPlaceDetai
 
     from services.maps_scrape_service import scrape_maps_place_details
 
-    detalhe = scrape_maps_place_details(maps_url, headless=False)
+    detalhe = scrape_maps_place_details(maps_url, headless=True)
     return GetMapsPlaceDetailsResponse(ok=True, item=detalhe)
