@@ -316,8 +316,9 @@ def _build_queries_for_free_text(query: str, cidade: str, estado: str) -> list[s
 
 
 def _filter_large_retail(results: list[dict]) -> list[dict]:
-    """Filtra varejo grande dos resultados (Google Maps não respeita exclusão)."""
-    large_retail_exclusions = [
+    """Filtra grandes redes de varejo e serviços puramente técnicos dos resultados."""
+    server_exclusions = [
+        # Grandes redes B2C globais
         "magazine luiza",
         "americanas",
         "casas bahia",
@@ -328,14 +329,23 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "leroy merlin",
         "camicado",
         "madeiramadeira",
+        
+        # Guilhotina de Serviços (Corte Rígido Python)
+        "conserto",
+        "manutenção",
+        "assistência técnica",
+        "assistencia tecnica",
+        "reparo",
+        "assistência",
+        "assistencia",
     ]
     
     filtered = []
     for item in results:
         nome = (item.get("nome", "") or "").lower()
-        # Verificar se o nome contém algum dos termos de exclusão
-        is_large_retail = any(excl in nome for excl in large_retail_exclusions)
-        if not is_large_retail:
+        # Verificar se o nome contém algum dos termos proibidos
+        excluded = any(excl in nome for excl in server_exclusions)
+        if not excluded:
             filtered.append(item)
     
     return filtered
@@ -405,8 +415,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "MadeiraMadeira",
     ]
     
-    # Varejo grande para filtrar nos resultados (Google Maps não respeita exclusão)
-    large_retail_exclusions = [
+    # Guilhotina do Lado do Servidor (Google Maps não respeita 100% termos -fechado)
+    server_exclusions = [
+        # Grandes Varejos
         "magazine luiza",
         "americanas",
         "casas bahia",
@@ -417,6 +428,13 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "leroy merlin",
         "camicado",
         "madeiramadeira",
+        # Guilhotina de Serviços (Corte no Nome Comercial)
+        "conserto",
+        "manutenção",
+        "assistência técnica",
+        "assistencia tecnica",
+        "reparo",
+        "oficina",
     ]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
@@ -462,15 +480,12 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "instalação de som automotivo", # Compram centrais multimídia aos montes
         ],
         "Utilidades e Variedades": [
-            # O Pote de Ouro para produtos de curva B e C Multimarcas
+            # O Pote de Ouro para produtos de curva B e C Multimarcas (Limpo de alimentos)
             "loja de utilidades",
             "loja de variedades",
             "bazar e presentes",
             "comercial importadora",
-            "loja de 1,99",
-            "loja preço único",
             "loja de utilidades domésticas",
-            "atacadão de utilidades",
         ],
         "Eletroportáteis": [
             # O Alto Volume (Atacadistas e distribuidores regionais)
@@ -481,13 +496,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "loja de eletrodomésticos",
             "loja de eletroportáteis",
             "comércio de eletroportáteis",
-            "utilidades domésticas e presentes",
-            "bazar e utilidades",
-            "magazine presentes",
             # O Novo Nicho (Giro Rápido / Outlets / Saldo)
             "outlet eletrodomésticos",
             "saldão eletrodomésticos",
-            "comercial importadora",
         ],
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
