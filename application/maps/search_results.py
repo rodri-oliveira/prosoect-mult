@@ -498,15 +498,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "loja de informática",
             "comércio de informática",
             "suprimentos de informática",
-        ],
-        "Informática - Papelaria": [
+            "loja de eletrônicos",
             "papelaria e informática",
-            "papelaria",
-            "loja de informática e papelaria",
-            "papelaria e eletrônicos",
-        ],
-        "Informática - Outlet/Saldão": [
-            # Nicho específico: outlet/saldão com foco em informática
+            # Outlet/Saldão
             "outlet informática",
             "saldão informática",
             "informática seminovos",
@@ -552,14 +546,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             # O Médio Comércio (Lojistas de Utensílios e Médio Varejo)
             "loja de eletrodomésticos",
             "loja de eletroportáteis",
-        ],
-        "Eletroportáteis - Outlet/Saldão": [
-            # Nicho específico: outlet/saldão com foco em eletro
+            "comércio de eletroportáteis",
+            # O Novo Nicho (Giro Rápido / Outlets / Saldo)
             "outlet eletrodomésticos",
             "saldão eletrodomésticos",
-            "outlet eletroportáteis",
-            "queima de estoque eletrodomésticos",
-            "liquidação eletrodomésticos",
         ],
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
@@ -644,10 +634,6 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         is_brand_segment = seg_clean in [
             "Multikids",
             "Health Care",
-            "Eletroportáteis",
-            "Eletroportáteis - Outlet/Saldão",
-            "Informática - Outlet/Saldão",
-            "Informática - Papelaria",
         ]
 
         if is_brand_segment:
@@ -696,40 +682,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             seen.add(k)
             out.append({"q": q, "segmento": spec.get("segmento") or ""})
     
-    # Adicionar termos de exclusão a todas as queries (com exceções por segmento)
-    extra_exclude_by_segment = {
-        "Eletroportáteis - Outlet/Saldão": [
-            "moveis", "móveis",
-            "sofa", "sofá",
-            "colchao", "colchão",
-            "cama", "roupa", "roupas",
-            "calcados", "calçados",
-            "moda", "vestuario", "vestuário",
-            "estofados", "enxoval", "tapetes", "cortinas",
-            "cadeiras", "poltronas",
-        ],
-        "Informática - Outlet/Saldão": [
-            "moveis", "móveis",
-            "sofa", "sofá",
-            "colchao", "colchão",
-            "cama", "roupa", "roupas",
-            "calcados", "calçados",
-            "moda", "vestuario", "vestuário",
-            "estofados", "enxoval", "tapetes", "cortinas",
-            "cadeiras", "poltronas",
-        ],
-        "Informática - Papelaria": [
-            "brinquedos",
-            "utilidades",
-            "variedades",
-            "bazar",
-            "presentes",
-        ],
-    }
+    # Adicionar termos de exclusão a todas as queries
     for spec in out:
         seg = spec.get("segmento") or ""
-        extra_exclude = extra_exclude_by_segment.get(seg, [])
-        all_excludes = exclude_terms + extra_exclude
+        all_excludes = exclude_terms
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     
