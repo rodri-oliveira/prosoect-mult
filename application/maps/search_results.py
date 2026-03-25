@@ -161,6 +161,11 @@ def search_maps_results_with_repo(
                 
                 # Filtrar varejo grande dos resultados (Google Maps não respeita exclusão)
                 got = _filter_large_retail(got or [])
+
+                # Filtro conservador: remover itens que declaram outra cidade no nome
+                # Ex: "Loja Zema - Casa Branca" quando o alvo é "Aguaí"
+                if cidade:
+                    got = _filter_items_with_other_city_in_name(got or [], cidade=cidade)
                 
                 # Atualizar total de lojas únicas
                 seen_keys_total.update(new_keys)
@@ -198,18 +203,17 @@ def search_maps_results_with_repo(
                     break
 
             merged_before_dedupe = len(merged)
-            
-            # Log final com resumo
+            merged = _dedupe_items(merged)
+            merged_after_dedupe = len(merged)
+
+            # Log final com resumo (valores reais do retorno)
             logger.warning(
                 "maps_summary total_queries=%s before_dedupe=%s after_dedupe=%s total_unique_keys=%s",
                 len(executed_queries),
                 merged_before_dedupe,
+                merged_after_dedupe,
                 len(seen_keys_total),
-                len(seen_keys_total)
             )
-
-            merged = _dedupe_items(merged)
-            merged_after_dedupe = len(merged)
             itens = merged[:limit]
             for it in itens:
                 it["cidade"] = it.get("cidade") or cidade
@@ -338,6 +342,10 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "reparo",
         "assistência",
         "assistencia",
+        "refrigeração",
+        "refrigeracao",
+        "lavadora",
+        "lavadoras",
     ]
     
     filtered = []
@@ -349,6 +357,47 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
             filtered.append(item)
     
     return filtered
+
+
+def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> list[dict]:
+    """Remove itens que declaram explicitamente outra cidade no nome.
+
+    Ex: ao buscar em "Aguaí", remove "Loja Zema - Casa Branca".
+    Filtro conservador: só remove quando o nome termina com " - <texto>" e esse
+    <texto> não bate com a cidade alvo normalizada.
+    """
+
+    import re
+
+    target_city = _norm_key(cidade)
+    if not target_city:
+        return results
+
+    out: list[dict] = []
+    for item in results or []:
+        nome_raw = str(item.get("nome") or "").strip()
+        if not nome_raw:
+            out.append(item)
+            continue
+
+        m = re.search(r"\s-\s([^\d]{2,40})$", nome_raw)
+        if not m:
+            out.append(item)
+            continue
+
+        declared_city = _norm_key(m.group(1))
+        if not declared_city:
+            out.append(item)
+            continue
+
+        # Se declarou explicitamente outra cidade, remover.
+        # Se declarou a própria cidade (ou variação), manter.
+        if declared_city != target_city:
+            continue
+
+        out.append(item)
+
+    return out
 
 
 def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra: str) -> list[dict[str, str]]:
@@ -448,13 +497,21 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             # O Médio Comércio (Lojistas que giram estoque)
             "loja de informática",
             "comércio de informática",
-            "loja de eletrônicos",
             "suprimentos de informática",
+        ],
+        "Informática - Papelaria": [
             "papelaria e informática",
-            # O Novo Nicho (Giro de Lotes e Curva C)
+            "papelaria",
+            "loja de informática e papelaria",
+            "papelaria e eletrônicos",
+        ],
+        "Informática - Outlet/Saldão": [
+            # Nicho específico: outlet/saldão com foco em informática
             "outlet informática",
             "saldão informática",
             "informática seminovos",
+            "queima de estoque informática",
+            "liquidação informática",
         ],
         "Celulares": [
             # O Alto Volume
@@ -495,10 +552,14 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             # O Médio Comércio (Lojistas de Utensílios e Médio Varejo)
             "loja de eletrodomésticos",
             "loja de eletroportáteis",
-            "comércio de eletroportáteis",
-            # O Novo Nicho (Giro Rápido / Outlets / Saldo)
+        ],
+        "Eletroportáteis - Outlet/Saldão": [
+            # Nicho específico: outlet/saldão com foco em eletro
             "outlet eletrodomésticos",
             "saldão eletrodomésticos",
+            "outlet eletroportáteis",
+            "queima de estoque eletrodomésticos",
+            "liquidação eletrodomésticos",
         ],
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
@@ -577,11 +638,18 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             continue
 
         anchor_lists = anchor_groups.get(seg_clean, [""])
-        
+
         # Segmentos especiais que são marcas/linhas (não tipos de loja)
         # Para esses, usar apenas âncoras, não o nome do segmento na query
-        is_brand_segment = seg_clean in ["Multikids", "Health Care"]
-        
+        is_brand_segment = seg_clean in [
+            "Multikids",
+            "Health Care",
+            "Eletroportáteis",
+            "Eletroportáteis - Outlet/Saldão",
+            "Informática - Outlet/Saldão",
+            "Informática - Papelaria",
+        ]
+
         if is_brand_segment:
             # Para segmentos de marca/linha, usar queries com âncoras diretamente
             for anchors in anchor_lists:
@@ -628,9 +696,41 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             seen.add(k)
             out.append({"q": q, "segmento": spec.get("segmento") or ""})
     
-    # Adicionar termos de exclusão a todas as queries
-    exclude_suffix = " " + " ".join([f'-"{term}"' for term in exclude_terms])
+    # Adicionar termos de exclusão a todas as queries (com exceções por segmento)
+    extra_exclude_by_segment = {
+        "Eletroportáteis - Outlet/Saldão": [
+            "moveis", "móveis",
+            "sofa", "sofá",
+            "colchao", "colchão",
+            "cama", "roupa", "roupas",
+            "calcados", "calçados",
+            "moda", "vestuario", "vestuário",
+            "estofados", "enxoval", "tapetes", "cortinas",
+            "cadeiras", "poltronas",
+        ],
+        "Informática - Outlet/Saldão": [
+            "moveis", "móveis",
+            "sofa", "sofá",
+            "colchao", "colchão",
+            "cama", "roupa", "roupas",
+            "calcados", "calçados",
+            "moda", "vestuario", "vestuário",
+            "estofados", "enxoval", "tapetes", "cortinas",
+            "cadeiras", "poltronas",
+        ],
+        "Informática - Papelaria": [
+            "brinquedos",
+            "utilidades",
+            "variedades",
+            "bazar",
+            "presentes",
+        ],
+    }
     for spec in out:
+        seg = spec.get("segmento") or ""
+        extra_exclude = extra_exclude_by_segment.get(seg, [])
+        all_excludes = exclude_terms + extra_exclude
+        exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     
     return out
