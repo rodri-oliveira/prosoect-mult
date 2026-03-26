@@ -1,0 +1,163 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-3xl font-black text-emerald-900 tracking-tight flex items-center gap-3">
+                <span class="text-4xl">🧾</span> 
+                Registrar Faturamento
+            </h2>
+            <p class="text-emerald-700 text-sm mt-1">Lançamento de pedido para: <span class="font-bold underline">{{ lead.nome_loja }}</span></p>
+        </div>
+        <a href="/leads/{{ lead.id }}" class="text-xs font-bold text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 uppercase tracking-widest transition-all">
+            ✕ Cancelar
+        </a>
+    </div>
+
+    <form action="/vendas/registrar" method="POST" id="form-venda" class="space-y-6 pb-20">
+        <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+        <!-- Dados do Cabeçalho -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-emerald-50 border border-emerald-100 p-6 rounded-2xl shadow-sm">
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase font-black text-emerald-800 tracking-widest pl-1">Data do Pedido *</label>
+                <input type="date" name="data_pedido" value="{{ hoje }}" required class="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-sm font-bold shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase font-black text-emerald-800 tracking-widest pl-1">Número do Pedido / ERP</label>
+                <input type="text" name="numero_pedido" placeholder="Ex: NF1023 ou Pedido #001" class="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-sm font-bold shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            </div>
+        </div>
+
+        <!-- Tabela de Itens -->
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-black text-gray-800 flex items-center gap-2">🛒 Detalhamento do Pedido</h3>
+                <button type="button" onclick="adicionarLinha()" class="text-xs font-black text-brand-600 hover:text-brand-800 bg-brand-50 px-4 py-2 rounded-lg flex items-center gap-2 transition-all active:scale-95">
+                    ➕ ADICIONAR ITEM
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100" id="tabela-itens">
+                    <thead>
+                        <tr class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+                            <th class="px-2 py-3 text-left w-20">Família</th>
+                            <th class="px-2 py-3 text-left w-32">Código</th>
+                            <th class="px-2 py-3 text-left">Descrição</th>
+                            <th class="px-2 py-3 text-center w-24">Qtd.</th>
+                            <th class="px-2 py-3 text-right w-36">R$ Unit.</th>
+                            <th class="px-2 py-3 text-right w-36">Total</th>
+                            <th class="px-2 py-3 text-center w-12"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itens-body" class="divide-y divide-gray-50">
+                        <!-- Primeira linha padrão -->
+                        <tr class="item-linha group">
+                            <td class="px-1 py-3"><input type="text" name="familias[]" placeholder="ex: ME" class="w-full text-xs font-bold border-gray-100 focus:border-brand-300 focus:ring-1 focus:ring-brand-300 rounded p-2 transition-all"></td>
+                            <td class="px-1 py-3"><input type="text" name="codigos[]" placeholder="ex: PD588" class="w-full text-xs font-bold border-gray-100 focus:border-brand-300 focus:ring-1 focus:ring-brand-300 rounded p-2 transition-all"></td>
+                            <td class="px-1 py-3"><input type="text" name="descricoes[]" required placeholder="Nome do produto" class="w-full text-xs font-bold border-gray-100 focus:border-brand-300 focus:ring-1 focus:ring-brand-300 rounded p-2 transition-all"></td>
+                            <td class="px-1 py-3"><input type="number" name="quantidades[]" value="1" min="1" oninput="calcular(this)" class="w-full text-center text-xs font-black border-gray-100 focus:border-brand-300 focus:ring-1 focus:ring-brand-300 rounded p-2"></td>
+                            <td class="px-1 py-3"><input type="number" step="0.01" name="precos_unt[]" value="0.00" oninput="calcular(this)" class="w-full text-right text-xs font-black border-gray-100 focus:border-brand-300 focus:ring-1 focus:ring-brand-300 rounded p-2"></td>
+                            <td class="px-4 py-3 text-right text-xs font-black text-gray-700 total-linha">R$ 0,00</td>
+                            <td class="px-1 py-3 text-center">
+                                <button type="button" onclick="removerLinha(this)" class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">✕</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer da Tabela -->
+            <div class="mt-6 flex flex-col md:flex-row items-end md:items-center justify-between gap-4 pt-6 border-t border-gray-100">
+                <div class="flex items-center gap-6">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-black text-gray-400 tracking-widest">SUBTOTAL</span>
+                        <span class="text-2xl font-black text-gray-900" id="total-geral">R$ 0,00</span>
+                    </div>
+                </div>
+                
+                <!-- Automação de Pós Venda -->
+                <div class="bg-brand-50 border border-brand-100 p-4 rounded-xl flex items-center gap-4">
+                    <div class="text-xl">📅</div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-black text-brand-700 tracking-widest block">Agendar Retorno (Pós-Venda)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="date" name="data_proximo_contato" id="proximo-contato" class="text-xs font-bold rounded-lg border-brand-200 px-3 py-2 text-brand-900 focus:ring-brand-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="agendarEm(15)" class="text-[9px] font-black bg-white border border-brand-200 px-2 py-1.5 rounded hover:bg-brand-100 transition-colors uppercase">+15d</button>
+                                <button type="button" onclick="agendarEm(30)" class="text-[9px] font-black bg-white border border-brand-200 px-2 py-1.5 rounded hover:bg-brand-100 transition-colors uppercase">+30d</button>
+                            </div>
+                        </div>
+                        <p class="text-[9px] text-brand-600 font-medium">O CRM te lembrará de contatar o cliente nesta data para uma nova venda.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="space-y-1">
+            <label class="text-[10px] uppercase font-black text-gray-400 tracking-widest pl-1">Anotações do Pedido</label>
+            <textarea name="observacoes" rows="3" placeholder="Ex: Cliente pediu urgência no envio..." class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium shadow-xs focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 pb-20">
+            <button type="submit" class="w-full md:w-auto bg-brand-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl shadow-brand-500/20 hover:bg-brand-700 hover:shadow-brand-500/40 transition-all transform active:scale-95 text-sm uppercase tracking-widest">
+                🚀 SALVAR E FATURAR
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function adicionarLinha() {
+        const body = document.getElementById('itens-body');
+        const novaLinha = body.querySelector('.item-linha').cloneNode(true);
+        
+        // Limpar inputs
+        novaLinha.querySelectorAll('input').forEach(input => {
+            if (input.type === 'number') input.value = input.name.includes('quant') ? '1' : '0.00';
+            else input.value = '';
+        });
+        
+        novaLinha.querySelector('.total-linha').textContent = 'R$ 0,00';
+        body.appendChild(novaLinha);
+        novaLinha.querySelector('input[name="codigos[]"]').focus();
+    }
+
+    function removerLinha(btn) {
+        const linhas = document.querySelectorAll('.item-linha');
+        if (linhas.length > 1) {
+            btn.closest('tr').remove();
+            atualizarTotalGeral();
+        }
+    }
+
+    function calcular(input) {
+        const tr = input.closest('tr');
+        const qtd = parseFloat(tr.querySelector('input[name="quantidades[]"]').value) || 0;
+        const preco = parseFloat(tr.querySelector('input[name="precos_unt[]"]').value) || 0;
+        const total = qtd * preco;
+        
+        tr.querySelector('.total-linha').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        atualizarTotalGeral();
+    }
+
+    function atualizarTotalGeral() {
+        let totalVal = 0;
+        document.querySelectorAll('.item-linha').forEach(tr => {
+            const qtd = parseFloat(tr.querySelector('input[name="quantidades[]"]').value) || 0;
+            const preco = parseFloat(tr.querySelector('input[name="precos_unt[]"]').value) || 0;
+            totalVal += (qtd * preco);
+        });
+        document.getElementById('total-geral').textContent = totalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function agendarEm(dias) {
+        const dataInput = document.getElementById('proximo-contato');
+        const data = new Date();
+        data.setDate(data.getDate() + dias);
+        dataInput.value = data.toISOString().split('T')[0];
+    }
+</script>
+{% endblock %}

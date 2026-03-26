@@ -127,6 +127,39 @@ def init_db():
         c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_url TEXT')
     if 'site' not in cols:
         c.execute('ALTER TABLE prospeccao_temp ADD COLUMN site TEXT')
+
+    # --- NOVAS TABELAS DE FATURAMENTO E PÓS-VENDA ---
+    
+    # Tabela pedidos (Cabeçalho da venda)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS pedidos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lead_id INTEGER NOT NULL,
+            data_pedido DATE DEFAULT CURRENT_DATE,
+            numero_pedido TEXT,
+            valor_total REAL DEFAULT 0,
+            status_faturamento TEXT DEFAULT 'Pendente',
+            data_proximo_contato DATE,
+            observacoes TEXT,
+            data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Tabela pedido_itens (Itens detalhados do pedido - Padrão Multilaser)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS pedido_itens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            familia TEXT,
+            codigo_produto TEXT,
+            descricao TEXT,
+            quantidade INTEGER DEFAULT 1,
+            preco_unitario REAL DEFAULT 0,
+            preco_total REAL DEFAULT 0,
+            FOREIGN KEY(pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+        )
+    ''')
     
     conn.commit()
     conn.close()

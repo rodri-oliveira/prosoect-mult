@@ -50,6 +50,13 @@
                 </a>
                 {% endif %}
                 
+                <a href="/vendas/registrar/{{ lead.id }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg transition-all transform active:scale-95">
+                    <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Faturar Venda
+                </a>
+
                 <a href="https://www.google.com/search?q={{ lead.nome_loja }} {{ lead.cidade }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Google
                 </a>
@@ -193,9 +200,13 @@
                                 {% endif %}
                                 <div class="relative flex space-x-3">
                                     <div>
-                                        <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white {% if contato.tipo_contato == 'Ligação' %}bg-blue-500{% elif contato.tipo_contato == 'WhatsApp' %}bg-green-500{% else %}bg-gray-500{% endif %}">
+                                        <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white {% if contato.tipo_contato == 'Ligação' %}bg-blue-500{% elif contato.tipo_contato == 'WhatsApp' %}bg-green-500{% elif contato.tipo_contato == 'Venda / Pós-Venda' %}bg-emerald-500{% else %}bg-gray-500{% endif %}">
                                             <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                {% if contato.tipo_contato == 'Venda / Pós-Venda' %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                {% else %}
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                {% endif %}
                                             </svg>
                                         </span>
                                     </div>
@@ -221,6 +232,47 @@
                         </div>
                         {% endfor %}
                     </ul>
+                </div>
+            </div>
+
+            <!-- Histórico de Compras -->
+            <div class="bg-white shadow sm:rounded-lg border border-gray-200 overflow-hidden">
+                <div class="px-4 py-5 sm:px-6 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center">
+                    <h3 class="text-lg leading-6 font-bold text-emerald-900">📦 Histórico de Compras (Faturamento)</h3>
+                    <div class="text-xs font-black text-emerald-700 uppercase tracking-widest">
+                        Total LTV: R$ {{ "{:,.2f}".format(faturamento_total).replace(',', 'X').replace('.', ',').replace('X', '.') if faturamento_total else '0,00' }}
+                    </div>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    {% if pedidos %}
+                    <div class="space-y-4">
+                        {% for pedido in pedidos %}
+                        <div class="border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="text-sm font-bold text-gray-900">Pedido #{{ pedido.id }} {% if pedido.numero_pedido %}(ERP: {{ pedido.numero_pedido }}){% endif %}</div>
+                                    <div class="text-xs text-gray-500">Realizado em: {{ pedido.data_pedido }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-black text-emerald-600">R$ {{ "{:,.2f}".format(pedido.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-widest mt-1">
+                                        {{ pedido.status_faturamento }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if pedido.observacoes %}
+                            <div class="mt-2 text-xs text-gray-600 italic border-l-2 border-gray-200 pl-2">
+                                {{ pedido.observacoes }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-sm text-gray-500 text-center py-8">
+                        Nenhuma venda registrada para este cliente.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

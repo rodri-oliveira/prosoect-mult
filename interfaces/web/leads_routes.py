@@ -51,11 +51,19 @@ def lead_detail(lead_id: int):
     if not result:
         return redirect(url_for("leads_list"))
     lead, contatos, segmentos = result
+    
+    # Adicionar histórico de faturamento
+    vendas_repo = pedido_repository()
+    pedidos = vendas_repo.list_by_lead(lead_id)
+    faturamento_total = vendas_repo.get_faturamento_total(lead_id)
+    
     return render_template(
         "lead_detalhe.html",
         lead=lead,
         contatos=contatos,
         segmentos=segmentos,
+        pedidos=pedidos,
+        faturamento_total=faturamento_total,
         active_page="leads",
     )
 

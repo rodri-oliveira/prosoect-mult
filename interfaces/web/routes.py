@@ -8,6 +8,7 @@ from interfaces.web.leads_routes import register_leads_routes
 from interfaces.web.agendamentos_routes import register_agendamentos_routes
 from interfaces.web.relatorios_routes import register_relatorios_routes
 from interfaces.web.cnpj_routes import register_cnpj_routes
+from interfaces.web.vendas_routes import register_vendas_routes
 
 
 def register_web_routes(app: Flask) -> None:
@@ -17,3 +18,4 @@ def register_web_routes(app: Flask) -> None:
     register_leads_routes(app)
     register_agendamentos_routes(app)
     register_cnpj_routes(app)
+    register_vendas_routes(app)
