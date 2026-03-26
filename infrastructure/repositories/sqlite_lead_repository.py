@@ -220,3 +220,48 @@ class SqliteLeadRepository(LeadRepository):
         rows = c.fetchall()
         conn.close()
         return [dict(row) for row in rows]
+
+    def update(self, lead_id: int, data: dict) -> bool:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        campos = []
+        valores = []
+        
+        # Mapear campos permitidos para atualização
+        mapping = {
+            'nome_loja': 'nome_loja',
+            'cnpj': 'cnpj',
+            'telefone': 'telefone',
+            'whatsapp': 'whatsapp',
+            'email': 'email',
+            'cidade': 'cidade',
+            'estado': 'estado',
+            'endereco': 'endereco',
+            'responsavel': 'responsavel',
+            'site': 'site',
+            'observacoes': 'observacoes'
+        }
+        
+        for key, col in mapping.items():
+            if key in data:
+                val = data[key]
+                # Normalização simples se for string
+                if isinstance(val, str):
+                    val = val.strip() or None
+                
+                campos.append(f"{col} = ?")
+                valores.append(val)
+                
+        if not campos:
+            conn.close()
+            return False
+            
+        valores.append(lead_id)
+        sql = f"UPDATE leads SET {', '.join(campos)} WHERE id = ?"
+        
+        c.execute(sql, tuple(valores))
+        conn.commit()
+        affected = c.rowcount
+        conn.close()
+        return affected > 0

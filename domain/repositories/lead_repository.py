@@ -46,3 +46,7 @@ class LeadRepository(Protocol):
     def get_retornos_atrasados(self, data_ref: str) -> list[dict]:
         """Retorna retornos atrasados até uma data de referência."""
         raise NotImplementedError
+
+    def update(self, lead_id: int, data: dict) -> bool:
+        """Atualiza os dados de um lead."""
+        raise NotImplementedError

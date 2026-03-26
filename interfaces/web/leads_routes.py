@@ -95,6 +95,25 @@ def add_lead_contato(lead_id: int):
     return redirect(request.form.get("next", url_for("leads_list")))
 
 
+def lead_update_info(lead_id: int):
+    # Campos que podem ser atualizados
+    data = {
+        'nome_loja': request.form.get('nome_loja'),
+        'cnpj': request.form.get('cnpj'),
+        'telefone': request.form.get('telefone'),
+        'whatsapp': request.form.get('whatsapp'),
+        'email': request.form.get('email'),
+        'cidade': request.form.get('cidade'),
+        'estado': request.form.get('estado'),
+        'responsavel': request.form.get('responsavel'),
+        'site': request.form.get('site'),
+        'observacoes': request.form.get('observacoes')
+    }
+    
+    lead_repository().update(lead_id, data)
+    return redirect(url_for('lead_detail', lead_id=lead_id))
+
+
 def register_leads_routes(app: Flask) -> None:
     app.add_url_rule("/leads", endpoint="leads_list", view_func=leads_list, methods=["GET"])
     app.add_url_rule(
@@ -108,6 +127,12 @@ def register_leads_routes(app: Flask) -> None:
         "/leads/<int:lead_id>/status",
         endpoint="lead_update_status",
         view_func=lead_update_status,
+        methods=["POST"],
+    )
+    app.add_url_rule(
+        "/leads/<int:lead_id>/update",
+        endpoint="lead_update_info",
+        view_func=lead_update_info,
         methods=["POST"],
     )
     app.add_url_rule(

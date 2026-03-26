@@ -59,10 +59,45 @@ function updateFields() {
  * Inicializa página de detalhe do lead
  */
 function init() {
+    console.log("Lead-detalhe: Inicializando módulo...");
     const resultado = document.getElementById('resultado');
     if (resultado) {
         resultado.addEventListener('change', updateFields);
         updateFields();
+    }
+
+    // Configuração do modo Edição de Informações (In-place)
+    const btnEditar = document.getElementById('btn-editar-lead');
+    const btnSalvar = document.getElementById('btn-salvar-lead');
+    const btnCancelar = document.getElementById('btn-cancelar-edit');
+    const fieldContainer = document.getElementById('lead-fields-container');
+
+    console.log("Lead-detalhe IDs encontrados:", {
+        btnEditar: !!btnEditar,
+        btnSalvar: !!btnSalvar,
+        btnCancelar: !!btnCancelar,
+        fieldContainer: !!fieldContainer
+    });
+
+    if (btnEditar && fieldContainer) {
+        const toggleEdit = (active) => {
+            fieldContainer.querySelectorAll('.view-val').forEach(el => el.classList.toggle('hidden', active));
+            fieldContainer.querySelectorAll('.edit-input').forEach(el => el.classList.toggle('hidden', !active));
+            
+            btnEditar.classList.toggle('hidden', active);
+            btnSalvar.classList.toggle('hidden', !active);
+            btnCancelar.classList.toggle('hidden', !active);
+
+            if (active) {
+                const firstInput = fieldContainer.querySelector('.edit-input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 50); // Delay para transição suave
+                }
+            }
+        };
+
+        btnEditar.addEventListener('click', () => toggleEdit(true));
+        btnCancelar.addEventListener('click', () => toggleEdit(false));
     }
 }
 
