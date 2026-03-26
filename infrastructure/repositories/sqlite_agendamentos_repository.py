@@ -19,7 +19,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             WHERE data_retorno < ?
               AND data_retorno IS NOT NULL
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
         """,
             (data_limite,),
         )
@@ -52,7 +52,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             WHERE data_retorno < ?
               AND data_retorno IS NOT NULL
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
             ORDER BY data_retorno, hora_retorno
         """,
             (data,),
@@ -166,8 +166,23 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
         )
         retornos_leads_atrasados = [dict(row) for row in c.fetchall()]
 
+        retornos_futuros = []
         retornos_leads_futuros = []
+
         if mostrar_todos:
+            # Carregar listas completas apenas se necessário
+            c.execute(
+                """
+                SELECT * FROM prospeccao_temp
+                WHERE data_retorno > ?
+                  AND (arquivado = 0 OR arquivado IS NULL)
+                  AND status_prospeccao != 'Interessado'
+                ORDER BY data_retorno, hora_retorno
+            """,
+                (data,),
+            )
+            retornos_futuros = [dict(row) for row in c.fetchall()]
+
             c.execute(
                 """
                 SELECT
@@ -179,31 +194,14 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                     l.whatsapp,
                     c2.data_retorno,
                     c2.hora_retorno,
-                    (
-                        SELECT tipo_contato FROM contatos
-                        WHERE lead_id = l.id
-                        ORDER BY data DESC
-                        LIMIT 1
-                    ) as ultimo_tipo_contato,
-                    (
-                        SELECT resultado FROM contatos
-                        WHERE lead_id = l.id
-                        ORDER BY data DESC
-                        LIMIT 1
-                    ) as ultimo_resultado,
-                    (
-                        SELECT observacao FROM contatos
-                        WHERE lead_id = l.id
-                        ORDER BY data DESC
-                        LIMIT 1
-                    ) as ultimo_observacao
+                    (SELECT tipo_contato FROM contatos WHERE lead_id = l.id ORDER BY data DESC LIMIT 1) as ultimo_tipo_contato,
+                    (SELECT resultado FROM contatos WHERE lead_id = l.id ORDER BY data DESC LIMIT 1) as ultimo_resultado,
+                    (SELECT observacao FROM contatos WHERE lead_id = l.id ORDER BY data DESC LIMIT 1) as ultimo_observacao
                 FROM contatos c2
                 JOIN leads l ON c2.lead_id = l.id
                 WHERE c2.id = (
-                    SELECT id
-                    FROM contatos
-                    WHERE lead_id = l.id
-                      AND data_retorno > ?
+                    SELECT id FROM contatos
+                    WHERE lead_id = l.id AND data_retorno > ?
                     ORDER BY data_retorno ASC, (hora_retorno IS NULL) ASC, hora_retorno ASC, id DESC
                     LIMIT 1
                 )
@@ -213,15 +211,42 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             )
             retornos_leads_futuros = [dict(row) for row in c.fetchall()]
 
-        conn.close()
+        # Totais Reais (Independente de mostrar_todos) - Sempre atualizados
+        c.execute(
+            """
+            SELECT COUNT(*) FROM prospeccao_temp
+            WHERE data_retorno > ?
+              AND (arquivado = 0 OR arquivado IS NULL)
+              AND status_prospeccao != 'Interessado'
+        """,
+            (data,),
+        )
+        total_futuros = int(c.fetchone()[0])
 
-        total_futuros = len([r for r in retornos_futuros if r.get("data_retorno") != data])
-        total_leads_futuros = len([r for r in retornos_leads_futuros if r.get("data_retorno") != data])
+        c.execute(
+            """
+            SELECT COUNT(*)
+            FROM contatos c2
+            JOIN leads l ON c2.lead_id = l.id
+            WHERE c2.id = (
+                SELECT id
+                FROM contatos
+                WHERE lead_id = l.id
+                  AND data_retorno > ?
+                ORDER BY data_retorno ASC, id DESC
+                LIMIT 1
+            )
+        """,
+            (data,),
+        )
+        total_leads_futuros = int(c.fetchone()[0])
+
+        conn.close()
 
         return AgendamentosViewData(
             retornos_hoje=retornos_hoje,
             retornos_atrasados=retornos_atrasados,
-            retornos_futuros=retornos_futuros if mostrar_todos else [],
+            retornos_futuros=retornos_futuros,
             retornos_leads_hoje=retornos_leads_hoje,
             retornos_leads_atrasados=retornos_leads_atrasados,
             retornos_leads_futuros=retornos_leads_futuros,

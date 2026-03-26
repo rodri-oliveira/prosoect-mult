@@ -345,12 +345,18 @@
         <div class="space-y-2 max-h-[400px] overflow-y-auto">
             {% for item in retornos_futuros %}
             {% if item.data_retorno != hoje %}
-            <div class="bg-gray-50 rounded-lg p-3 border-l-4 border-blue-400">
+            <div class="bg-white rounded-lg p-3 border-l-4 border-blue-400 shadow-sm cursor-pointer hover:shadow-md transition" role="button" tabindex="0"
+                 onclick="openRegistrarModal(this)"
+                 data-prospeccao-id="{{ item.id }}"
+                 data-nome-loja="{{ item.nome_loja }}"
+                 data-telefone="{{ item.telefone or '' }}"
+                 data-segmento="{{ item.segmento or '' }}"
+                 data-next="/agendamentos?todos=1">
                 <div class="flex justify-between items-start">
                     <div>
                         <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
-                        <p class="text-sm text-gray-600">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                        <p class="text-sm text-blue-600 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
@@ -363,10 +369,6 @@
                                 {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
                                 {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
                                 {% else %}bg-brand-50 text-brand-800{% endif %}">
-                                {% if 'não atendeu' in _ult %}📵
-                                {% elif 'caixa postal' in _ult %}📮
-                                {% elif 'sem contato' in _ult %}🚫
-                                {% else %}📝{% endif %}
                                 <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
                                 {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
                             </span>
@@ -378,7 +380,11 @@
                             {{ item.data_retorno }}{% if item.hora_retorno %} {{ item.hora_retorno }}{% endif %}
                         </span>
                         <div class="mt-2 flex gap-1 justify-end">
-                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
+                            <button type="button" class="px-2 py-1 text-xs rounded bg-brand-50 text-brand-700 hover:bg-brand-100" onclick="event.stopPropagation(); openRegistrarModal(this.closest('[data-prospeccao-id]'))">📝 Registrar</button>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline" onclick="event.stopPropagation();">
+                                <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter</button>
+                            </form>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onclick="event.stopPropagation();" onsubmit="return pedirDataRetorno(this)">
                                 <input type="hidden" name="status" value="Pediu para retornar">
                                 <input type="hidden" name="data_retorno" class="data-retorno-input">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100">🔄 Reagendar</button>

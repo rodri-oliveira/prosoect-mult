@@ -37,9 +37,10 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if not mostrar_arquivados:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
 
-        # Excluir "Pediu para retornar" da lista de prospecção (esses ficam em /agendamentos)
-        if status != "Pediu para retornar":
-            where_parts.append("(status_prospeccao != 'Pediu para retornar' OR status_prospeccao IS NULL)")
+        # Excluir agendamentos da lista de prospecção (esses ficam em /agendamentos)
+        agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação')
+        if status not in agendamento_statuses:
+            where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
 
         if status:
             where_parts.append("status_prospeccao = ?")
@@ -126,7 +127,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if status == "Pediu portfólio":
             status = "Em negociação"
 
-        data_retorno = dados.get("data_retorno") if status in ("Pediu para retornar", "Em negociação") else None
+        data_retorno = dados.get("data_retorno") if status in ("Pediu para retornar", "Agendamento", "Em negociação") else None
         hora_retorno = dados.get("hora_retorno") if data_retorno else None
 
         maps_place_id = (dados.get("maps_place_id") or "").strip() or None
@@ -435,7 +436,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje,),

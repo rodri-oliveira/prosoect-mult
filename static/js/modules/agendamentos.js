@@ -154,3 +154,4 @@ if (document.readyState === 'loading') {
 window.pedirDataRetorno = pedirDataRetorno;
 window.openRegistrarModal = openRegistrarModal;
 window.closeRegistrarModal = closeRegistrarModal;
+window.scrollToHash = scrollToHash;
