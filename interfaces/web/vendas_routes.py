@@ -18,9 +18,11 @@ def vendas_list_view():
 
 def vendas_registrar_view(lead_id: int):
     l_repo = lead_repository()
-    lead = l_repo.get_by_id(lead_id)
-    if not lead:
+    result = l_repo.get_by_id(lead_id)
+    if not result:
         return redirect(url_for('leads_list'))
+    
+    lead, _, _ = result
         
     return render_template(
         "vendas_registrar.html",
@@ -80,7 +82,11 @@ def vendas_registrar_action():
     
     return redirect(url_for('vendas_list_view'))
 
+def vendas_cliente_detalhe(lead_id: int):
+    return redirect(url_for('lead_detail', lead_id=lead_id))
+
 def register_vendas_routes(app: Flask) -> None:
     app.add_url_rule("/vendas", endpoint="vendas_list_view", view_func=vendas_list_view)
     app.add_url_rule("/vendas/registrar/<int:lead_id>", endpoint="vendas_registrar_view", view_func=vendas_registrar_view)
     app.add_url_rule("/vendas/registrar", endpoint="vendas_registrar_action", view_func=vendas_registrar_action, methods=["POST"])
+    app.add_url_rule("/vendas/cliente/<int:lead_id>", endpoint="vendas_cliente_detalhe", view_func=vendas_cliente_detalhe)

@@ -7,7 +7,7 @@ from application.leads.add_contato import AddLeadContatoRequest, add_lead_contat
 from application.leads.create_lead import CreateLeadRequest, create_lead_with_repo
 from application.leads.list_leads import ListLeadsRequest, list_leads_with_repo
 from application.leads.update_status import UpdateLeadStatusRequest, update_lead_status_with_repo
-from infrastructure.container import lead_repository
+from infrastructure.container import lead_repository, pedido_repository
 
 
 def leads_list():
