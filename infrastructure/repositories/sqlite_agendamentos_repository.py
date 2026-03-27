@@ -39,7 +39,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             SELECT * FROM prospeccao_temp
             WHERE data_retorno = ?
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao != 'Interessado'
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociaÃ§Ã£o')
             ORDER BY hora_retorno
         """,
             (data,),
@@ -67,7 +67,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 WHERE data_retorno > ?
                   AND data_retorno IS NOT NULL
                   AND (arquivado = 0 OR arquivado IS NULL)
-                  AND status_prospeccao != 'Interessado'
+                  AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociaÃ§Ã£o')
                 ORDER BY data_retorno, hora_retorno
             """,
                 (data,),
@@ -176,7 +176,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 SELECT * FROM prospeccao_temp
                 WHERE data_retorno > ?
                   AND (arquivado = 0 OR arquivado IS NULL)
-                  AND status_prospeccao != 'Interessado'
+                  AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociaÃ§Ã£o')
                 ORDER BY data_retorno, hora_retorno
             """,
                 (data,),
@@ -217,7 +217,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno > ?
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao != 'Interessado'
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociaÃ§Ã£o')
         """,
             (data,),
         )

@@ -53,6 +53,7 @@ def registrar_tentativa_with_repo(
 
     resultados_tentativa = ("Não atendeu", "Caixa postal", "Sem contato")
     resultados_proximo_passo = ("Em negociação", "Agendar retorno", "Pediu preço")
+    resultados_status = ("Solicitou portfólio", "Já tem consultor atendendo", "Sem interesse")
 
     if resultado in resultados_proximo_passo and not req.observacao:
         return RegistrarTentativaResult(
@@ -100,7 +101,12 @@ def registrar_tentativa_with_repo(
         )
 
     if resultado == "Descartado":
-        prospeccao_repo.update_status(req.prospeccao_id, "Descartado", observacao=req.observacao)
+        prospeccao_repo.update_status(
+            req.prospeccao_id,
+            "Descartado",
+            observacao=req.observacao,
+            clear_retorno=True,
+        )
         agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, "Descartado", observacao=req.observacao)
         prospeccao_repo.arquivar(req.prospeccao_id)
         return RegistrarTentativaResult(
@@ -110,7 +116,12 @@ def registrar_tentativa_with_repo(
         )
 
     if resultado == "Interessado":
-        prospeccao_repo.update_status(req.prospeccao_id, "Interessado", observacao=req.observacao)
+        prospeccao_repo.update_status(
+            req.prospeccao_id,
+            "Interessado",
+            observacao=req.observacao,
+            clear_retorno=True,
+        )
         agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, "Interessado", observacao=req.observacao)
         if req.pos_acao == "converter":
             lead_id = prospeccao_repo.converter_para_lead(req.prospeccao_id)
@@ -124,6 +135,20 @@ def registrar_tentativa_with_repo(
         return RegistrarTentativaResult(
             ok=True,
             redirect_to="leads_view",
+            redirect_kwargs={},
+        )
+
+    if resultado in resultados_status:
+        prospeccao_repo.update_status(
+            req.prospeccao_id,
+            resultado,
+            observacao=req.observacao,
+            clear_retorno=True,
+        )
+        agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, resultado, observacao=req.observacao)
+        return RegistrarTentativaResult(
+            ok=True,
+            redirect_to="agendamentos_view",
             redirect_kwargs={},
         )
 

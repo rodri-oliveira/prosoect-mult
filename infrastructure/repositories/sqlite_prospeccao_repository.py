@@ -272,6 +272,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         observacao: str | None = None,
         data_retorno: str | None = None,
         hora_retorno: str | None = None,
+        clear_retorno: bool = False,
     ) -> bool:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -289,6 +290,9 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             if hora_retorno:
                 fields.append("hora_retorno = ?")
                 params.append(hora_retorno)
+        elif clear_retorno:
+            fields.append("data_retorno = NULL")
+            fields.append("hora_retorno = NULL")
 
         params.append(prospeccao_id)
 
