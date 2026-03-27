@@ -229,6 +229,12 @@
                                 <span>📞 {{ item.telefone }}</span>
                             </div>
                             {% endif %}
+
+                            {% if item.whatsapp %}
+                            <div class="flex items-center gap-2 text-sm text-green-600 mb-2">
+                                <span>WhatsApp: {{ item.whatsapp }}</span>
+                            </div>
+                            {% endif %}
                             
                             {% if item.data_retorno %}
                             <div class="text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2">

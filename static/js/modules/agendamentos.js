@@ -61,11 +61,14 @@ function openRegistrarModal(cardEl) {
     const id = cardEl.getAttribute('data-prospeccao-id');
     const nome = cardEl.getAttribute('data-nome-loja') || '-';
     const tel = cardEl.getAttribute('data-telefone') || '';
+    const wa = cardEl.getAttribute('data-whatsapp') || '';
     const seg = cardEl.getAttribute('data-segmento') || '';
     const next = cardEl.getAttribute('data-next') || '/agendamentos';
 
     document.getElementById('modalTitle').textContent = nome;
     document.getElementById('modalPhone').textContent = tel ? `📞 ${tel}` : '📞 Sem telefone';
+    const waEl = document.getElementById('modalWhatsapp');
+    if (waEl) waEl.textContent = wa ? `WhatsApp: ${wa}` : 'WhatsApp: Sem WhatsApp';
     document.getElementById('modalNext').value = next;
     document.getElementById('modalSegmento').value = seg;
     document.getElementById('modalResultado').value = '';
