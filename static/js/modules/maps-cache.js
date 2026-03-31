@@ -128,8 +128,25 @@ export const readMapsCache = () => {
 export const removeItemByKey = (key) => {
     const k = String(key || '').trim();
     if (!k) return;
+    const deriveKey = (it) => {
+        const url = String(it.maps_url || '').trim();
+        if (url) {
+            try {
+                const u = new URL(url);
+                const cid = u.searchParams.get('cid');
+                if (cid && /^\d+$/.test(cid)) {
+                    return `cid:${cid}`;
+                }
+            } catch (e) {}
+            const m = url.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            if (m && m[1]) {
+                return `ftid:${m[1].toLowerCase()}`;
+            }
+        }
+        return String(it.maps_place_id || it.id || '').trim();
+    };
     lastMapsItems = (lastMapsItems || []).filter((it) => {
-        const itKey = String(it.maps_place_id || it.id || '').trim();
+        const itKey = deriveKey(it);
         return itKey !== k;
     });
     writeMapsCache(lastMapsItems, buildQueryPayload());

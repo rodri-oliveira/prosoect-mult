@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from domain.gateways.cnpj_gateway import CnpjGateway
+from application.shared.phone_utils import normalize_phone
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,6 @@ def consultar_cnpj_with_gateway(cnpj: str, gateway: CnpjGateway) -> ConsultarCnp
         endereco=info.endereco,
         cidade=info.cidade,
         estado=info.estado,
-        telefone=info.telefone,
+        telefone=normalize_phone(info.telefone),
         email=info.email,
     )

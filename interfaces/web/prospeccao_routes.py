@@ -12,6 +12,7 @@ from infrastructure.container import prospeccao_repository
 
 def prospeccao_view():
     filtro_status = request.args.get("status")
+    filtro_nome = request.args.get("nome")
     segmento = request.args.get("segmento")
     cidade = request.args.get("cidade")
     estado = request.args.get("estado")
@@ -22,6 +23,7 @@ def prospeccao_view():
     view = build_prospeccao_list_view_with_repo(
         ProspecctionListViewRequest(
             filtro_status=filtro_status,
+            filtro_nome=filtro_nome,
             segmento=segmento,
             cidade=cidade,
             estado=estado,
@@ -38,6 +40,7 @@ def prospeccao_view():
         resumo_prospeccao=view.resumo_prospeccao,
         active_page="prospeccao",
         filtro_status=filtro_status,
+        filtro_nome=filtro_nome,
         segmento=segmento,
         cidade=cidade,
         estado=estado,

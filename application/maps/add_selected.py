@@ -5,6 +5,7 @@ from typing import Any
 
 from domain.repositories.prospeccao_temp_repository import ProspecctionTempRepository
 from infrastructure.repositories.sqlite_prospeccao_temp_repository import SqliteProspecctionTempRepository
+from application.shared.phone_utils import normalize_phone
 
 
 @dataclass(frozen=True)
@@ -54,8 +55,8 @@ def add_maps_items_with_repo(
         dados = {
             "nome_loja": (it.get("nome") or it.get("nome_loja") or "").strip(),
             "cnpj": (it.get("cnpj") or "").strip(),
-            "telefone": (it.get("telefone") or "").strip(),
-            "whatsapp": (it.get("whatsapp") or "").strip(),
+            "telefone": normalize_phone((it.get("telefone") or "").strip()),
+            "whatsapp": normalize_phone((it.get("whatsapp") or "").strip()),
             "endereco": (it.get("endereco") or "").strip(),
             "cidade": (it.get("cidade") or "").strip(),
             "estado": (it.get("estado") or "").strip(),

@@ -20,6 +20,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
     def list_by_filters(
         self,
         status: str | None = None,
+        nome: str | None = None,
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
@@ -45,6 +46,13 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if status:
             where_parts.append("status_prospeccao = ?")
             params.append(status)
+
+        if nome:
+            nome_raw = (nome or "").strip().lower()
+            nome_nospace = nome_raw.replace(" ", "")
+            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            params.append(f"%{nome_raw}%")
+            params.append(f"%{nome_nospace}%")
 
         if segmento:
             where_parts.append("segmento LIKE ?")
@@ -78,7 +86,16 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return [dict(row) for row in rows]
 
-    def get_summary(self, data_inicio: str | None, data_fim: str | None, mostrar_arquivados: bool = False) -> ProspecctionSummary:
+    def get_summary(
+        self,
+        data_inicio: str | None,
+        data_fim: str | None,
+        mostrar_arquivados: bool = False,
+        nome: str | None = None,
+        segmento: str | None = None,
+        cidade: str | None = None,
+        estado: str | None = None,
+    ) -> ProspecctionSummary:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
@@ -87,6 +104,25 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         if not mostrar_arquivados:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
+
+        if nome:
+            nome_raw = (nome or "").strip().lower()
+            nome_nospace = nome_raw.replace(" ", "")
+            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            params.append(f"%{nome_raw}%")
+            params.append(f"%{nome_nospace}%")
+
+        if segmento:
+            where_parts.append("segmento LIKE ?")
+            params.append(f"%{segmento}%")
+
+        if cidade:
+            where_parts.append("cidade LIKE ?")
+            params.append(f"%{cidade}%")
+
+        if estado:
+            where_parts.append("estado LIKE ?")
+            params.append(f"%{estado}%")
 
         if data_inicio and data_fim:
             where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")

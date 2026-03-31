@@ -276,15 +276,17 @@ def _key_from_item(it: dict[str, Any]) -> str:
     except Exception:
         derive_maps_place_id = None
 
-    k = str(it.get("maps_place_id") or it.get("id") or "").strip()
-    if k:
-        return k
     u = str(it.get("maps_url") or "").strip()
     if u and derive_maps_place_id:
         try:
-            return derive_maps_place_id(u)
+            dk = derive_maps_place_id(u)
+            if dk:
+                return dk
         except Exception:
-            return ""
+            pass
+    k = str(it.get("maps_place_id") or it.get("id") or "").strip()
+    if k:
+        return k
     return ""
 
 

@@ -156,6 +156,12 @@
                     
                     <!-- Filtros -->
                     <form method="GET" action="/prospeccao" class="flex flex-wrap items-end gap-2">
+                        <div class="flex-1 min-w-[180px]">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+                            <input type="text" name="nome" value="{{ filtro_nome or '' }}"
+                                   placeholder="Ex: Computecshop"
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                        </div>
                         <div class="flex-1 min-w-[120px]">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Data Início</label>
                             <input type="date" name="data_inicio" value="{{ data_inicio or '' }}" 

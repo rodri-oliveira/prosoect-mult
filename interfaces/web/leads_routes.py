@@ -7,6 +7,7 @@ from application.leads.add_contato import AddLeadContatoRequest, add_lead_contat
 from application.leads.create_lead import CreateLeadRequest, create_lead_with_repo
 from application.leads.list_leads import ListLeadsRequest, list_leads_with_repo
 from application.leads.update_status import UpdateLeadStatusRequest, update_lead_status_with_repo
+from application.shared.phone_utils import normalize_phone
 from infrastructure.container import lead_repository, pedido_repository
 
 
@@ -100,8 +101,8 @@ def lead_update_info(lead_id: int):
     data = {
         'nome_loja': request.form.get('nome_loja'),
         'cnpj': request.form.get('cnpj'),
-        'telefone': request.form.get('telefone'),
-        'whatsapp': request.form.get('whatsapp'),
+        'telefone': normalize_phone(request.form.get('telefone')),
+        'whatsapp': normalize_phone(request.form.get('whatsapp')),
         'email': request.form.get('email'),
         'cidade': request.form.get('cidade'),
         'estado': request.form.get('estado'),

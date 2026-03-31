@@ -30,7 +30,17 @@ def _clean_phone(v: str) -> str:
     v = re.sub(r'\s+', ' ', v).strip()
     m = re.search(r'(\+?\d[\d\s().\-]{7,}\d)', v)
     if m:
-        return m.group(1).strip()
+        v = m.group(1).strip()
+
+    # Normaliza telefones BR para evitar formatos quebrados como "19) 4042-5008"
+    digits = re.sub(r'\D', '', v)
+    if digits.startswith('55') and len(digits) in (12, 13):
+        digits = digits[2:]
+    if len(digits) == 10:
+        return f"({digits[:2]}) {digits[2:6]}-{digits[6:]}"
+    if len(digits) == 11:
+        return f"({digits[:2]}) {digits[2:7]}-{digits[7:]}"
+
     return re.sub(r'^[^0-9+]+', '', v).strip()
 
 

@@ -28,7 +28,16 @@ class ProspeccaoRepository(Protocol):
         """Lista prospecções com filtros."""
         raise NotImplementedError
 
-    def get_summary(self, data_inicio: str | None, data_fim: str | None, mostrar_arquivados: bool = False) -> ProspecctionSummary:
+    def get_summary(
+        self,
+        data_inicio: str | None,
+        data_fim: str | None,
+        mostrar_arquivados: bool = False,
+        nome: str | None = None,
+        segmento: str | None = None,
+        cidade: str | None = None,
+        estado: str | None = None,
+    ) -> ProspecctionSummary:
         """Retorna resumo de prospecções (total e por status)."""
         raise NotImplementedError
 

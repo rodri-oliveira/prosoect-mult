@@ -9,6 +9,7 @@ from infrastructure.repositories.sqlite_prospeccao_repository import SqliteProsp
 @dataclass(frozen=True)
 class ProspecctionListViewRequest:
     filtro_status: str | None
+    filtro_nome: str | None
     segmento: str | None
     cidade: str | None
     estado: str | None
@@ -45,6 +46,7 @@ def build_prospeccao_list_view_with_repo(
 
     prospeccoes = repo.list_by_filters(
         status=req.filtro_status,
+        nome=req.filtro_nome,
         segmento=req.segmento,
         cidade=req.cidade,
         estado=req.estado,
@@ -57,7 +59,15 @@ def build_prospeccao_list_view_with_repo(
     for p in prospeccoes:
         p["eventos"] = repo.get_eventos(p["id"])
 
-    resumo = repo.get_summary(data_inicio, data_fim, req.mostrar_arquivados)
+    resumo = repo.get_summary(
+        data_inicio,
+        data_fim,
+        req.mostrar_arquivados,
+        nome=req.filtro_nome,
+        segmento=req.segmento,
+        cidade=req.cidade,
+        estado=req.estado,
+    )
     resumo_prospeccao = {
         "total": resumo.total,
         "por_status": list((resumo.por_status or {}).items()),

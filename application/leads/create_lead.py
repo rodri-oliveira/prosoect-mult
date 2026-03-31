@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from domain.repositories.lead_repository import LeadRepository
+from application.shared.phone_utils import normalize_phone
 from infrastructure.repositories.sqlite_lead_repository import SqliteLeadRepository
 
 
@@ -40,8 +41,8 @@ def create_lead_with_repo(req: CreateLeadRequest, repo: LeadRepository) -> Creat
         "cidade": req.cidade,
         "estado": req.estado,
         "cnpj": req.cnpj,
-        "telefone": req.telefone,
-        "whatsapp": req.whatsapp,
+        "telefone": normalize_phone(req.telefone),
+        "whatsapp": normalize_phone(req.whatsapp),
         "site": req.site,
         "email": req.email,
         "endereco": req.endereco,

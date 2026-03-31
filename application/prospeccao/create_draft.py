@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from domain.repositories.prospeccao_repository import ProspeccaoRepository
+from application.shared.phone_utils import normalize_phone
 from infrastructure.repositories.sqlite_prospeccao_repository import SqliteProspeccaoRepository
 
 
@@ -43,8 +44,8 @@ def create_prospeccao_draft_with_repo(
     dados = {
         "nome_loja": req.nome_loja,
         "cnpj": req.cnpj,
-        "telefone": req.telefone,
-        "whatsapp": req.whatsapp,
+        "telefone": normalize_phone(req.telefone),
+        "whatsapp": normalize_phone(req.whatsapp),
         "endereco": req.endereco,
         "cidade": req.cidade,
         "estado": req.estado,

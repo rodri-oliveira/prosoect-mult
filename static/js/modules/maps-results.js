@@ -12,6 +12,25 @@ const DEFAULT_PAGE_SIZE = 50;
 let currentPage = 1;
 let pageSize = DEFAULT_PAGE_SIZE;
 
+const deriveMapsKey = (mapsUrl, mapsPlaceId, id) => {
+    const url = String(mapsUrl || '').trim();
+    if (url) {
+        try {
+            const u = new URL(url);
+            const cid = u.searchParams.get('cid');
+            if (cid && /^\d+$/.test(cid)) {
+                return `cid:${cid}`;
+            }
+        } catch (e) {}
+        const m = url.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+        if (m && m[1]) {
+            return `ftid:${m[1].toLowerCase()}`;
+        }
+    }
+    const k = String(mapsPlaceId || id || '').trim();
+    return k;
+};
+
 /**
  * Log de debug
  */
@@ -34,8 +53,9 @@ export const renderResults = (items) => {
     }
     resultsNow.innerHTML = '';
     const list = Array.isArray(items) ? items : [];
-    const normalized = list.map((it) => {
-        const key = String(it.maps_place_id || it.id || '').trim();
+    const filteredList = list.filter((it) => !it?.already_added);
+    const normalized = filteredList.map((it) => {
+        const key = deriveMapsKey(it.maps_url, it.maps_place_id, it.id);
         const already = !!it.already_added;
         return { ...it, __key: key, __already: already };
     });
@@ -417,7 +437,7 @@ export function initDrawerButtonListeners() {
 
                 const addedKeySet = new Set([].concat(data.added_keys || [], data.duplicate_keys || []).map((k) => String(k || '').trim()).filter(Boolean));
                 const updatedItems = (getLastMapsItems() || []).map((it) => {
-                    const key = String(it.maps_place_id || it.id || '').trim();
+                    const key = deriveMapsKey(it.maps_url, it.maps_place_id, it.id);
                     if (key && addedKeySet.has(key)) return { ...it, already_added: true };
                     return it;
                 });
