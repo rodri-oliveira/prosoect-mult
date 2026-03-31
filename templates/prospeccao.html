@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+﻿{% extends "layout.html" %}
 
 {% block content %}
 <div class="h-full flex flex-col space-y-4">
@@ -173,6 +173,7 @@
                                 <option value="Não contatado" {% if filtro_status == 'Não contatado' %}selected{% endif %}>Não contatado</option>
                                 <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
                                 <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
+                                <option value="Enviado Portfólio Whats" {% if filtro_status == 'Enviado Portfólio Whats' %}selected{% endif %}>Enviado Portfólio Whats</option>
                                 <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Agendamento</option>
                                 <option value="Solicitou portfólio" {% if filtro_status == 'Solicitou portfólio' %}selected{% endif %}>Solicitou portfólio</option>
                                 <option value="Em negociação" {% if filtro_status == 'Em negociação' %}selected{% endif %}>Em negociação</option>
@@ -208,19 +209,23 @@
                                     {% endif %}
                                 </div>
                                 <span class="px-2 py-1 rounded-full text-xs font-medium
-                                    {% if item.status_prospeccao == 'Não contatado' %}bg-gray-100 text-gray-600
-                                    {% elif item.status_prospeccao == 'Não atendeu' %}bg-red-100 text-red-700
-                                    {% elif item.status_prospeccao == 'Caixa postal' %}bg-gray-200 text-gray-700
-                                    {% elif item.status_prospeccao == 'Pediu para retornar' %}bg-yellow-100 text-yellow-800
-                                    {% elif item.status_prospeccao == 'Solicitou portfólio' %}bg-blue-100 text-blue-800
-                                    {% elif item.status_prospeccao == 'Em negociação' %}bg-blue-100 text-blue-800
-                                    {% elif item.status_prospeccao == 'Interessado' %}bg-green-100 text-green-800
-                                    {% elif item.status_prospeccao == 'Já tem consultor atendendo' %}bg-orange-100 text-orange-800
-                                    {% elif item.status_prospeccao == 'Sem interesse' %}bg-gray-300 text-gray-700
-                                    {% elif item.status_prospeccao == 'Descartado' %}bg-red-50 text-red-600
-                                    {% elif item.status_prospeccao == 'Convertido em Lead' %}bg-purple-100 text-purple-800
-                                    {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                    {% if item.status_prospeccao == 'Pediu para retornar' %}Agendamento{% else %}{{ item.status_prospeccao }}{% endif %}
+                                    {% set status_options = [
+                            ('Não atendeu', 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100'),
+                            ('Caixa postal', 'bg-gray-50 text-gray-700 border-gray-100 hover:bg-gray-100'),
+                            ('Enviado Portfólio Whats', 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100'),
+                            ('Agendamento', 'bg-yellow-50 text-yellow-700 border-yellow-100 hover:bg-yellow-100'),
+                            ('Portfólio', 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100'),
+                            ('Negociação', 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100'),
+                            ('Interessado', 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100'),
+                            ('Tem consultor', 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100'),
+                            ('Sem interesse', 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'),
+                            ('Descartado', 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100')
+                        ] %}
+                                    {% for status, classes in status_options %}
+                                        {% if item.status_prospeccao == status %}
+                                            <span class="{{ classes }}">{{ status }}</span>
+                                        {% endif %}
+                                    {% endfor %}
                                 </span>
                             </div>
                             
@@ -267,6 +272,10 @@
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="Caixa postal">
                                     <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Caixa postal</button>
+                                </form>
+                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                    <input type="hidden" name="status" value="Enviado Portfólio Whats">
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Env. Portfólio</button>
                                 </form>
                                 <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
                                     <input type="hidden" name="status" value="Pediu para retornar">
@@ -488,6 +497,7 @@
                             <option value="Não contatado">Não contatado</option>
                             <option value="Não atendeu">Não atendeu</option>
                             <option value="Caixa postal">Caixa postal</option>
+                            <option value="Enviado Portfólio Whats">Enviado Portfólio Whats</option>
                             <option value="Pediu para retornar">Agendamento</option>
                             <option value="Solicitou portfólio">Solicitou portfólio</option>
                             <option value="Em negociação">Em negociação</option>
@@ -594,3 +604,4 @@
 
 <script type="module" src="{{ url_for('static', filename='js/app.js', v='20260318-1') }}"></script>
 {% endblock %}
+

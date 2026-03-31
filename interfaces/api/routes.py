@@ -201,6 +201,16 @@ def api_rascunho_novo():
         return jsonify({"ok": False, "message": "Erro ao criar rascunho"}), 500
 
 
+def api_prospeccao_eventos(prospeccao_id: int):
+    """API: Obter histórico de eventos de uma prospecção."""
+    try:
+        eventos = prospeccao_repository().get_eventos(prospeccao_id)
+        return jsonify({"ok": True, "eventos": eventos})
+    except Exception as e:
+        logger.error(f"Erro em api_prospeccao_eventos: {e}", exc_info=True)
+        return jsonify({"ok": False, "message": "Erro ao buscar histórico"}), 500
+
+
 def register_api_routes(app: Flask) -> None:
     """Registra todas as rotas de API."""
     app.add_url_rule(
@@ -232,4 +242,10 @@ def register_api_routes(app: Flask) -> None:
         endpoint="api_rascunho_novo",
         view_func=api_rascunho_novo,
         methods=["POST"],
+    )
+    app.add_url_rule(
+        "/api/prospeccao/<int:prospeccao_id>/eventos",
+        endpoint="api_prospeccao_eventos",
+        view_func=api_prospeccao_eventos,
+        methods=["GET"],
     )

@@ -5,6 +5,8 @@
 import { pedirDataRetorno } from './form.js';
 import { scrollToHash, initBackToTop, initScrollLinks } from './utils.js';
 
+const historicoCache = new Map();
+
 /**
  * Converte hora HH:MM para minutos
  */
@@ -51,6 +53,87 @@ function highlightByTime() {
     });
 }
 
+function formatEventoDate(value) {
+    if (!value) return '';
+    const str = String(value);
+    return str.replace('T', ' ').slice(0, 16);
+}
+
+function renderHistoricoItens(itens) {
+    const wrap = document.getElementById('modalHistoricoWrap');
+    const list = document.getElementById('modalHistorico');
+    if (!wrap || !list) return;
+
+    list.innerHTML = '';
+    wrap.classList.remove('hidden');
+
+    if (!itens || itens.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-xs text-gray-500';
+        empty.textContent = 'Sem histórico registrado.';
+        list.appendChild(empty);
+        return;
+    }
+
+    itens.forEach((ev) => {
+        const row = document.createElement('div');
+        row.className = 'border-b border-gray-200 last:border-b-0 pb-2 last:pb-0';
+
+        const line = document.createElement('div');
+        line.className = 'text-xs text-gray-700';
+        const when = formatEventoDate(ev.data_evento);
+        const tipo = ev.tipo_evento ? String(ev.tipo_evento).replace(/_/g, ' ') : 'Evento';
+        const detalhe = ev.detalhe ? String(ev.detalhe) : '';
+        line.textContent = `${when ? when + ' • ' : ''}${tipo}${detalhe ? ': ' + detalhe : ''}`;
+        row.appendChild(line);
+
+        if (ev.data_retorno_antes || ev.data_retorno_depois) {
+            const extra = document.createElement('div');
+            extra.className = 'text-[11px] text-gray-500 mt-0.5';
+            const antes = ev.data_retorno_antes || '-';
+            const depois = ev.data_retorno_depois || '-';
+            extra.textContent = `Retorno: ${antes} → ${depois}`;
+            row.appendChild(extra);
+        }
+
+        list.appendChild(row);
+    });
+}
+
+async function loadHistorico(prospeccaoId) {
+    const wrap = document.getElementById('modalHistoricoWrap');
+    const list = document.getElementById('modalHistorico');
+    if (!wrap || !list) return;
+
+    wrap.classList.remove('hidden');
+    list.innerHTML = '';
+    const loading = document.createElement('div');
+    loading.className = 'text-xs text-gray-500';
+    loading.textContent = 'Carregando histórico...';
+    list.appendChild(loading);
+
+    if (historicoCache.has(prospeccaoId)) {
+        renderHistoricoItens(historicoCache.get(prospeccaoId));
+        return;
+    }
+
+    try {
+        const resp = await fetch(`/api/prospeccao/${prospeccaoId}/eventos`);
+        const data = await resp.json().catch(() => null);
+        if (!resp.ok || !data || !data.ok) {
+            throw new Error((data && data.message) || 'Erro ao carregar histórico');
+        }
+        historicoCache.set(prospeccaoId, data.eventos || []);
+        renderHistoricoItens(data.eventos || []);
+    } catch (err) {
+        list.innerHTML = '';
+        const fail = document.createElement('div');
+        fail.className = 'text-xs text-red-600';
+        fail.textContent = 'Não foi possível carregar o histórico.';
+        list.appendChild(fail);
+    }
+}
+
 /**
  * Abre modal de registro
  */
@@ -63,6 +146,7 @@ function openRegistrarModal(cardEl) {
     const tel = cardEl.getAttribute('data-telefone') || '';
     const wa = cardEl.getAttribute('data-whatsapp') || '';
     const seg = cardEl.getAttribute('data-segmento') || '';
+    const obsAtual = cardEl.getAttribute('data-observacao') || '';
     const next = cardEl.getAttribute('data-next') || '/agendamentos';
 
     document.getElementById('modalTitle').textContent = nome;
@@ -77,9 +161,22 @@ function openRegistrarModal(cardEl) {
     const hr = document.getElementById('modalHoraRetorno');
     if (hr) hr.value = '';
 
+    const obsWrap = document.getElementById('modalObsAtualWrap');
+    const obsEl = document.getElementById('modalObsAtual');
+    if (obsWrap && obsEl) {
+        if (obsAtual) {
+            obsEl.textContent = obsAtual;
+            obsWrap.classList.remove('hidden');
+        } else {
+            obsEl.textContent = '';
+            obsWrap.classList.add('hidden');
+        }
+    }
+
     form.action = `/agendamentos/${id}/registrar-tentativa`;
     modal.classList.remove('hidden');
     updateModalRequirements();
+    loadHistorico(id);
 }
 
 /**

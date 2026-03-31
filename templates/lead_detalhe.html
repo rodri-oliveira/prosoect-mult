@@ -72,7 +72,7 @@
                 </div>
                 <form action="/leads/{{ lead.id }}/status" method="POST" class="w-full">
                     <select name="status" class="block w-full text-xs border-gray-100 focus:ring-brand-500 rounded-xl shadow-xs font-bold text-gray-700 bg-gray-50/50 p-3" onchange="this.form.submit()">
-                        {% set statuses = ['Novo Lead', 'Sem contato', 'Falou com responsável', 'Apresentação feita', 'Solicitou portfólio', 'Interessado', 'Em negociação', 'Já tem consultor atendendo', 'Cliente ativo', 'Sem interesse', 'Descartado'] %}
+                        {% set statuses = ['Novo Lead', 'Sem contato', 'Enviado Portfólio Whats', 'Falou com responsável', 'Apresentação feita', 'Solicitou portfólio', 'Interessado', 'Em negociação', 'Já tem consultor atendendo', 'Cliente ativo', 'Sem interesse', 'Descartado'] %}
                         {% for s in statuses %}
                         <option value="{{ s }}" {% if lead.status == s %}selected{% endif %}>{{ s }}</option>
                         {% endfor %}
@@ -167,6 +167,7 @@
                                     <option>Não atendeu</option>
                                     <option>Caixa postal</option>
                                     <option>Sem contato</option>
+                                    <option>Enviado Portfólio Whats</option>
                                     <option>Agendar retorno</option>
                                     <option>Pediu preço</option>
                                     <option>Solicitou portfólio</option>

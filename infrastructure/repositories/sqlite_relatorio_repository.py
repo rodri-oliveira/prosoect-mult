@@ -21,7 +21,7 @@ class SqliteRelatorioRepository(RelatorioRepository):
         whatsapp = c.fetchone()["qtd"]
 
         c.execute(
-            "SELECT COUNT(*) as qtd FROM contatos WHERE date(data) = ? AND resultado NOT IN ('Sem contato', 'Não atendeu')",
+            "SELECT COUNT(*) as qtd FROM contatos WHERE date(data) = ? AND resultado NOT IN ('Sem contato', 'Não atendeu', 'Caixa postal')",
             (hoje,),
         )
         efetivos = c.fetchone()["qtd"]

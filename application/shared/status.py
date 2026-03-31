@@ -8,6 +8,7 @@ STATUS_PROSPECCAO = [
     "Não contatado",
     "Não atendeu",
     "Caixa postal",
+    "Enviado Portfólio Whats",
     "Pediu para retornar",  # Exibido como "Agendamento" na UI
     "Solicitou portfólio",
     "Em negociação",
@@ -22,6 +23,7 @@ STATUS_PROSPECCAO = [
 STATUS_LEADS = [
     "Novo Lead",
     "Sem contato",
+    "Enviado Portfólio Whats",
     "Falou com responsável",
     "Apresentação feita",
     "Solicitou portfólio",
@@ -38,6 +40,7 @@ RESULTADOS_INTERACAO = [
     "Não atendeu",
     "Caixa postal",
     "Sem contato",
+    "Enviado Portfólio Whats",
     "Agendar retorno",
     "Pediu preço",
     "Solicitou portfólio",
@@ -54,6 +57,7 @@ STATUS_COLORS = {
     "Não contatado": "bg-gray-100 text-gray-600",
     "Não atendeu": "bg-red-100 text-red-700",
     "Caixa postal": "bg-gray-200 text-gray-700",
+    "Enviado Portfólio Whats": "bg-indigo-100 text-indigo-800",
     "Pediu para retornar": "bg-yellow-100 text-yellow-800",
     "Solicitou portfólio": "bg-blue-100 text-blue-800",
     "Em negociação": "bg-blue-100 text-blue-800",
