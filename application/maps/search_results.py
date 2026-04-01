@@ -315,7 +315,16 @@ def _build_queries_for_free_text(query: str, cidade: str, estado: str) -> list[s
     base = (query or "").strip()
     if not base:
         return []
-    local = ", ".join([p for p in [cidade, estado] if (p or "").strip()])
+    
+    cidade_clean = (cidade or "").strip()
+    estado_clean = (estado or "").strip()
+    local_parts = []
+    if cidade_clean:
+        local_parts.append(f'"{cidade_clean}"')
+    if estado_clean:
+        local_parts.append(estado_clean)
+        
+    local = ", ".join(local_parts)
     if local:
         return [f"{base} em {local}"]
     return [base]
@@ -324,8 +333,9 @@ def _build_queries_for_free_text(query: str, cidade: str, estado: str) -> list[s
 def _filter_large_retail(results: list[dict]) -> list[dict]:
     """Filtra grandes redes de varejo e serviços puramente técnicos dos resultados."""
     server_exclusions = [
-        # Grandes redes B2C globais
+        # Grandes redes B2C globais e regionais
         "magazine luiza",
+        "magalu",
         "americanas",
         "casas bahia",
         "ponto frio",
@@ -335,19 +345,37 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "leroy merlin",
         "camicado",
         "madeiramadeira",
+        "havan",
+        "kalunga",
+        "fast shop",
+        "kabum",
+        "bumerang",
+        "pichau",
+        "terabyte",
+        "mercado livre",
+        "ponto de coleta",
+        "agência mercado livre",
         
         # Guilhotina de Serviços (Corte Rígido Python)
         "conserto",
         "manutenção",
+        "manutencao",
         "assistência técnica",
         "assistencia tecnica",
-        "reparo",
         "assistência",
         "assistencia",
+        "reparo",
         "refrigeração",
         "refrigeracao",
         "lavadora",
         "lavadoras",
+        "autorizada",
+        "suporte técnico",
+        "suporte tecnico",
+        "peças e serviços",
+        "oficina",
+        "instalação",
+        "instalacao",
     ]
     
     filtered = []
@@ -413,7 +441,15 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     - 2-3 segmentos: combinar com OR (~20 queries)
     - 4+ segmentos: estratégia genérica + priorização (~25 queries)
     """
-    local = ", ".join([p for p in [cidade, estado] if (p or "").strip()])
+    cidade_clean = (cidade or "").strip()
+    estado_clean = (estado or "").strip()
+    local_parts = []
+    if cidade_clean:
+        local_parts.append(f'"{cidade_clean}"')
+    if estado_clean:
+        local_parts.append(estado_clean)
+        
+    local = ", ".join(local_parts)
     if local:
         local = f" em {local}"
 
@@ -453,8 +489,13 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "manutenção",
         "assistência técnica",
         "reparo",
-        # Varejo grande - não interessam para revenda CNPJ
+        "autorizada",
+        "suporte técnico",
+        "instalação",
+        "oficina",
+        # Varejo grande e agências - não interessam para revenda CNPJ
         "Magazine Luiza",
+        "Magalu",
         "Americanas",
         "Casas Bahia",
         "Ponto Frio",
@@ -464,12 +505,19 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Leroy Merlin",
         "Camicado",
         "MadeiraMadeira",
+        "Havan",
+        "Kalunga",
+        "Fast Shop",
+        "Kabum",
+        "Agência Mercado Livre",
+        "Ponto de Coleta",
     ]
     
     # Guilhotina do Lado do Servidor (Google Maps não respeita 100% termos -fechado)
     server_exclusions = [
         # Grandes Varejos
         "magazine luiza",
+        "magalu",
         "americanas",
         "casas bahia",
         "ponto frio",
@@ -479,6 +527,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "leroy merlin",
         "camicado",
         "madeiramadeira",
+        "havan",
+        "kalunga",
+        "fast shop",
         # Guilhotina de Serviços (Corte no Nome Comercial)
         "conserto",
         "manutenção",
@@ -486,6 +537,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "assistencia tecnica",
         "reparo",
         "oficina",
+        "autorizada",
+        "suporte",
     ]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
@@ -502,6 +555,11 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "suprimentos de informática",
             "loja de eletrônicos",
             "papelaria e informática",
+            # Lojas que vendem acessórios/periféricos
+            "loja de utilidades",
+            "loja de utilidades domésticas",
+            "loja de variedades",
+            "bazar e presentes",
             # Outlet/Saldão
             "outlet informática",
             "saldão informática",
@@ -549,6 +607,11 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "loja de eletrodomésticos",
             "loja de eletroportáteis",
             "comércio de eletroportáteis",
+            # Vendas Correlatas e Giro Rápido (Lojas menores/bairro e móveis)
+            "loja de utilidades domésticas",
+            "loja de artigos para o lar",
+            "loja de presentes",
+            "loja de móveis e eletro",
             # O Novo Nicho (Giro Rápido / Outlets / Saldo)
             "outlet eletrodomésticos",
             "saldão eletrodomésticos",
@@ -556,15 +619,28 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
         "Drones e Câmeras": [
+            # O Alto Volume (Atacadistas e Distribuidores)
+            "distribuidor de drones",
+            "revenda de drones",
+            "distribuidor de eletrônicos premium",
+            # O Varejo Especializado de Drones e Hobby
             "loja de drones",
+            "revenda dji",
+            "loja de aeromodelismo",
+            # O Forte do Audiovisual (Câmeras, Ronin, Microfones)
+            "loja de equipamentos fotográficos",
+            "loja de câmeras digitais",
+            "loja de áudio e vídeo",
+            "equipamentos audiovisuais",
+            "equipamentos para cinema e tv",
+            "locadora de equipamentos audiovisuais", # Locadoras compram muito volume
+            # Action Cams e Mobile (Osmo Action, Osmo Mobile, etc)
+            "acessórios para câmeras",
+            "loja de artigos esportivos premium",
+            # Termos âncora de produtos premium (Google busca no catálogo do lojista)
             "drone dji",
-            "drone mini mavic",
-            "drone fpv",
             "câmera de ação",
             "estabilizador gimbal",
-            "osmo pocket",
-            "filmadora câmera",
-            "microfone sem fio",
         ],
         "Ortopédica": ["ortopedia"],
         "Fitness": ["fitness"],
@@ -657,13 +733,20 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                 if not anchors:
                     continue
                 anchor_lower = anchors.lower()
-                has_loja = anchor_lower.startswith("loja de ") or anchor_lower.startswith("loja ")
                 
-                # Query varejo com âncora
-                if has_loja:
+                # Palavras que indicam que a âncora já possui seu próprio prefixo estrutural
+                prefixes_to_ignore = (
+                    "loja", "comércio", "comercial", "atacadista", "distribuidor",
+                    "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
+                    "locadora", "equipamento", "drone", "câmera", "estabilizador", 
+                    "acessório"
+                )
+                
+                if anchor_lower.startswith(prefixes_to_ignore):
                     q = f"{anchors}{local}".strip()
                 else:
                     q = f"loja de {anchors}{local}".strip()
+                
                 queries.append({"q": q, "segmento": seg_clean})
             
             # Query B2B do segmento
