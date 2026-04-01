@@ -139,12 +139,8 @@ def search_maps_results_with_repo(
                 got = scrape_maps_results(q, limit=per_query_limit, headless=True)
                 dt_ms = int((time.time() - t0) * 1000)
                 
-                # Calcular lojas únicas desta query
-                new_keys: set[str] = set()
+                # Enriquecer itens com segmento e fonte da query (antes dos filtros)
                 for it in (got or []):
-                    k = _key_from_item(it)
-                    if k and k not in seen_keys_total:
-                        new_keys.add(k)
                     if seg:
                         cur = it.get("segmentos")
                         if not isinstance(cur, list):
@@ -158,18 +154,33 @@ def search_maps_results_with_repo(
                     if q not in src:
                         src.append(q)
                     it["query_sources"] = src
-                
+
                 # Filtrar varejo grande dos resultados (Google Maps não respeita exclusão)
                 got = _filter_large_retail(got or [])
+
+                # Filtro: remover a própria cidade retornada como se fosse um negócio
+                if cidade:
+                    got = _filter_city_page_results(got or [], cidade=cidade)
+
+                # Filtro semântico por segmento
+                # Para drones: filtro leve (só remove aluguel/locação, não bloqueia lojas genéricas)
+                got = _filter_segment_noise(got or [], seg=seg)
 
                 # Filtro conservador: remover itens que declaram outra cidade no nome
                 # Ex: "Loja Zema - Casa Branca" quando o alvo é "Aguaí"
                 if cidade:
                     got = _filter_items_with_other_city_in_name(got or [], cidade=cidade)
-                
+
+                # Calcular new_unique APÓS filtros → stats refletem o que realmente entra
+                new_keys: set[str] = set()
+                for it in (got or []):
+                    k = _key_from_item(it)
+                    if k and k not in seen_keys_total:
+                        new_keys.add(k)
+
                 # Atualizar total de lojas únicas
                 seen_keys_total.update(new_keys)
-                
+
                 # Log detalhado com estatísticas e nomes das lojas
                 lojas_nomes = [it.get("nome", "?")[:30] for it in (got or [])[:5]]
                 logger.warning(
@@ -182,7 +193,7 @@ def search_maps_results_with_repo(
                     q,
                     lojas_nomes,
                 )
-                
+
                 query_stats.append({
                     "q": q,
                     "segmento": seg or None,
@@ -330,6 +341,67 @@ def _build_queries_for_free_text(query: str, cidade: str, estado: str) -> list[s
     return [base]
 
 
+def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
+    """Filtro semântico por segmento: descarta estabelecimentos que claramente
+    não vendem os produtos do segmento alvo, mesmo que tenham aparecido na busca.
+    """
+    seg_clean = (seg or "").strip().lower()
+
+    if "drone" in seg_clean:
+        return _filter_noise_drones(results)
+
+    return results
+
+
+# Termos que CONFIRMAM que é um negócio de drones/aeromodelismo
+_DRONE_POSITIVE_TERMS = [
+    "drone", "dji", "fpv", "aeromodel", "radiocontrol", "rádio controle",
+    "radio controle", "radiocontrol", "multirotor", "quadcopter",
+    "parrot", "autel", "skydio", "hubsan", "syma",
+    "aeromod", "planador", "helicóptero rc", "helicoptero rc",
+]
+
+# Categorias Google Maps que indicam negócio genérico (não drone)
+_DRONE_NEGATIVE_CATEGORIES = [
+    "photography studio", "estúdio fotográfico", "fotógrafo", "photographer",
+    "sound equipment supplier", "áudio e vídeo", "audio e video",
+    "sporting goods store", "artigos esportivos",
+    "electronics store",   # sozinho é genérico demais; só bloqueado se sem positivo
+    "security system supplier", "sistema de segurança", "cftv", "alarme",
+    "musical instrument store", "instrumentos musicais",
+    "rental service", "locadora",
+    "video production", "produtora de vídeo",
+]
+
+
+_DRONE_NOISE_NAMES = [
+    "aluguel", "alugação", "locação", "locação", "aluga drone",
+    "piloto de drone", "serviço de drone", "filmagem", "filmagens", "fotografia aerea",
+    "foto aerea", "aerial", "ceubô drone", "voo de drone",
+]
+
+
+def _filter_noise_drones(results: list[dict]) -> list[dict]:
+    """Remove estabelecimentos que não têm relação com VENDA de drones (locadoras, pilotos freelance).
+
+    Lógica:
+      - Remove se o nome contém termos de aluguel/serviço puro (não vende drone, presta serviço)
+      - Mantém tudo mais (sem filtro agressivo de categoria)
+    """
+    filtered = []
+    for item in results:
+        nome = _norm_key(item.get("nome") or "")
+
+        # Remove locadoras e prestadores de serviço (não compram para revender)
+        is_service_only = any(t in nome for t in _DRONE_NOISE_NAMES)
+        if is_service_only:
+            continue
+
+        filtered.append(item)
+
+    return filtered
+
+
 def _filter_large_retail(results: list[dict]) -> list[dict]:
     """Filtra grandes redes de varejo e serviços puramente técnicos dos resultados."""
     server_exclusions = [
@@ -387,6 +459,36 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
             filtered.append(item)
     
     return filtered
+
+
+def _filter_city_page_results(results: list[dict], cidade: str) -> list[dict]:
+    """Remove resultados onde o nome É a própria cidade.
+
+    Acontece quando o Google Maps retorna a página da cidade/região (ex: 'Adamantina')
+    em vez de um negócio real. Filtro exato + variações comuns.
+    """
+    if not cidade:
+        return results
+
+    target = _norm_key(cidade)
+    if not target:
+        return results
+
+    out: list[dict] = []
+    for item in results or []:
+        nome = _norm_key(str(item.get("nome") or ""))
+        if not nome:
+            out.append(item)
+            continue
+        # Nome IDÊNTICO à cidade → lixo (página da cidade no Maps)
+        if nome == target:
+            continue
+        # Nome é a cidade + sufixo genérico (ex: "Adamantina - SP", "Adamantina SP")
+        if nome.startswith(target) and len(nome) - len(target) < 5:
+            continue
+        out.append(item)
+
+    return out
 
 
 def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> list[dict]:
@@ -619,28 +721,15 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
         "Drones e Câmeras": [
-            # O Alto Volume (Atacadistas e Distribuidores)
-            "distribuidor de drones",
-            "revenda de drones",
-            "distribuidor de eletrônicos premium",
-            # O Varejo Especializado de Drones e Hobby
-            "loja de drones",
-            "revenda dji",
+            # ── TIER 1: Varejo especializado – queries que GERAM resultados no Maps ──
+            "loja de drones",          # query ouro: 12 resultados em Mogi das Cruzes
+            "loja fpv",               # +1 novo em Mogi
             "loja de aeromodelismo",
-            # O Forte do Audiovisual (Câmeras, Ronin, Microfones)
-            "loja de equipamentos fotográficos",
-            "loja de câmeras digitais",
-            "loja de áudio e vídeo",
-            "equipamentos audiovisuais",
-            "equipamentos para cinema e tv",
-            "locadora de equipamentos audiovisuais", # Locadoras compram muito volume
-            # Action Cams e Mobile (Osmo Action, Osmo Mobile, etc)
-            "acessórios para câmeras",
-            "loja de artigos esportivos premium",
-            # Termos âncora de produtos premium (Google busca no catálogo do lojista)
-            "drone dji",
-            "câmera de ação",
-            "estabilizador gimbal",
+            "loja de radiocontrol",
+            "loja de aeromodelos",
+            # ── TIER 2: Distribuidores que realmente aparecem no Maps com esse nome ──
+            "drone shop",
+            "drone store",
         ],
         "Ortopédica": ["ortopedia"],
         "Fitness": ["fitness"],
@@ -738,8 +827,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                 prefixes_to_ignore = (
                     "loja", "comércio", "comercial", "atacadista", "distribuidor",
                     "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
-                    "locadora", "equipamento", "drone", "câmera", "estabilizador", 
-                    "acessório"
+                    "locadora", "equipamento", "drone", "câmera", "estabilizador",
+                    "acessório", "clube", "produtora", "estúdio",
                 )
                 
                 if anchor_lower.startswith(prefixes_to_ignore):
@@ -753,8 +842,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             q = f"distribuidor de {seg_clean}{local}".strip()
             queries.append({"q": q, "segmento": seg_clean})
             
-            # Queries com marcas relevantes (captura revendedores autorizados)
-            for brand in brand_terms[:2]:  # Limitar a 2 marcas por segmento
+            # Queries com marcas relevantes (só para segmentos onde faz sentido)
+            # Drones: Multilaser/Lenovo não fabricam drones – skip
+            seg_brands = brand_terms[:2] if "drone" not in seg_clean.lower() else []
+            for brand in seg_brands:
                 queries.append({"q": f"{brand} {seg_clean}{local}".strip(), "segmento": seg_clean})
     
     # Remover duplicatas mantendo ordem
