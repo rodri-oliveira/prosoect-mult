@@ -1,4 +1,4 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 
 {% block content %}
 <div class="h-full flex flex-col space-y-4">
@@ -155,26 +155,32 @@
                     </div>
                     
                     <!-- Filtros -->
-                    <form method="GET" action="/prospeccao" class="flex flex-wrap items-end gap-2">
-                        <div class="flex-1 min-w-[180px]">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+                    <form method="GET" action="/prospeccao" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end bg-white p-3 rounded-lg border border-gray-100 shadow-sm mb-4">
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nome</label>
                             <input type="text" name="nome" value="{{ filtro_nome or '' }}"
                                    placeholder="Ex: Computecshop"
-                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                                   class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all">
                         </div>
-                        <div class="flex-1 min-w-[120px]">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Data Início</label>
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Cidade</label>
+                            <input type="text" name="cidade" value="{{ cidade or '' }}"
+                                   placeholder="Ex: Mogi das Cruzes"
+                                   class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all">
+                        </div>
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Data Início</label>
                             <input type="date" name="data_inicio" value="{{ data_inicio or '' }}" 
-                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                                   class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all">
                         </div>
-                        <div class="flex-1 min-w-[120px]">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Data Fim</label>
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Data Fim</label>
                             <input type="date" name="data_fim" value="{{ data_fim or '' }}" 
-                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                                   class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all">
                         </div>
-                        <div class="flex-1 min-w-[140px]">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
-                            <select name="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-2 py-1.5 border">
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Status</label>
+                            <select name="status" class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all appearance-none bg-no-repeat bg-right" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
                                 <option value="">Todos</option>
                                 <option value="Não contatado" {% if filtro_status == 'Não contatado' %}selected{% endif %}>Não contatado</option>
                                 <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
@@ -190,12 +196,12 @@
                                 <option value="Convertido em Lead" {% if filtro_status == 'Convertido em Lead' %}selected{% endif %}>Convertido em Lead</option>
                             </select>
                         </div>
-                        <div class="flex gap-1">
-                            <button type="submit" class="px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 text-xs font-medium">
-                                Filtrar
+                        <div class="lg:col-span-1 flex gap-1">
+                            <button type="submit" class="flex-1 bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 text-xs font-bold shadow-sm transition-all hover:shadow-md active:scale-95">
+                                FILTRAR
                             </button>
-                            <a href="/prospeccao" class="px-3 py-1.5 rounded-md bg-gray-200 text-gray-600 hover:bg-gray-300 text-xs font-medium">
-                                Limpar
+                            <a href="/prospeccao" class="bg-gray-100 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-200 text-xs font-bold transition-all" title="Limpar Filtros">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </a>
                         </div>
                     </form>
