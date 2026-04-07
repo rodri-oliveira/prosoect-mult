@@ -1,7 +1,7 @@
 """Rotas web de Prospecção."""
 from __future__ import annotations
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from application.prospeccao.create_draft import CreateProspecctionDraftRequest, create_prospeccao_draft_with_repo
 from application.prospeccao.list_view import ProspecctionListViewRequest, build_prospeccao_list_view_with_repo
@@ -10,12 +10,48 @@ from application.shared.cnpj_utils import is_valid_cnpj, normalize_cnpj
 from infrastructure.container import prospeccao_repository
 
 
+def _build_prospeccao_url_with_filters():
+    """Constrói URL de prospecção preservando filtros atuais."""
+    filtro_status = request.args.get("status") or request.form.get("filtro_status")
+    filtro_nome = request.args.get("nome") or request.form.get("filtro_nome")
+    segmento = request.args.get("segmento") or request.form.get("filtro_segmento")
+    cidade = request.args.get("cidade") or request.form.get("filtro_cidade")
+    estado = request.args.get("estado") or request.form.get("filtro_estado")
+    telefone = request.args.get("telefone") or request.form.get("filtro_telefone")
+    data_inicio = request.args.get("data_inicio") or request.form.get("filtro_data_inicio")
+    data_fim = request.args.get("data_fim") or request.form.get("filtro_data_fim")
+    mostrar_arquivados = request.args.get("arquivados") or request.form.get("filtro_arquivados")
+
+    kwargs = {}
+    if filtro_status:
+        kwargs["status"] = filtro_status
+    if filtro_nome:
+        kwargs["nome"] = filtro_nome
+    if segmento:
+        kwargs["segmento"] = segmento
+    if cidade:
+        kwargs["cidade"] = cidade
+    if estado:
+        kwargs["estado"] = estado
+    if telefone:
+        kwargs["telefone"] = telefone
+    if data_inicio:
+        kwargs["data_inicio"] = data_inicio
+    if data_fim:
+        kwargs["data_fim"] = data_fim
+    if mostrar_arquivados:
+        kwargs["arquivados"] = mostrar_arquivados
+
+    return url_for("prospeccao_view", **kwargs)
+
+
 def prospeccao_view():
     filtro_status = request.args.get("status")
     filtro_nome = request.args.get("nome")
     segmento = request.args.get("segmento")
     cidade = request.args.get("cidade")
     estado = request.args.get("estado")
+    telefone = request.args.get("telefone")
     data_inicio = request.args.get("data_inicio")
     data_fim = request.args.get("data_fim")
     mostrar_arquivados = request.args.get("arquivados") == "1"
@@ -27,6 +63,7 @@ def prospeccao_view():
             segmento=segmento,
             cidade=cidade,
             estado=estado,
+            telefone=telefone,
             data_inicio=data_inicio,
             data_fim=data_fim,
             mostrar_arquivados=mostrar_arquivados,
@@ -44,8 +81,9 @@ def prospeccao_view():
         segmento=segmento,
         cidade=cidade,
         estado=estado,
-        data_inicio=view.data_inicio,
-        data_fim=view.data_fim,
+        telefone=telefone,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
         mostrar_arquivados=mostrar_arquivados,
     )
 
@@ -100,7 +138,7 @@ def rascunho_status(prospeccao_id: int):
     next_url = request.form.get("next")
 
     if not novo_status:
-        return redirect(next_url or url_for("prospeccao_view"))
+        return redirect(next_url or _build_prospeccao_url_with_filters())
 
     result = update_prospecction_status_with_repo(
         UpdateProspecctionStatusRequest(
@@ -115,6 +153,8 @@ def rascunho_status(prospeccao_id: int):
 
     if next_url and result.ok and not result.redirect_kwargs:
         return redirect(next_url)
+    if result.redirect_to == "prospeccao_view":
+        return redirect(_build_prospeccao_url_with_filters())
     return redirect(url_for(result.redirect_to, **result.redirect_kwargs))
 
 
@@ -122,19 +162,25 @@ def rascunho_converter(prospeccao_id: int):
     lead_id = prospeccao_repository().converter_para_lead(prospeccao_id)
     if lead_id:
         return redirect(url_for("lead_detail", lead_id=lead_id))
-    return redirect(url_for("prospeccao_view"))
+    return redirect(_build_prospeccao_url_with_filters())
 
 
 def rascunho_excluir(prospeccao_id: int):
     prospeccao_repository().arquivar(prospeccao_id)
-    return redirect(url_for("prospeccao_view"))
+    return redirect(_build_prospeccao_url_with_filters())
 
 
 def rascunho_observacao(prospeccao_id: int):
     observacao = (request.form.get("observacao") or "").strip() or None
     repo = prospeccao_repository()
     repo.update_observacao(prospeccao_id, observacao)
-    return redirect(url_for("prospeccao_view"))
+    return redirect(_build_prospeccao_url_with_filters())
+
+
+def rascunho_historico(prospeccao_id: int):
+    repo = prospeccao_repository()
+    eventos = repo.get_eventos(prospeccao_id)
+    return jsonify({"ok": True, "eventos": eventos})
 
 
 def register_prospeccao_routes(app: Flask) -> None:
@@ -168,4 +214,10 @@ def register_prospeccao_routes(app: Flask) -> None:
         endpoint="rascunho_observacao",
         view_func=rascunho_observacao,
         methods=["POST"],
+    )
+    app.add_url_rule(
+        "/prospeccao/rascunho/<int:prospeccao_id>/historico",
+        endpoint="rascunho_historico",
+        view_func=rascunho_historico,
+        methods=["GET"],
     )

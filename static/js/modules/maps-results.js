@@ -365,9 +365,12 @@ export const loadResults = async () => {
         
         mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, mergedBefore, mergedAfter, totalQueries });
         const nextItems = Array.isArray(data.items) ? data.items : [];
+        // Filtrar itens já adicionados antes de salvar no cache
+        const filteredItems = nextItems.filter((it) => !it?.already_added);
+        
         if (data.modo !== 'mock') {
             if (mergedAfter > 0) {
-                statusEl.textContent = `OK - ${nextItems.length}/${mergedAfter} resultados`;
+                statusEl.textContent = `OK - ${filteredItems.length}/${mergedAfter} resultados`;
             } else {
                 statusEl.textContent = `OK - ${totalQueries} queries`;
             }
@@ -377,9 +380,9 @@ export const loadResults = async () => {
             : (Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : []);
         const shouldPreserve = nextItems.length === 0 && Array.isArray(currentCached) && currentCached.length > 0;
         if (!shouldPreserve) {
-            writeMapsCache(nextItems, buildQueryPayload());
+            writeMapsCache(filteredItems, buildQueryPayload());
             currentPage = 1;
-            renderResults(nextItems);
+            renderResults(filteredItems);
         } else {
             try { readMapsCache(); } catch (e) {}
             statusEl.textContent = '0 resultados. Mantendo últimos resultados.';

@@ -1,9 +1,9 @@
 import time
 import hashlib
 import re
+import logging
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright
-
 
 _CACHE = {}
 
@@ -237,9 +237,115 @@ def scrape_maps_results(query: str, limit: int = 20, headless: bool = False, cac
                             name = (a.inner_text() or "").strip().split("\n")[0]
                         except Exception:
                             name = ""
+                    
+                    # Limpar o nome removendo ícones e caracteres especiais
+                    if name:
+                        name = re.sub(r'\[.*?\]', '', name)
+                        name = re.sub(r'\(.*?\)', '', name)
+                        name = re.sub(r'[^\w\s\-\.]', '', name)
+                        name = name.strip()
 
                     if not name:
                         continue
+
+                    # Extrair informações completas do cartão do Google Maps
+                    endereco_completo = ""
+                    cidade_extraida = ""
+                    estado_extraido = ""
+                    telefone_extraido = ""
+                    whatsapp_extraido = ""
+                    website_extraido = ""
+                    raw_text = ""
+                    card_text = ""
+
+                    try:
+                        # Estratégia 1: Subir na árvore DOM até encontrar o container do item
+                        # O card do Maps geralmente tem role='article' ou é um div com dados do estabelecimento
+                        try:
+                            # Procura por ancestor que seja o container do resultado
+                            card_container = a.locator('xpath=ancestor::div[@role="article"]')
+                            if card_container.count() == 0:
+                                # Fallback: procura container por estrutura de árvore
+                                card_container = a.locator('xpath=ancestor::div[3]')
+                            
+                            if card_container.count() > 0:
+                                card_text = (card_container.first.inner_text() or "").strip()
+                        except Exception:
+                            pass
+                        
+                        # Estratégia 2: Se ainda não conseguiu, tenta subir manualmente
+                        if not card_text:
+                            try:
+                                card_text = (a.locator("xpath=../..").first.inner_text() or "").strip()
+                            except Exception:
+                                pass
+
+                        # Estratégia 3: Último recurso - tenta subir mais na árvore
+                        if not card_text:
+                            try:
+                                card_text = (a.locator("xpath=../../..").first.inner_text() or "").strip()
+                            except Exception:
+                                pass
+
+                        # Filtra botões de ação conhecidos que poluem o texto
+                        if card_text:
+                            # Remove padrões comuns de botões do Maps
+                            card_text = re.sub(r'\bRotas\b.*', '', card_text, flags=re.IGNORECASE)
+                            card_text = re.sub(r'\bSalvar\b.*', '', card_text, flags=re.IGNORECASE)
+                            card_text = re.sub(r'\bCompartilhar\b.*', '', card_text, flags=re.IGNORECASE)
+                            card_text = re.sub(r'\bMais\b.*', '', card_text, flags=re.IGNORECASE)
+                            card_text = re.sub(r'\bVocê chegou ao final\b.*', '', card_text, flags=re.IGNORECASE)
+                            card_text = card_text.strip()
+
+                            raw_text = card_text.replace("\n", " | ")
+
+                            # Extrair endereço completo do card_text
+                            # O endereço geralmente aparece após o nome e telefone, separado por | ou quebras de linha
+                            lines = [l.strip() for l in card_text.split("\n") if l.strip()]
+                            if len(lines) > 1:
+                                # Tenta encontrar a linha que parece endereço (contém rua, av, etc.)
+                                for line in lines:
+                                    if line == name:
+                                        continue
+                                    line_lower = line.lower()
+                                    # Se a linha contém padrões de endereço (Rua, Av, etc.) ou cidade-estado
+                                    has_street_prefix = any(prefix in line_lower for prefix in ["rua", "avenida", "av.", "r.", "alameda", "travessa", "praça", "estrada", "rodovia"])
+                                    has_city_state = re.search(r'[A-Za-zÀ-ÿ\s]+[-·,]\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', line, re.IGNORECASE)
+                                    if has_street_prefix or has_city_state:
+                                        endereco_completo = line
+                                        break
+
+                            # Extrair cidade e estado do endereço ou do card_text
+                            full_text = endereco_completo if endereco_completo else card_text
+                            city_state_match = re.search(r'([A-Za-zÀ-ÿ0-9\s\-]+?)\s*[,·\-]\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', full_text, re.IGNORECASE)
+                            if city_state_match:
+                                cidade_extraida = city_state_match.group(1).strip()
+                                estado_extraido = city_state_match.group(2).strip().upper()
+                                if not endereco_completo:
+                                    endereco_completo = f"{cidade_extraida} - {estado_extraido}"
+
+                            # Extrair telefone do card_text
+                            phone_match = re.search(r'(\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4})', card_text)
+                            if phone_match:
+                                telefone_extraido = phone_match.group(1).strip()
+
+                            # Extrair WhatsApp do card_text (procura por número após "WhatsApp" ou "WA")
+                            whatsapp_match = re.search(r'(?:WhatsApp|WA)[:\s]*(\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4})', card_text, re.IGNORECASE)
+                            if whatsapp_match:
+                                whatsapp_extraido = whatsapp_match.group(1).strip()
+
+                            # Extrair website do card_text
+                            website_match = re.search(r'(https?://[^\s<>"]+|www\.[^\s<>"]+)', card_text, re.IGNORECASE)
+                            if website_match:
+                                website_extraido = website_match.group(1).strip()
+                                
+                        # Debug: log do texto extraído para verificação
+                        if raw_text:
+                            import logging
+                            logging.getLogger(__name__).debug(f"[SCRAPER] nome={name} | raw={raw_text[:100]}... | cidade={cidade_extraida}")
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).debug(f"[SCRAPER] Erro ao extrair dados do cartão: {e}")
 
                     seen.add(href)
                     maps_place_id = derive_maps_place_id(href)
@@ -248,11 +354,14 @@ def scrape_maps_results(query: str, limit: int = 20, headless: bool = False, cac
                         "id": place_key,
                         "maps_place_id": maps_place_id or place_key,
                         "nome": name,
-                        "endereco": "",
-                        "telefone": "",
-                        "whatsapp": "",
-                        "website": "",
+                        "endereco": _clean_address(endereco_completo),
+                        "cidade": cidade_extraida,
+                        "estado": estado_extraido,
+                        "telefone": _clean_phone(telefone_extraido),
+                        "whatsapp": _clean_phone(whatsapp_extraido),
+                        "website": _clean_website(website_extraido),
                         "maps_url": href,
+                        "__raw_text": raw_text,
                     })
 
                     if len(items) >= limit:

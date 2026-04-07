@@ -170,6 +170,10 @@ def search_maps_results_with_repo(
                 # Ex: "Loja Zema - Casa Branca" quando o alvo é "Aguaí"
                 if cidade:
                     got = _filter_items_with_other_city_in_name(got or [], cidade=cidade)
+                
+                # Filtro geográfico estrito: remove itens que o scraper identificou como estando em outra cidade
+                if cidade:
+                    got = _filter_strict_city(got or [], cidade=cidade)
 
                 # Calcular new_unique APÓS filtros → stats refletem o que realmente entra
                 new_keys: set[str] = set()
@@ -259,6 +263,18 @@ def search_maps_results_with_repo(
             merged_after_dedupe = len(itens)
 
     existing_keys = _find_existing_keys(itens, existing_keys_repo)
+    
+    # DEBUG: Log detalhado de chaves
+    if existing_keys:
+        logger.warning("[DEBUG] Total existing_keys encontradas: %s", len(existing_keys))
+        logger.warning("[DEBUG] Amostra existing_keys: %s", existing_keys[:5])
+    
+    # DEBUG: Verificar chaves dos primeiros itens
+    for idx, it in enumerate(itens[:3]):
+        k = _key_from_item(it)
+        nome = it.get("nome", "?")
+        logger.warning("[DEBUG] Item %s: nome=%s | key=%s | in_existing=%s", 
+                      idx, nome, k, k in existing_keys if existing_keys else False)
 
     if existing_keys:
         existing_set = set(existing_keys)
@@ -266,6 +282,8 @@ def search_maps_results_with_repo(
             k = _key_from_item(it)
             if k and k in existing_set:
                 it["already_added"] = True
+                logger.warning("[DEBUG] Marcado already_added: nome=%s | key=%s", 
+                              it.get("nome", "?"), k)
 
     return SearchMapsResultsResponse(
         ok=True,
@@ -448,6 +466,43 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "oficina",
         "instalação",
         "instalacao",
+        
+        # Lojas irrelevantes para Informática (varal, parafusos, metalurgia, ferragens)
+        "varal",
+        "varais",
+        "parafuso",
+        "parafusos",
+        "metalurgia",
+        "metalúrgica",
+        "metalurgica",
+        "ferragem",
+        "ferragens",
+        "ferramenta",
+        "ferramentas",
+        "serralheria",
+        "solda",
+        "soldas",
+        "máquinas",
+        "maquinas",
+        "industrial",
+        "industriais",
+        # Hardware industrial específico
+        "spiralock",
+        "aço",
+        "açoforti",
+        "acoforti",
+        "afiação",
+        "afiacao",
+        "pro-lar",
+        "prolar",
+        "trava",
+        "travas",
+        "fixação",
+        "fixacao",
+        "porca",
+        "porcas",
+        "buchas",
+        "arruela",
     ]
     
     filtered = []
@@ -527,6 +582,77 @@ def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> l
         if declared_city != target_city:
             continue
 
+        out.append(item)
+
+    return out
+
+
+def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
+    """Remove itens que são explícitos sobre estarem em outra cidade,
+    ou quando o resultado é apenas o marcador da própria cidade.
+    """
+    import re
+
+    target_city = _norm_key(cidade)
+    if not target_city:
+        return results
+
+    out: list[dict] = []
+
+    # Lista de siglas de estados para o regex
+    estados = "AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO"
+
+    # Regex melhorado:
+    # 1. Suporta separadores , ou · ou - antes da sigla do estado
+    # 2. Suporta siglas em maiúsculo ou minúsculo
+    # 3. Detecta "Cidade - UF" ou "Cidade, UF"
+    city_state_re = re.compile(
+        rf'([A-Za-zÀ-ÿ0-9\s\-]+)\s*[,·\-]\s*(?:{estados})\b', 
+        re.IGNORECASE
+    )
+
+    for item in results or []:
+        nome_raw = str(item.get("nome") or "").strip()
+        if not nome_raw:
+            out.append(item)
+            continue
+
+        # 1. Bloqueia o marcador genérico da cidade (Ex: name="Americana")
+        norm_nome = _norm_key(nome_raw)
+        if norm_nome == target_city:
+            continue
+
+        # 2. Verifica se o campo cidade extraído do scraper está diferente da cidade alvo
+        cidade_extraida = str(item.get("cidade") or "").strip()
+        if cidade_extraida:
+            norm_cidade_extraida = _norm_key(cidade_extraida)
+            if norm_cidade_extraida and norm_cidade_extraida != target_city:
+                # Cidade extraída é diferente da cidade alvo - descarta
+                continue
+
+        # 3. Fallback: Verifica se o texto bruto do card do Maps acusa uma cidade diferente
+        raw_text = str(item.get("__raw_text") or "")
+        if raw_text and not cidade_extraida:
+            # Tenta encontrar correspondências de "Cidade, UF"
+            # O Maps costuma colocar o endereço no final ou perto do final separados por | ou ponto
+            matches = city_state_re.findall(raw_text)
+            if matches:
+                # Vamos verificar de trás para frente, pois o endereço completo costuma estar no final
+                found_wrong_city = False
+                for match_city in reversed(matches):
+                    # Limpa a "cidade" encontrada
+                    candidate = match_city.split("·")[-1].split("|")[-1].split("-")[-1].strip()
+                    candidate = _norm_key(candidate)
+
+                    if candidate and candidate != target_city:
+                        # Se achamos uma cidade explícita diferente, é lixo geográfico
+                        found_wrong_city = True
+                        break
+
+                if found_wrong_city:
+                    continue
+
+        # Se passou pelos filtros, mantém
         out.append(item)
 
     return out
@@ -647,27 +773,34 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
     anchor_groups: dict[str, list[str]] = {
         "Informática": [
-            # O Alto Volume (Atacadistas e distribuidores regionais)
+            # Foco B2B - Atacadistas e distribuidores regionais
             "atacadista informática",
             "distribuidor informática",
             "revenda informática",
-            # O Médio Comércio (Lojistas que giram estoque)
-            "loja de informática",
-            "comércio de informática",
+            "atacadista de computadores",
+            "distribuidor de computadores",
+            "atacadista de periféricos",
+            "distribuidor de periféricos",
+            "atacadista de acessórios de computador",
+            "distribuidor de acessórios de computador",
+            "atacadista de componentes de computador",
+            "distribuidor de componentes de computador",
+            "atacadista de hardware",
+            "distribuidor de hardware",
+            # Revendas B2B
+            "revenda de computadores",
+            "revenda de periféricos",
+            "revenda de acessórios de computador",
+            "revenda de componentes de computador",
+            "revenda de hardware",
             "suprimentos de informática",
-            "loja de eletrônicos",
-            "papelaria e informática",
-            # Lojas que vendem acessórios/periféricos
-            "loja de utilidades",
-            "loja de utilidades domésticas",
-            "loja de variedades",
-            "bazar e presentes",
-            # Outlet/Saldão
-            "outlet informática",
-            "saldão informática",
-            "informática seminovos",
-            "queima de estoque informática",
-            "liquidação informática",
+            # Comércio B2B
+            "comércio de informática",
+            "comércio de computadores",
+            "comércio de periféricos",
+            "comércio de acessórios de computador",
+            "comércio de componentes de computador",
+            "comércio de hardware",
         ],
         "Celulares": [
             # O Alto Volume

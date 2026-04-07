@@ -18,9 +18,11 @@ class ProspeccaoRepository(Protocol):
     def list_by_filters(
         self,
         status: str | None = None,
+        nome: str | None = None,
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
+        telefone: str | None = None,
         data_inicio: str | None = None,
         data_fim: str | None = None,
         mostrar_arquivados: bool = False,
@@ -37,6 +39,7 @@ class ProspeccaoRepository(Protocol):
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
+        telefone: str | None = None,
     ) -> ProspecctionSummary:
         """Retorna resumo de prospecções (total e por status)."""
         raise NotImplementedError

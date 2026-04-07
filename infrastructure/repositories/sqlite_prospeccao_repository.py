@@ -24,6 +24,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
+        telefone: str | None = None,
         data_inicio: str | None = None,
         data_fim: str | None = None,
         mostrar_arquivados: bool = False,
@@ -35,13 +36,25 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         where_parts = []
         params: list[Any] = []
 
-        if not mostrar_arquivados:
+        tel_digits = ""
+        is_phone_search = False
+        if telefone:
+            tel_input = (telefone or "").strip()
+            tel_digits = "".join(ch for ch in tel_input if ch.isdigit())
+            # Remover codigo do pais se vier com +55
+            if tel_digits.startswith("55") and len(tel_digits) > 11:
+                tel_digits = tel_digits[2:]
+            if tel_digits:
+                is_phone_search = True
+
+        if not mostrar_arquivados and not is_phone_search:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
 
-        # Excluir agendamentos da lista de prospecção (esses ficam em /agendamentos)
-        agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação')
-        if status not in agendamento_statuses:
-            where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
+        # Excluir agendamentos da lista de prospeccao (esses ficam em /agendamentos)
+        if not is_phone_search:
+            agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Em negociacao')
+            if status not in agendamento_statuses:
+                where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
 
         if status:
             where_parts.append("status_prospeccao = ?")
@@ -50,7 +63,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if nome:
             nome_raw = (nome or "").strip().lower()
             nome_nospace = nome_raw.replace(" ", "")
-            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            where_parts.append("(lower(nome_lo_ja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
             params.append(f"%{nome_raw}%")
             params.append(f"%{nome_nospace}%")
 
@@ -66,15 +79,29 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             where_parts.append("estado LIKE ?")
             params.append(f"%{estado}%")
 
-        if data_inicio and data_fim:
-            where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")
-            params.extend([data_inicio, data_fim])
-        elif data_inicio:
-            where_parts.append("date(data_prospeccao) >= date(?)")
-            params.append(data_inicio)
-        elif data_fim:
-            where_parts.append("date(data_prospeccao) <= date(?)")
-            params.append(data_fim)
+        if tel_digits:
+            # Busca parcial por numeros, ignorando formatacao ((), -, espacos)
+            tel_pattern = f"%{tel_digits}%"
+            tel_sql = (
+                "replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            )
+            wa_sql = (
+                "replace(replace(replace(replace(replace(whatsapp, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            )
+            where_parts.append(f"({tel_sql} LIKE ? OR {wa_sql} LIKE ?)")
+            params.append(tel_pattern)
+            params.append(tel_pattern)
+
+        if not is_phone_search:
+            if data_inicio and data_fim:
+                where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")
+                params.extend([data_inicio, data_fim])
+            elif data_inicio:
+                where_parts.append("date(data_prospeccao) >= date(?)")
+                params.append(data_inicio)
+            elif data_fim:
+                where_parts.append("date(data_prospeccao) <= date(?)")
+                params.append(data_fim)
 
         where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
@@ -95,6 +122,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
+        telefone: str | None = None,
     ) -> ProspecctionSummary:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -102,7 +130,18 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         where_parts = []
         params: list[Any] = []
 
-        if not mostrar_arquivados:
+        tel_digits = ""
+        is_phone_search = False
+        if telefone:
+            tel_input = (telefone or "").strip()
+            tel_digits = "".join(ch for ch in tel_input if ch.isdigit())
+            # Remover codigo do pais se vier com +55
+            if tel_digits.startswith("55") and len(tel_digits) > 11:
+                tel_digits = tel_digits[2:]
+            if tel_digits:
+                is_phone_search = True
+
+        if not mostrar_arquivados and not is_phone_search:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
 
         if nome:
@@ -124,15 +163,29 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             where_parts.append("estado LIKE ?")
             params.append(f"%{estado}%")
 
-        if data_inicio and data_fim:
-            where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")
-            params.extend([data_inicio, data_fim])
-        elif data_inicio:
-            where_parts.append("date(data_prospeccao) >= date(?)")
-            params.append(data_inicio)
-        elif data_fim:
-            where_parts.append("date(data_prospeccao) <= date(?)")
-            params.append(data_fim)
+        if tel_digits:
+            # Busca parcial por numeros, ignorando formatacao ((), -, espacos)
+            tel_pattern = f"%{tel_digits}%"
+            tel_sql = (
+                "replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            )
+            wa_sql = (
+                "replace(replace(replace(replace(replace(whatsapp, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            )
+            where_parts.append(f"({tel_sql} LIKE ? OR {wa_sql} LIKE ?)")
+            params.append(tel_pattern)
+            params.append(tel_pattern)
+
+        if not is_phone_search:
+            if data_inicio and data_fim:
+                where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")
+                params.extend([data_inicio, data_fim])
+            elif data_inicio:
+                where_parts.append("date(data_prospeccao) >= date(?)")
+                params.append(data_inicio)
+            elif data_fim:
+                where_parts.append("date(data_prospeccao) <= date(?)")
+                params.append(data_fim)
 
         where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
@@ -356,22 +409,31 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
-    def arquivar(self, prospeccao_id: int) -> bool:
+    def update_observacao(self, prospeccao_id: int, observacao: str | None) -> bool:
+        """Atualiza observação registrando histórico antes de sobrescrever."""
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
+
+        # Buscar observação atual para registrar histórico
         c.execute(
-            "UPDATE prospeccao_temp SET arquivado = 1 WHERE id = ?",
+            "SELECT observacao FROM prospeccao_temp WHERE id = ?",
             (prospeccao_id,),
         )
-        conn.commit()
-        affected = c.rowcount
-        conn.close()
-        return affected > 0
+        row = c.fetchone()
+        observacao_atual = row[0] if row else None
 
-    def update_observacao(self, prospeccao_id: int, observacao: str | None) -> bool:
-        """Atualiza apenas a observação, sem registrar evento no histórico."""
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
+        # Se houver observação anterior e a nova for diferente, registrar histórico
+        if observacao_atual and observacao_atual.strip() and observacao and observacao.strip() and observacao_atual != observacao:
+            c.execute(
+                """
+                INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
+                VALUES (?, 'OBSERVACAO_CHANGE', ?)
+            """,
+                (prospeccao_id, observacao_atual),
+            )
+            conn.commit()
+
+        # Atualizar observação atual
         c.execute(
             "UPDATE prospeccao_temp SET observacao = ? WHERE id = ?",
             ((observacao or "").strip() or None, prospeccao_id),
@@ -381,10 +443,13 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
-    def converter_para_lead(self, prospeccao_id: int) -> int | None:
+    def arquivar(self, prospeccao_id: int) -> bool:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-
+        c.execute(
+            "UPDATE prospeccao_temp SET arquivado = 1 WHERE id = ?",
+            (prospeccao_id,),
+        )
         c.execute(
             "SELECT * FROM prospeccao_temp WHERE id = ? AND (arquivado = 0 OR arquivado IS NULL)",
             (prospeccao_id,),

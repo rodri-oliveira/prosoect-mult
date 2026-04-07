@@ -13,6 +13,7 @@ class ProspecctionListViewRequest:
     segmento: str | None
     cidade: str | None
     estado: str | None
+    telefone: str | None
     data_inicio: str | None
     data_fim: str | None
     mostrar_arquivados: bool
@@ -40,7 +41,23 @@ def build_prospeccao_list_view_with_repo(
     data_inicio = req.data_inicio
     data_fim = req.data_fim
 
-    if req.default_to_today_when_no_dates and not data_inicio and not data_fim and not req.mostrar_arquivados:
+    has_other_filters = any(
+        [
+            req.filtro_status,
+            req.filtro_nome,
+            req.segmento,
+            req.cidade,
+            req.estado,
+            req.telefone,
+        ]
+    )
+    if (
+        req.default_to_today_when_no_dates
+        and not data_inicio
+        and not data_fim
+        and not req.mostrar_arquivados
+        and not has_other_filters
+    ):
         data_inicio = date.today().isoformat()
         data_fim = date.today().isoformat()
 
@@ -50,6 +67,7 @@ def build_prospeccao_list_view_with_repo(
         segmento=req.segmento,
         cidade=req.cidade,
         estado=req.estado,
+        telefone=req.telefone,
         data_inicio=data_inicio,
         data_fim=data_fim,
         mostrar_arquivados=req.mostrar_arquivados,
@@ -67,6 +85,7 @@ def build_prospeccao_list_view_with_repo(
         segmento=req.segmento,
         cidade=req.cidade,
         estado=req.estado,
+        telefone=req.telefone,
     )
     resumo_prospeccao = {
         "total": resumo.total,

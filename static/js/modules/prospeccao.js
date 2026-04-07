@@ -190,6 +190,57 @@ function restorePendingDrawer() {
 }
 
 /**
+ * Carrega e mostra histórico de observações de uma prospecção
+ */
+async function toggleHistorico(prospeccaoId) {
+    const historicoDiv = document.getElementById(`historico-${prospeccaoId}`);
+    if (!historicoDiv) return;
+
+    if (historicoDiv.classList.contains('hidden')) {
+        historicoDiv.classList.remove('hidden');
+        historicoDiv.innerHTML = '<div class="text-gray-500 italic">Carregando histórico...</div>';
+
+        try {
+            const response = await fetch(`/prospeccao/rascunho/${prospeccaoId}/historico`);
+            const data = await response.json();
+
+            if (!data.ok || !data.eventos || data.eventos.length === 0) {
+                historicoDiv.innerHTML = '<div class="text-gray-500 italic">Nenhum histórico de observações.</div>';
+                return;
+            }
+
+            const obsEventos = data.eventos.filter(e => e.tipo_evento === 'OBSERVACAO_CHANGE');
+            if (obsEventos.length === 0) {
+                historicoDiv.innerHTML = '<div class="text-gray-500 italic">Nenhum histórico de observações.</div>';
+                return;
+            }
+
+            let html = '<div class="space-y-1">';
+            obsEventos.forEach(evt => {
+                const dataEvento = evt.data_evento || '';
+                const detalhe = evt.detalhe || '';
+                html += `
+                    <div class="flex items-start gap-2">
+                        <span class="text-gray-400 text-[10px] whitespace-nowrap">${dataEvento}</span>
+                        <span class="text-gray-600">${detalhe}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            historicoDiv.innerHTML = html;
+        } catch (e) {
+            console.error('Erro ao carregar histórico:', e);
+            historicoDiv.innerHTML = '<div class="text-red-500 italic">Erro ao carregar histórico.</div>';
+        }
+    } else {
+        historicoDiv.classList.add('hidden');
+    }
+}
+
+// Exportar função para uso global
+window.toggleHistorico = toggleHistorico;
+
+/**
  * Inicializa módulos na carga da página
  */
 function init() {
