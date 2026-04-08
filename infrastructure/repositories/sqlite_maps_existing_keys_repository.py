@@ -21,7 +21,7 @@ class SqliteMapsExistingKeysRepository(MapsExistingKeysRepository):
         c = conn.cursor()
 
         c.execute(
-            "SELECT maps_place_id, maps_url FROM prospeccao_temp WHERE ((maps_place_id IS NOT NULL AND maps_place_id != '') OR (maps_url IS NOT NULL AND maps_url != '')) AND (arquivado = 0 OR arquivado IS NULL)"
+            "SELECT maps_place_id, maps_url FROM prospeccao_temp WHERE (maps_place_id IS NOT NULL AND maps_place_id != '') OR (maps_url IS NOT NULL AND maps_url != '')"
         )
         for row in c.fetchall() or []:
             mpid = (row["maps_place_id"] or "").strip()

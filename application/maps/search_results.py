@@ -446,26 +446,21 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "ponto de coleta",
         "agência mercado livre",
         
-        # Guilhotina de Serviços (Corte Rígido Python)
-        "conserto",
-        "manutenção",
-        "manutencao",
-        "assistência técnica",
-        "assistencia tecnica",
-        "assistência",
-        "assistencia",
-        "reparo",
         "refrigeração",
         "refrigeracao",
         "lavadora",
         "lavadoras",
-        "autorizada",
-        "suporte técnico",
-        "suporte tecnico",
-        "peças e serviços",
         "oficina",
-        "instalação",
-        "instalacao",
+        
+        # Filtros de Assistência Técnica
+        "assistência técnica",
+        "assistencia tecnica",
+        "assistência",
+        "assistencia",
+        "conserto",
+        "reparo",
+        "manutenção",
+        "manutencao",
         
         # Lojas irrelevantes para Informática (varal, parafusos, metalurgia, ferragens)
         "varal",
@@ -712,15 +707,6 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "fechado",
         "extinto",
         "falência",
-        # Serviços puros (Oficinas que não compram volume para revenda)
-        "conserto",
-        "manutenção",
-        "assistência técnica",
-        "reparo",
-        "autorizada",
-        "suporte técnico",
-        "instalação",
-        "oficina",
         # Varejo grande e agências - não interessam para revenda CNPJ
         "Magazine Luiza",
         "Magalu",
@@ -739,68 +725,54 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Kabum",
         "Agência Mercado Livre",
         "Ponto de Coleta",
-    ]
-    
-    # Guilhotina do Lado do Servidor (Google Maps não respeita 100% termos -fechado)
-    server_exclusions = [
-        # Grandes Varejos
-        "magazine luiza",
-        "magalu",
-        "americanas",
-        "casas bahia",
-        "ponto frio",
-        "carrefour",
-        "extra",
-        "walmart",
-        "leroy merlin",
-        "camicado",
-        "madeiramadeira",
-        "havan",
-        "kalunga",
-        "fast shop",
-        # Guilhotina de Serviços (Corte no Nome Comercial)
-        "conserto",
-        "manutenção",
-        "assistência técnica",
-        "assistencia tecnica",
-        "reparo",
-        "oficina",
-        "autorizada",
-        "suporte",
+        "Assistência Técnica",
+        "Assistencia Tecnica",
+        "Conserto",
+        "Reparo",
+        "Manutenção",
+        "Manutencao",
     ]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
     anchor_groups: dict[str, list[str]] = {
         "Informática": [
-            # Foco B2B - Atacadistas e distribuidores regionais
+            # Foco B2B - O Alto Volume
             "atacadista informática",
             "distribuidor informática",
             "revenda informática",
-            "atacadista de computadores",
-            "distribuidor de computadores",
             "atacadista de periféricos",
             "distribuidor de periféricos",
-            "atacadista de acessórios de computador",
-            "distribuidor de acessórios de computador",
+            "atacado e varejo informática",
+            
+            # Produtos Específicos e Acessórios
+            "loja de mouses e teclados",
+            "loja de cabos",
+            "loja de cabos e conectores",
+            "pendrive e cartões de memória",
+            "venda de periféricos",
+            "comércio de acessórios de informática",
+            
+            # Equipamentos Maiores (O Médio Comércio)
+            "loja de tablets",
+            "loja de laptops",
+            "venda de notebooks e laptops",
+            "loja de nobreaks",
+            
+            # Varejo e Centro da Cidade (Giro Rápido)
+            "loja de informática",
+            "comércio de informática",
+            "varejo informática",
+            "loja de acessórios informática",
+            "loja de eletrônicos e informática",
+            "suprimentos de informática",
+            "loja de informática centro",
+            
+            # Componentes
             "atacadista de componentes de computador",
             "distribuidor de componentes de computador",
             "atacadista de hardware",
             "distribuidor de hardware",
-            # Revendas B2B
-            "revenda de computadores",
-            "revenda de periféricos",
-            "revenda de acessórios de computador",
-            "revenda de componentes de computador",
-            "revenda de hardware",
-            "suprimentos de informática",
-            # Comércio B2B
-            "comércio de informática",
-            "comércio de computadores",
-            "comércio de periféricos",
-            "comércio de acessórios de computador",
-            "comércio de componentes de computador",
-            "comércio de hardware",
         ],
         "Celulares": [
             # O Alto Volume
@@ -812,6 +784,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "acessórios para celular",
             "comércio de eletrônicos",
             "loja de eletrônicos",
+            "loja de celulares centro",
+            "venda de celular flip",
+            "celular para idoso loja",
+            "assistência e venda de celular",
         ],
         "Áudio e Vídeo": [
             # O Alto Volume B2B
