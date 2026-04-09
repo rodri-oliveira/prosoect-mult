@@ -368,6 +368,9 @@ def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
     if "drone" in seg_clean:
         return _filter_noise_drones(results)
 
+    if "inform" in seg_clean:
+        return _filter_noise_informatica(results)
+
     return results
 
 
@@ -408,6 +411,26 @@ _DRONE_NOISE_NAMES = [
     "papelaria", "bazar",
 ]
 
+# Termos que indicam ruído para Informática (escolas, baterias carro, elétrica, etc)
+_INFO_NOISE_NAMES = [
+    "escola de informatica",
+    "curso de informatica",
+    "treinamento de informatica",
+    "baterias automotiva",
+    "baterias de carro",
+    "baterias para carro",
+    "centro automotivo",
+    "material eletrico",
+    "eletrica",
+    "hidraulica",
+    "escola de",
+    "treinamento",
+    "curso",
+    "moveis para escritorio",
+    "fios e cabos eletricos",  # Cabos de rede/HDMI são ok, mas "fios elétricos" geralmente é construção
+    "desentupidora",
+]
+
 
 def _filter_noise_drones(results: list[dict]) -> list[dict]:
     """Remove estabelecimentos que não têm relação com VENDA de drones.
@@ -423,6 +446,27 @@ def _filter_noise_drones(results: list[dict]) -> list[dict]:
 
         # Remove locadoras, prestadores de serviço e lojas irrelevantes
         is_noise = any(t in nome for t in _DRONE_NOISE_NAMES)
+        if is_noise:
+            continue
+
+        filtered.append(item)
+
+    return filtered
+
+
+def _filter_noise_informatica(results: list[dict]) -> list[dict]:
+    """Filtro para o segmento de Informática.
+    Lógica:
+      - Remove escolas e cursos (não são revendas)
+      - Remove lojas de baterias automotivas (confusão com nobreaks/baterias)
+      - Remove materiais elétricos e móveis (muito distantes do core TI)
+      - Mantém lojas de celulares e eletrônicos pois costumam vender periféricos
+    """
+    filtered = []
+    for item in results:
+        nome = _norm_key(item.get("nome") or "")
+
+        is_noise = any(t in nome for t in _INFO_NOISE_NAMES)
         if is_noise:
             continue
 
