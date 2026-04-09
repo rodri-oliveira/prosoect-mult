@@ -830,15 +830,32 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
         "Drones e Câmeras": [
-            # ── TIER 1: Varejo especializado – queries que GERAM resultados no Maps ──
-            "loja de drones",          # query ouro: 12 resultados em Mogi das Cruzes
-            "loja fpv",               # +1 novo em Mogi
-            "loja de aeromodelismo",
-            "loja de radiocontrol",
-            "loja de aeromodelos",
-            # ── TIER 2: Distribuidores que realmente aparecem no Maps com esse nome ──
+            # TIER 1: Revenda B2B / Distribuidores Corporativos
+            "distribuidor de drones",
+            "atacadista de drones",
+            "revenda de drones",
+            "importadora de drones",
+            
+            # TIER 2: Agricultura de Precisão e Uso Corporativo (Alto valor agregado)
+            "agricultura de precisão",
+            "pulverização agrícola com drones",
+            "tecnologia agrícola",
+            "mapeamento aéreo drones",
+            "topografia drones",
+            "soluções em drones agrícolas",
+            "loja de drones agrícolas",
+            
+            # TIER 3: Varejo Especializado / Lojas Físicas
+            "loja de drones",
+            "venda de drones",
             "drone shop",
             "drone store",
+            "comércio de drones",
+            
+            # TIER 4: Hobby e FPV (Potenciais parceiros e pequenas revendas)
+            "loja de aeromodelismo",
+            "loja fpv",
+            "hobby aeromodelismo",
         ],
         "Ortopédica": ["ortopedia"],
         "Fitness": ["fitness"],
@@ -937,7 +954,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                     "loja", "comércio", "comercial", "atacadista", "distribuidor",
                     "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
                     "locadora", "equipamento", "drone", "câmera", "estabilizador",
-                    "acessório", "clube", "produtora", "estúdio",
+                    "acessório", "clube", "produtora", "estúdio", "importadora",
+                    "agricultura", "tecnologia", "mapeamento", "topografia", "soluções", "hobby", "pulverização"
                 )
                 
                 if anchor_lower.startswith(prefixes_to_ignore):
@@ -951,9 +969,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             q = f"distribuidor de {seg_clean}{local}".strip()
             queries.append({"q": q, "segmento": seg_clean})
             
-            # Queries com marcas relevantes (só para segmentos onde faz sentido)
-            # Drones: Multilaser/Lenovo não fabricam drones – skip
-            seg_brands = brand_terms[:2] if "drone" not in seg_clean.lower() else []
+            # Queries com marcas relevantes
+            # Drones: Inserir "DJI" para focar em profissionais e revendas
+            seg_brands = brand_terms[:2] if "drone" not in seg_clean.lower() else ["DJI"]
             for brand in seg_brands:
                 queries.append({"q": f"{brand} {seg_clean}{local}".strip(), "segmento": seg_clean})
     
