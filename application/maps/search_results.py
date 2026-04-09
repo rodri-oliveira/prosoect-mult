@@ -396,23 +396,34 @@ _DRONE_NOISE_NAMES = [
     "aluguel", "alugação", "locação", "locação", "aluga drone",
     "piloto de drone", "serviço de drone", "filmagem", "filmagens", "fotografia aerea",
     "foto aerea", "aerial", "ceubô drone", "voo de drone",
+    # Segurança / CFTV / Alarmes (não vendem drones)
+    "cftv", "alarme", "alarmes", "segurança", "seguranca",
+    "cerca eletrica", "cerca elétrica", "portão", "portao",
+    "cabeamento estruturado", "intelbras", "câmera de segurança", "camera de seguranca",
+    "monitoramento", "vigilância", "vigilancia",
+    # Material elétrico / Utilidades / Auto peças (lixo genérico)
+    "auto peças", "auto pecas", "autopeças", "autopecas",
+    "material eletrico", "material elétrico", "eletromax",
+    "utilidade", "utilidades", "presentes",
+    "papelaria", "bazar",
 ]
 
 
 def _filter_noise_drones(results: list[dict]) -> list[dict]:
-    """Remove estabelecimentos que não têm relação com VENDA de drones (locadoras, pilotos freelance).
+    """Remove estabelecimentos que não têm relação com VENDA de drones.
 
     Lógica:
-      - Remove se o nome contém termos de aluguel/serviço puro (não vende drone, presta serviço)
-      - Mantém tudo mais (sem filtro agressivo de categoria)
+      - Remove nomes com termos de serviço puro (locação, filmagem)
+      - Remove CFTV, alarmes, segurança, auto peças, material elétrico
+      - Mantém apenas lojas/revendas de drones, aeromodelismo e FPV
     """
     filtered = []
     for item in results:
         nome = _norm_key(item.get("nome") or "")
 
-        # Remove locadoras e prestadores de serviço (não compram para revender)
-        is_service_only = any(t in nome for t in _DRONE_NOISE_NAMES)
-        if is_service_only:
+        # Remove locadoras, prestadores de serviço e lojas irrelevantes
+        is_noise = any(t in nome for t in _DRONE_NOISE_NAMES)
+        if is_noise:
             continue
 
         filtered.append(item)
@@ -830,32 +841,23 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Gamer": ["gamer"],
         "Brinquedos": ["brinquedos"],
         "Drones e Câmeras": [
-            # TIER 1: Revenda B2B / Distribuidores Corporativos
+            # TIER 1: Revenda B2B / Distribuidores
             "distribuidor de drones",
-            "atacadista de drones",
             "revenda de drones",
             "importadora de drones",
+            "revenda DJI",
+            "assistência DJI",
             
-            # TIER 2: Agricultura de Precisão e Uso Corporativo (Alto valor agregado)
-            "agricultura de precisão",
-            "pulverização agrícola com drones",
-            "tecnologia agrícola",
-            "mapeamento aéreo drones",
-            "topografia drones",
-            "soluções em drones agrícolas",
-            "loja de drones agrícolas",
-            
-            # TIER 3: Varejo Especializado / Lojas Físicas
+            # TIER 2: Varejo Especializado / Lojas Físicas
             "loja de drones",
-            "venda de drones",
+            "loja de drones e câmeras",
             "drone shop",
             "drone store",
-            "comércio de drones",
             
-            # TIER 4: Hobby e FPV (Potenciais parceiros e pequenas revendas)
+            # TIER 3: Hobby e FPV (Pequenas revendas especializadas)
             "loja de aeromodelismo",
             "loja fpv",
-            "hobby aeromodelismo",
+            "loja de radiocontrole",
         ],
         "Ortopédica": ["ortopedia"],
         "Fitness": ["fitness"],
@@ -955,7 +957,6 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                     "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
                     "locadora", "equipamento", "drone", "câmera", "estabilizador",
                     "acessório", "clube", "produtora", "estúdio", "importadora",
-                    "agricultura", "tecnologia", "mapeamento", "topografia", "soluções", "hobby", "pulverização"
                 )
                 
                 if anchor_lower.startswith(prefixes_to_ignore):
