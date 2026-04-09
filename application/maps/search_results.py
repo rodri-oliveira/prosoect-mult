@@ -411,23 +411,25 @@ _DRONE_NOISE_NAMES = [
     "papelaria", "bazar",
 ]
 
-# Termos que indicam ruído para Informática (escolas, baterias carro, elétrica, etc)
+# Termos que indicam ruído para Informática (escolas, baterias, serviços puros, etc)
 _INFO_NOISE_NAMES = [
-    "escola de informatica",
-    "curso de informatica",
-    "treinamento de informatica",
-    "baterias automotiva",
-    "baterias de carro",
-    "baterias para carro",
+    "escola de",
+    "curso",
+    "treinamento",
+    "baterias",
+    "bateria",
+    "automotiva",
     "centro automotivo",
+    "nuvem",
+    "cloud",
+    "software",
+    "sistemas",
+    "consultoria",
     "material eletrico",
     "eletrica",
     "hidraulica",
-    "escola de",
-    "treinamento",
-    "curso",
     "moveis para escritorio",
-    "fios e cabos eletricos",  # Cabos de rede/HDMI são ok, mas "fios elétricos" geralmente é construção
+    "servicos de ti",
     "desentupidora",
 ]
 
@@ -457,16 +459,26 @@ def _filter_noise_drones(results: list[dict]) -> list[dict]:
 def _filter_noise_informatica(results: list[dict]) -> list[dict]:
     """Filtro para o segmento de Informática.
     Lógica:
-      - Remove escolas e cursos (não são revendas)
-      - Remove lojas de baterias automotivas (confusão com nobreaks/baterias)
-      - Remove materiais elétricos e móveis (muito distantes do core TI)
-      - Mantém lojas de celulares e eletrônicos pois costumam vender periféricos
+      - Remove escolas, cursos e baterias (automotivas)
+      - Remove empresas de serviço puro (Software, Nuvem, Consultoria)
+      - Verifica tanto o NOME quanto as CATEGORIAS retornadas pelo Maps
     """
     filtered = []
     for item in results:
         nome = _norm_key(item.get("nome") or "")
+        # Pega as categorias (segmentos) que o scraper achou
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        
+        texto_para_busca = f"{nome} {categorias_str}"
 
-        is_noise = any(t in nome for t in _INFO_NOISE_NAMES)
+        is_noise = any(t in texto_para_busca for t in _INFO_NOISE_NAMES)
+        
+        # Exceção: Se for "Bateria" mas também tiver "Informatica" no nome, 
+        # pode ser nobreak, então mantemos (ex: "Real Baterias e Informatica")
+        if "bateria" in texto_para_busca and "inform" in texto_para_busca:
+            is_noise = False
+
         if is_noise:
             continue
 
