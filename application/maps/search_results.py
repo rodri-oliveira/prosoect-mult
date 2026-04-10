@@ -371,6 +371,9 @@ def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
     if "inform" in seg_clean:
         return _filter_noise_informatica(results)
 
+    if "sennheiser" in seg_clean:
+        return _filter_noise_sennheiser(results)
+
     return results
 
 
@@ -433,6 +436,18 @@ _INFO_NOISE_NAMES = [
     "desentupidora",
 ]
 
+_SENNHEISER_NOISE_NAMES = [
+    "som automotivo",
+    "acessorios para carro",
+    "central multimidia",
+    "som residencial",
+    "home theater",
+    "conserto de tv",
+    "conserto de radio",
+    "eletronica de bairro",
+    "alto falante de carro",
+]
+
 
 def _filter_noise_drones(results: list[dict]) -> list[dict]:
     """Remove estabelecimentos que não têm relação com VENDA de drones.
@@ -479,6 +494,31 @@ def _filter_noise_informatica(results: list[dict]) -> list[dict]:
         if "bateria" in texto_para_busca and "inform" in texto_para_busca:
             is_noise = False
 
+        if is_noise:
+            continue
+
+        filtered.append(item)
+
+    return filtered
+
+
+def _filter_noise_sennheiser(results: list[dict]) -> list[dict]:
+    """Filtro para Sennheiser (Pro Audio).
+    Lógica:
+      - Remove som automotivo (maior poluição)
+      - Remove home theater e eletrônicas de conserto
+      - Foca em Pro Audio, Broadcast e Rental
+    """
+    filtered = []
+    for item in results:
+        nome = _norm_key(item.get("nome") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        
+        texto_para_busca = f"{nome} {categorias_str}"
+
+        is_noise = any(t in texto_para_busca for t in _SENNHEISER_NOISE_NAMES)
+        
         if is_noise:
             continue
 
@@ -944,6 +984,26 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "carrinho brinquedo", "hot wheels",
             "faz de conta", "kit cozinha", "kit médico",
         ],
+        "Sennheiser": [
+            # TIER 1: O "Coração" do B2B Pro Audio
+            "áudio profissional",
+            "equipamentos para estúdio de som",
+            "loja de áudio profissional",
+            "locaçao de som para eventos",
+            "locação de microfones profissionais",
+            "sistemas de áudio sem fio",
+            
+            # TIER 2: Segmentos Verticais (Broadcast e Touring)
+            "revenda broadcast áudio",
+            "integrador de sistemas de áudio",
+            "sonorização profissional",
+            "loja de instrumentos musicais especializada",
+            
+            # TIER 3: Nichos Específicos
+            "equipamentos para rádio e tv",
+            "conferência e áudio corporativo",
+            "fones de ouvido audiófilo",
+        ],
     }
 
     # Override Multikids anchors with the updated list
@@ -985,6 +1045,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         is_brand_segment = seg_clean in [
             "Multikids",
             "Health Care",
+            "Sennheiser",
         ]
 
         if is_brand_segment:
