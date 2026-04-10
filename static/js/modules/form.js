@@ -49,11 +49,18 @@ export function pedirDataRetorno(form) {
     const onSave = () => {
         const data = (inputData.value || '').trim();
         const hora = (inputHora.value || '').trim();
+        const obs = (document.getElementById('retornoObs')?.value || '').trim();
+        
         if (!data || !hora) return;
+        
         const d = form.querySelector('.data-retorno-input');
         const h = form.querySelector('.hora-retorno-input');
+        const o = form.querySelector('.observacao-retorno-input');
+        
         if (d) d.value = data;
         if (h) h.value = hora;
+        if (o) o.value = obs;
+        
         cleanup();
         close();
         form.submit();

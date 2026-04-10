@@ -21,11 +21,11 @@ app = Flask(__name__)
 def inject_globals():
     try:
         return {
-            'total_retornos_hoje': prospeccao_repository().get_total_retornos_hoje()
+            'retornos_stats': prospeccao_repository().get_retornos_stats()
         }
     except Exception as e:
         logger.error(f"Erro ao injetar globais: {e}")
-        return {'total_retornos_hoje': 0}
+        return {'retornos_stats': {'hoje': 0, 'atrasados': 0, 'urgentes': 0, 'total': 0}}
 
 
 # ==================== ERROR Handlers ====================

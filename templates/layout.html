@@ -39,6 +39,15 @@
         /* Transições suaves */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        /* Animação para agendamentos atrasados */
+        @keyframes pulse-red {
+            0%, 100% { background-color: #ef4444; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { background-color: #f87171; transform: scale(1.05); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
     </style>
 </head>
 <body class="bg-brand-50 text-gray-900 font-sans antialiased">
@@ -67,15 +76,54 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon_path }}"/>
                         </svg>
                         {{ label }}
-                        {% if key == 'agendamentos' and total_retornos_hoje > 0 %}
-                        <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {{ total_retornos_hoje }}
+                        {% if key == 'agendamentos' and retornos_stats and retornos_stats.total > 0 %}
+                        <span id="badge-agendamentos" 
+                              class="ml-auto text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm transition-all duration-500
+                                     {{ 'bg-red-600 animate-pulse-red' if (retornos_stats.atrasados > 0 or retornos_stats.urgentes > 0) else 'bg-yellow-500' }}">
+                            {{ retornos_stats.total }}
                         </span>
                         {% endif %}
                     </a>
                     {% endfor %}
                 </nav>
             </aside>
+
+            <!-- Script de Atualização Proativa -->
+            <script>
+                async function refreshStats() {
+                    try {
+                        const response = await fetch('/api/retornos/stats');
+                        const data = await response.json();
+                        if (data && data.total !== undefined) {
+                            const badge = document.getElementById('badge-agendamentos');
+                            if (badge) {
+                                badge.innerText = data.total;
+                                // Atualiza cores e animação
+                                if (data.atrasados > 0 || data.urgentes > 0) {
+                                    badge.classList.remove('bg-yellow-500');
+                                    badge.classList.add('bg-red-600', 'animate-pulse-red');
+                                } else if (data.total > 0) {
+                                    badge.classList.remove('bg-red-600', 'animate-pulse-red');
+                                    badge.classList.add('bg-yellow-500');
+                                } else {
+                                    badge.style.display = 'none';
+                                }
+                            } else if (data.total > 0) {
+                                // Se não tinha badge e agora tem total, recarrega para criar o elemento
+                                // ou poderíamos criar via JS aqui, mas o F5 é mais seguro para o layout
+                                if (window.location.pathname !== '/agendamentos') {
+                                    clearTimeout(refreshTimer);
+                                    window.location.reload();
+                                }
+                            }
+                        }
+                    } catch (e) { console.warn("Erro refresh stats", e); }
+                }
+                // Atualiza a cada 2 minutos
+                const refreshTimer = setInterval(refreshStats, 120000);
+                // Primeira execução breve
+                setTimeout(refreshStats, 5000);
+            </script>
 
             <!-- Área de Conteúdo -->
             <main class="flex-1 relative z-0 overflow-y-auto focus:outline-none flex flex-col bg-brand-50">

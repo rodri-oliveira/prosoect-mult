@@ -211,6 +211,16 @@ def api_prospeccao_eventos(prospeccao_id: int):
         return jsonify({"ok": False, "message": "Erro ao buscar histórico"}), 500
 
 
+def api_retornos_stats():
+    """API: Obter estatísticas de agendamento (hoje, atrasados, urgentes)."""
+    try:
+        stats = prospeccao_repository().get_retornos_stats()
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Erro em api_retornos_stats: {e}", exc_info=True)
+        return jsonify({"hoje": 0, "atrasados": 0, "urgentes": 0, "total": 0}), 500
+
+
 def register_api_routes(app: Flask) -> None:
     """Registra todas as rotas de API."""
     app.add_url_rule(
@@ -247,5 +257,11 @@ def register_api_routes(app: Flask) -> None:
         "/api/prospeccao/<int:prospeccao_id>/eventos",
         endpoint="api_prospeccao_eventos",
         view_func=api_prospeccao_eventos,
+        methods=["GET"],
+    )
+    app.add_url_rule(
+        "/api/retornos/stats",
+        endpoint="api_retornos_stats",
+        view_func=api_retornos_stats,
         methods=["GET"],
     )

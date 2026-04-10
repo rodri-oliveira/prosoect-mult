@@ -63,7 +63,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if nome:
             nome_raw = (nome or "").strip().lower()
             nome_nospace = nome_raw.replace(" ", "")
-            where_parts.append("(lower(nome_lo_ja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
             params.append(f"%{nome_raw}%")
             params.append(f"%{nome_nospace}%")
 
@@ -530,13 +530,32 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
-    def get_total_retornos_hoje(self) -> int:
-        from datetime import date
+    def get_retornos_stats(self) -> dict:
+        """Retorna estatísticas detalhadas de agendamentos: hoje, atrasados e urgentes."""
+        from datetime import datetime, date, timedelta
 
-        hoje = date.today().isoformat()
+        agora = datetime.now()
+        hoje_date = date.today().isoformat()
+        uma_hora_depois = (agora + timedelta(hours=1)).strftime("%H:%M")
+        hora_atual = agora.strftime("%H:%M")
 
         conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
         c = conn.cursor()
+
+        # 1. Atrasados (Data anterior a hoje)
+        c.execute(
+            """
+            SELECT COUNT(*) FROM prospeccao_temp
+            WHERE data_retorno < ?
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+              AND (arquivado = 0 OR arquivado IS NULL)
+        """,
+            (hoje_date,),
+        )
+        atrasados = c.fetchone()[0]
+
+        # 2. Hoje (Total para hoje)
         c.execute(
             """
             SELECT COUNT(*) FROM prospeccao_temp
@@ -544,11 +563,32 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
               AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
-            (hoje,),
+            (hoje_date,),
         )
-        total = int(c.fetchone()[0])
+        hoje = c.fetchone()[0]
+
+        # 3. Urgentes (Hoje, e o horário já passou ou falta < 1h)
+        # Nota: Se hora_retorno for nulo, consideramos urgente se for hoje
+        c.execute(
+            """
+            SELECT COUNT(*) FROM prospeccao_temp
+            WHERE data_retorno = ?
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+              AND (arquivado = 0 OR arquivado IS NULL)
+              AND (hora_retorno <= ? OR hora_retorno IS NULL)
+        """,
+            (hoje_date, uma_hora_depois),
+        )
+        urgentes = c.fetchone()[0]
+
         conn.close()
-        return total
+        
+        return {
+            "hoje": hoje,
+            "atrasados": atrasados,
+            "urgentes": urgentes,
+            "total": hoje + atrasados
+        }
 
     def get_eventos(self, prospeccao_id: int) -> list[dict]:
         conn = sqlite3.connect(DB_PATH)
