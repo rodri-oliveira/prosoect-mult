@@ -229,6 +229,25 @@ def search_maps_results_with_repo(
                 merged_after_dedupe,
                 len(seen_keys_total),
             )
+            # Ordenação Estratégica: Fixo > Celular > Outros
+            def _get_sort_priority(it: dict[str, Any]) -> int:
+                tel = str(it.get("telefone") or "").strip()
+                # Limpa apenas dígitos
+                clean = "".join(ch for ch in tel if ch.isdigit())
+                # Se tem DDD (10 ou 11 dígitos), o 3º dígito é o definidor
+                if len(clean) >= 10:
+                    first = clean[2]
+                    if first in ('2', '3', '4', '5'): return 1 # Fixo
+                    if first == '9': return 2 # Celular
+                elif len(clean) > 0:
+                    # Sem DDD, pega o 1º dígito
+                    first = clean[0]
+                    if first in ('2', '3', '4', '5'): return 1 
+                    if first == '9': return 2
+                return 3 # Outros/Sem tel
+
+            merged.sort(key=_get_sort_priority)
+            
             itens = merged[:limit]
             for it in itens:
                 it["cidade"] = it.get("cidade") or cidade
