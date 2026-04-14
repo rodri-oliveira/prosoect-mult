@@ -135,7 +135,6 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
-          AND (arquivado = 0 OR arquivado IS NULL)
         AND status_prospeccao != 'Não contatado'
     """, (data_inicio, data_fim))
     tentativas_prospeccao = c.fetchone()['qtd']
@@ -145,7 +144,6 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
         SELECT status_prospeccao, COUNT(*) as total
         FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
-          AND (arquivado = 0 OR arquivado IS NULL)
         GROUP BY status_prospeccao
     """, (data_inicio, data_fim))
     status_prospeccao = c.fetchall()
@@ -154,7 +152,6 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT COUNT(*) as qtd FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
-          AND (arquivado = 0 OR arquivado IS NULL)
         AND convertido_lead_id IS NOT NULL
     """, (data_inicio, data_fim))
     convertidos = c.fetchone()['qtd']
@@ -173,7 +170,6 @@ def get_relatorio_completo(data_inicio=None, data_fim=None):
     c.execute("""
         SELECT * FROM prospeccao_temp 
         WHERE data_prospeccao BETWEEN ? AND ?
-          AND (arquivado = 0 OR arquivado IS NULL)
         ORDER BY data_prospeccao DESC, data_criacao DESC
     """, (data_inicio, data_fim))
     detalhes_prospeccao = c.fetchall()

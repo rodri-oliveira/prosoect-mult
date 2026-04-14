@@ -443,30 +443,34 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
-    def arquivar(self, prospeccao_id: int) -> bool:
+    def converter_para_lead(self, prospeccao_id: int) -> int | None:
+        """Converte prospecção em lead. Retorna lead_id ou None."""
         conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        c.execute(
-            "UPDATE prospeccao_temp SET arquivado = 1 WHERE id = ?",
-            (prospeccao_id,),
-        )
-        c.execute(
-            "SELECT * FROM prospeccao_temp WHERE id = ? AND (arquivado = 0 OR arquivado IS NULL)",
-            (prospeccao_id,),
-        )
+
+        # Buscar dados da prospecção
+        c.execute("SELECT * FROM prospeccao_temp WHERE id = ?", (prospeccao_id,))
         row = c.fetchone()
         if not row:
             conn.close()
             return None
 
-        col_names = [desc[0] for desc in c.description]
-        prospeccao = dict(zip(col_names, row))
+        prospeccao = dict(row)
 
+        # Se já foi convertido, apenas retornar o ID
         if prospeccao.get("convertido_lead_id"):
             lead_id = prospeccao["convertido_lead_id"]
+            
+            # Garantir que está arquivado
+            if not prospeccao.get("arquivado"):
+                c.execute("UPDATE prospeccao_temp SET arquivado = 1 WHERE id = ?", (prospeccao_id,))
+                conn.commit()
+                
             conn.close()
             return lead_id
 
+        # Mapear dados para o novo lead
         nome = (prospeccao.get("nome_loja") or "").strip()
         cidade = (prospeccao.get("cidade") or "").strip()
         estado = (prospeccao.get("estado") or "").strip()
@@ -480,6 +484,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         maps_url = (prospeccao.get("maps_url") or "").strip()
         site = (prospeccao.get("site") or "").strip()
 
+        # Inserir na tabela de leads
         c.execute(
             """
             INSERT INTO leads (nome_loja, cidade, estado, cnpj, telefone, whatsapp, endereco, status, observacoes, maps_place_id, maps_url, site, data_criacao)
@@ -504,7 +509,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         lead_id = c.lastrowid
 
         # Inserir segmentos na tabela segmentos_loja
-        if segmento:
+        if segmento and lead_id:
             segmentos_list = [s.strip() for s in segmento.split(",") if s.strip()]
             for seg in segmentos_list:
                 c.execute(
@@ -513,13 +518,40 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 )
             conn.commit()
 
+        # Atualizar prospecção como convertida e arquivada
         c.execute(
             "UPDATE prospeccao_temp SET convertido_lead_id = ?, arquivado = 1 WHERE id = ?",
             (lead_id, prospeccao_id),
         )
         conn.commit()
+
+        # Migrar histórico de eventos para a tabela contatos do lead
+        c.execute("SELECT * FROM prospeccao_eventos WHERE prospeccao_id = ?", (prospeccao_id,))
+        eventos = c.fetchall()
+        for ev in eventos:
+            detalhe = ev['detalhe'] or ""
+            # Tentar separar resultado de observação se houver "|"
+            if " | " in detalhe:
+                res, obs = detalhe.split(" | ", 1)
+            else:
+                res, obs = detalhe, ""
+                
+            c.execute(
+                """
+                INSERT INTO contatos (lead_id, data, tipo_contato, resultado, observacao)
+                VALUES (?, ?, ?, ?, ?)
+            """,
+                (lead_id, ev['data_evento'], "Prospecção", res, obs),
+            )
+        conn.commit()
+
         conn.close()
         return lead_id
+
+    def arquivar(self, prospeccao_id: int) -> bool:
+        """Arquiva uma prospecção (converte em lead se necessário)."""
+        lead_id = self.converter_para_lead(prospeccao_id)
+        return lead_id is not None
 
     def delete(self, prospeccao_id: int) -> bool:
         conn = sqlite3.connect(DB_PATH)
