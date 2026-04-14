@@ -431,7 +431,16 @@ _DRONE_NOISE_NAMES = [
     "material eletrico", "material elétrico", "eletromax",
     "utilidade", "utilidades", "presentes",
     "papelaria", "bazar",
+    # Limpeza / Produtos não relacionados
+    "limpeza", "produtos de limpeza", "distribuidora de limpeza",
+    "distribuidora de produtos", "atacado",
+    # Imagens / Serviços (não vendem drones)
+    "imagens aereas", "imagem aerea", "imagens aéreas", "imagem aérea",
+    "drone show", "drone light show",
+    # Shows / Entretenimento
+    "magic show", "espetaculo", "entretenimento",
 ]
+
 
 # Termos que indicam ruído para Informática (escolas, baterias, serviços puros, etc)
 _INFO_NOISE_NAMES = [
@@ -473,15 +482,19 @@ def _filter_noise_drones(results: list[dict]) -> list[dict]:
 
     Lógica:
       - Remove nomes com termos de serviço puro (locação, filmagem)
-      - Remove CFTV, alarmes, segurança, auto peças, material elétrico
+      - Remove CFTV, alarmes, segurança, auto peças, material elétrico, limpeza
+      - Verifica nome + categorias do Maps
       - Mantém apenas lojas/revendas de drones, aeromodelismo e FPV
     """
     filtered = []
     for item in results:
         nome = _norm_key(item.get("nome") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        texto_para_busca = f"{nome} {categorias_str}"
 
         # Remove locadoras, prestadores de serviço e lojas irrelevantes
-        is_noise = any(t in nome for t in _DRONE_NOISE_NAMES)
+        is_noise = any(t in texto_para_busca for t in _DRONE_NOISE_NAMES)
         if is_noise:
             continue
 
