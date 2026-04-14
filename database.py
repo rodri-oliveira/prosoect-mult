@@ -39,6 +39,10 @@ def init_db():
         c.execute('ALTER TABLE leads ADD COLUMN maps_url TEXT')
     if 'site' not in lead_cols:
         c.execute('ALTER TABLE leads ADD COLUMN site TEXT')
+    if 'responsavel' not in lead_cols:
+        c.execute('ALTER TABLE leads ADD COLUMN responsavel TEXT')
+    if 'email' not in lead_cols:
+        c.execute('ALTER TABLE leads ADD COLUMN email TEXT')
     
     # Tabela segmentos_loja
     c.execute('''
@@ -70,7 +74,7 @@ def init_db():
     if 'hora_retorno' not in contato_cols:
         c.execute('ALTER TABLE contatos ADD COLUMN hora_retorno TIME')
     
-    # Tabela prospeccao_temp - rascunho de prospecção (mantém histórico permanente)
+    # Tabela prospeccao_temp
     c.execute('''
         CREATE TABLE IF NOT EXISTS prospeccao_temp (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +82,9 @@ def init_db():
             cnpj TEXT,
             telefone TEXT,
             whatsapp TEXT,
+            email TEXT,
+            site TEXT,
+            responsavel TEXT,
             endereco TEXT,
             cidade TEXT,
             estado TEXT,
@@ -89,9 +96,25 @@ def init_db():
             arquivado BOOLEAN DEFAULT 0,
             data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
             convertido_lead_id INTEGER,
+            maps_url TEXT,
+            maps_place_id TEXT,
             FOREIGN KEY(convertido_lead_id) REFERENCES leads(id)
         )
     ''')
+
+    c.execute("PRAGMA table_info(prospeccao_temp)")
+    cols = [row[1] for row in c.fetchall()]
+    
+    # Colunas faltantes na prospeccao_temp
+    for col in ['responsavel', 'email', 'site', 'maps_url', 'maps_place_id', 'cnpj', 
+                'data_primeiro_agendamento', 'tentativas_retorno', 'data_ultima_tentativa', 
+                'hora_retorno']:
+        if col not in cols:
+            type_str = 'TEXT'
+            if col == 'tentativas_retorno': type_str = 'INTEGER DEFAULT 0'
+            elif col in ['data_primeiro_agendamento', 'data_ultima_tentativa']: type_str = 'DATE'
+            elif col == 'hora_retorno': type_str = 'TIME'
+            c.execute(f'ALTER TABLE prospeccao_temp ADD COLUMN {col} {type_str}')
 
     c.execute('''
         CREATE TABLE IF NOT EXISTS prospeccao_eventos (
@@ -106,64 +129,8 @@ def init_db():
         )
     ''')
 
-    c.execute("PRAGMA table_info(prospeccao_temp)")
-    cols = [row[1] for row in c.fetchall()]
-    if 'cnpj' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN cnpj TEXT')
-
-    if 'data_primeiro_agendamento' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN data_primeiro_agendamento DATE')
-    if 'tentativas_retorno' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN tentativas_retorno INTEGER DEFAULT 0')
-    if 'data_ultima_tentativa' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN data_ultima_tentativa DATE')
-
-    if 'hora_retorno' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN hora_retorno TIME')
-
-    if 'maps_place_id' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_place_id TEXT')
-    if 'maps_url' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN maps_url TEXT')
-    if 'site' not in cols:
-        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN site TEXT')
-
-    # --- NOVAS TABELAS DE FATURAMENTO E PÓS-VENDA ---
-    
-    # Tabela pedidos (Cabeçalho da venda)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS pedidos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            lead_id INTEGER NOT NULL,
-            data_pedido DATE DEFAULT CURRENT_DATE,
-            numero_pedido TEXT,
-            valor_total REAL DEFAULT 0,
-            status_faturamento TEXT DEFAULT 'Pendente',
-            data_proximo_contato DATE,
-            observacoes TEXT,
-            data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE
-        )
-    ''')
-
-    # Tabela pedido_itens (Itens detalhados do pedido - Padrão Multilaser)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS pedido_itens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pedido_id INTEGER NOT NULL,
-            familia TEXT,
-            codigo_produto TEXT,
-            descricao TEXT,
-            quantidade INTEGER DEFAULT 1,
-            preco_unitario REAL DEFAULT 0,
-            preco_total REAL DEFAULT 0,
-            FOREIGN KEY(pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
-        )
-    ''')
-    
     conn.commit()
     conn.close()
 
 if __name__ == '__main__':
     init_db()
-    print("Banco de dados inicializado com sucesso.")

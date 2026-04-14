@@ -118,6 +118,7 @@ def rascunho_novo():
             status_prospeccao=status_prospeccao,
             data_retorno=(request.form.get("data_retorno") or "").strip() or None,
             hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
+            responsavel=(request.form.get("responsavel") or "").strip() or None,
         ),
         prospeccao_repository(),
     )
@@ -172,8 +173,20 @@ def rascunho_excluir(prospeccao_id: int):
 
 def rascunho_observacao(prospeccao_id: int):
     observacao = (request.form.get("observacao") or "").strip() or None
+    telefone = (request.form.get("telefone") or "").strip() or None
+    whatsapp = (request.form.get("whatsapp") or "").strip() or None
+    responsavel = (request.form.get("responsavel") or "").strip() or None
+    email = (request.form.get("email") or "").strip() or None
+    
     repo = prospeccao_repository()
-    repo.update_observacao(prospeccao_id, observacao)
+    repo.update_draft(
+        prospeccao_id=prospeccao_id,
+        observacao=observacao,
+        telefone=telefone,
+        whatsapp=whatsapp,
+        responsavel=responsavel,
+        email=email
+    )
     return redirect(_build_prospeccao_url_with_filters())
 
 

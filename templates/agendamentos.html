@@ -214,13 +214,31 @@
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
+                 data-responsavel="{{ item.responsavel or '' }}"
+                 data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos#retornos-atrasados">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
+                        <h4 class="font-semibold text-gray-900">
+                            {{ item.nome_loja }}
+                            {% if item.maps_url %}
+                            <a href="{{ item.maps_url }}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">📍</a>
+                            {% endif %}
+                        </h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
-                        <p class="text-sm text-red-600 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
-                        <p class="text-sm text-green-600 font-medium">WhatsApp: {{ item.whatsapp or 'Sem WhatsApp' }}</p>
+                        {% if item.responsavel %}
+                        <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-sm text-red-600 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.whatsapp %}
+                            <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
+                                WhatsApp: {{ item.whatsapp }}
+                            </a>
+                            {% else %}
+                            <p class="text-sm text-gray-400">Sem WhatsApp</p>
+                            {% endif %}
+                        </div>
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
@@ -288,13 +306,31 @@
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
+                 data-responsavel="{{ item.responsavel or '' }}"
+                 data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos#retornos-hoje">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
+                        <h4 class="font-semibold text-gray-900">
+                            {{ item.nome_loja }}
+                            {% if item.maps_url %}
+                            <a href="{{ item.maps_url }}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">📍</a>
+                            {% endif %}
+                        </h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
-                        <p class="text-sm text-yellow-700 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
-                        <p class="text-sm text-green-600 font-medium">WhatsApp: {{ item.whatsapp or 'Sem WhatsApp' }}</p>
+                        {% if item.responsavel %}
+                        <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-sm text-yellow-700 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.whatsapp %}
+                            <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
+                                WhatsApp: {{ item.whatsapp }}
+                            </a>
+                            {% else %}
+                            <p class="text-sm text-gray-400">Sem WhatsApp</p>
+                            {% endif %}
+                        </div>
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
@@ -359,13 +395,31 @@
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
+                 data-responsavel="{{ item.responsavel or \'\' }}"
+                 data-maps-url="{{ item.maps_url or \'\' }}"
                  data-next="/agendamentos?todos=1">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
+                        <h4 class="font-semibold text-gray-900">
+                            {{ item.nome_loja }}
+                            {% if item.maps_url %}
+                            <a href="{{ item.maps_url }}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">📍</a>
+                            {% endif %}
+                        </h4>
                         <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}/ {{ item.estado }}{% endif %}</p>
-                        <p class="text-sm text-blue-600 font-medium">📞 {{ item.telefone or 'Sem telefone' }}</p>
-                        <p class="text-sm text-green-600 font-medium">WhatsApp: {{ item.whatsapp or 'Sem WhatsApp' }}</p>
+                        {% if item.responsavel %}
+                        <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-sm text-blue-600 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.whatsapp %}
+                            <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
+                                WhatsApp: {{ item.whatsapp }}
+                            </a>
+                            {% else %}
+                            <p class="text-sm text-gray-400">Sem WhatsApp</p>
+                            {% endif %}
+                        </div>
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
@@ -431,6 +485,7 @@
                 <div id="modalTitle" class="text-lg font-semibold text-gray-900">-</div>
                 <div id="modalPhone" class="text-sm text-gray-600 mt-0.5">-</div>
                 <div id="modalWhatsapp" class="text-sm text-green-600 mt-0.5">-</div>
+                <div id="modalResponsavel" class="text-xs font-bold text-brand-600 mt-1 uppercase">-</div>
             </div>
             <button type="button" class="text-gray-500 hover:text-gray-700" onclick="closeRegistrarModal()">✕</button>
         </div>

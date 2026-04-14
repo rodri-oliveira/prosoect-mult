@@ -297,6 +297,8 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             _add_update("maps_place_id", maps_place_id)
             _add_update("maps_url", maps_url)
             _add_update("site", site)
+            _add_update("responsavel", (dados.get("responsavel") or "").strip() or None)
+            _add_update("email", (dados.get("email") or "").strip() or None)
 
             if update_parts:
                 c.execute(
@@ -309,8 +311,8 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         c.execute(
             """
-            INSERT INTO prospeccao_temp (nome_loja, cnpj, telefone, whatsapp, endereco, cidade, estado, segmento, status_prospeccao, observacao, data_retorno, data_primeiro_agendamento, tentativas_retorno, data_ultima_tentativa, hora_retorno, maps_place_id, maps_url, site)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO prospeccao_temp (nome_loja, cnpj, telefone, whatsapp, endereco, cidade, estado, segmento, status_prospeccao, observacao, data_retorno, data_primeiro_agendamento, tentativas_retorno, data_ultima_tentativa, hora_retorno, maps_place_id, maps_url, site, responsavel, email)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 (dados.get("nome_loja") or "").strip(),
@@ -331,6 +333,8 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 maps_place_id,
                 maps_url,
                 site,
+                (dados.get("responsavel") or "").strip() or None,
+                (dados.get("email") or "").strip() or None,
             ),
         )
         conn.commit()
@@ -409,35 +413,75 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn.close()
         return affected > 0
 
-    def update_observacao(self, prospeccao_id: int, observacao: str | None) -> bool:
-        """Atualiza observação registrando histórico antes de sobrescrever."""
+    def update_draft(
+        self,
+        prospeccao_id: int,
+        observacao: str | None = None,
+        telefone: str | None = None,
+        whatsapp: str | None = None,
+        responsavel: str | None = None,
+        email: str | None = None,
+    ) -> bool:
+        """Atualiza campos do rascunho registrando histórico da observação se necessário."""
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
-        # Buscar observação atual para registrar histórico
+        # Buscar dados atuais para histórico e comparação
         c.execute(
-            "SELECT observacao FROM prospeccao_temp WHERE id = ?",
+            "SELECT observacao, telefone, whatsapp, responsavel, email FROM prospeccao_temp WHERE id = ?",
             (prospeccao_id,),
         )
         row = c.fetchone()
-        observacao_atual = row[0] if row else None
-
-        # Se houver observação anterior e a nova for diferente, registrar histórico
-        if observacao_atual and observacao_atual.strip() and observacao and observacao.strip() and observacao_atual != observacao:
+        if not row:
+            conn.close()
+            return False
+            
+        obs_atual = row[0]
+        
+        # Histórico de observação
+        if obs_atual and obs_atual.strip() and observacao and observacao.strip() and obs_atual != observacao:
             c.execute(
                 """
                 INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
                 VALUES (?, 'OBSERVACAO_CHANGE', ?)
             """,
-                (prospeccao_id, observacao_atual),
+                (prospeccao_id, obs_atual),
             )
             conn.commit()
 
-        # Atualizar observação atual
-        c.execute(
-            "UPDATE prospeccao_temp SET observacao = ? WHERE id = ?",
-            ((observacao or "").strip() or None, prospeccao_id),
-        )
+        updates = []
+        params = []
+        
+        if observacao is not None:
+            updates.append("observacao = ?")
+            params.append((observacao or "").strip() or None)
+        
+        if telefone is not None:
+            from application.shared.phone_utils import normalize_phone
+            updates.append("telefone = ?")
+            params.append(normalize_phone(telefone))
+            
+        if whatsapp is not None:
+            from application.shared.phone_utils import normalize_phone
+            updates.append("whatsapp = ?")
+            params.append(normalize_phone(whatsapp))
+            
+        if responsavel is not None:
+            updates.append("responsavel = ?")
+            params.append((responsavel or "").strip() or None)
+            
+        if email is not None:
+            updates.append("email = ?")
+            params.append((email or "").strip() or None)
+            
+        if not updates:
+            conn.close()
+            return False
+            
+        params.append(prospeccao_id)
+        query = f"UPDATE prospeccao_temp SET {', '.join(updates)} WHERE id = ?"
+        
+        c.execute(query, tuple(params))
         conn.commit()
         affected = c.rowcount
         conn.close()
@@ -483,12 +527,14 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         maps_place_id = (prospeccao.get("maps_place_id") or "").strip()
         maps_url = (prospeccao.get("maps_url") or "").strip()
         site = (prospeccao.get("site") or "").strip()
+        responsavel = (prospeccao.get("responsavel") or "").strip()
+        email = (prospeccao.get("email") or "").strip()
 
         # Inserir na tabela de leads
         c.execute(
             """
-            INSERT INTO leads (nome_loja, cidade, estado, cnpj, telefone, whatsapp, endereco, status, observacoes, maps_place_id, maps_url, site, data_criacao)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE('now'))
+            INSERT INTO leads (nome_loja, cidade, estado, cnpj, telefone, whatsapp, endereco, status, observacoes, maps_place_id, maps_url, site, responsavel, email, data_criacao)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE('now'))
         """,
             (
                 nome,
@@ -503,6 +549,8 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 maps_place_id or None,
                 maps_url or None,
                 site or None,
+                responsavel or None,
+                email or None,
             ),
         )
         conn.commit()

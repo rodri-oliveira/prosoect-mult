@@ -84,6 +84,8 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 l.estado,
                 l.telefone,
                 l.whatsapp,
+                l.responsavel,
+                l.maps_url,
                 c2.data_retorno,
                 c2.hora_retorno,
                 (
@@ -129,6 +131,8 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 l.estado,
                 l.telefone,
                 l.whatsapp,
+                l.responsavel,
+                l.maps_url,
                 c2.data_retorno,
                 c2.hora_retorno,
                 (
@@ -192,6 +196,8 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                     l.estado,
                     l.telefone,
                     l.whatsapp,
+                    l.responsavel,
+                    l.maps_url,
                     c2.data_retorno,
                     c2.hora_retorno,
                     (SELECT tipo_contato FROM contatos WHERE lead_id = l.id ORDER BY data DESC LIMIT 1) as ultimo_tipo_contato,

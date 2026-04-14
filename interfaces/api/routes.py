@@ -181,6 +181,8 @@ def api_rascunho_novo():
                 status_prospeccao=(data.get("status_prospeccao") or "").strip() or None,
                 data_retorno=(data.get("data_retorno") or "").strip() or None,
                 hora_retorno=(data.get("hora_retorno") or "").strip() or None,
+                responsavel=(data.get("responsavel") or "").strip() or None,
+                email=(data.get("email") or "").strip() or None,
             ),
             prospeccao_repository(),
         )

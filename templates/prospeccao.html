@@ -221,7 +221,17 @@
                             <div class="flex justify-between items-start mb-2">
                                 <div>
                                     <h4 class="font-semibold text-gray-900">{{ item.nome_loja }}</h4>
-                                    <p class="text-sm text-gray-500">{{ item.cidade }} {% if item.estado %}- {{ item.estado }}{% endif %}</p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ item.cidade }} {% if item.estado %}- {{ item.estado }}{% endif %}
+                                        {% if item.maps_url %}
+                                        <a href="{{ item.maps_url }}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">
+                                            📍
+                                        </a>
+                                        {% endif %}
+                                    </p>
+                                    {% if item.responsavel %}
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
+                                    {% endif %}
                                     {% if item.segmento %}
                                     <span class="inline-block mt-1 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{{ item.segmento }}</span>
                                     {% endif %}
@@ -248,14 +258,30 @@
                             </div>
                             
                             {% if item.telefone %}
-                            <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                            <div class="flex items-center gap-2 text-sm text-gray-600 mb-1">
                                 <span>📞 {{ item.telefone }}</span>
                             </div>
                             {% endif %}
 
+                            {% if item.cnpj %}
+                            <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-2">
+                                <span class="font-bold">CNPJ:</span> {{ item.cnpj }}
+                            </div>
+                            {% endif %}
+
                             {% if item.whatsapp %}
-                            <div class="flex items-center gap-2 text-sm text-green-600 mb-2">
-                                <span>WhatsApp: {{ item.whatsapp }}</span>
+                            <div class="flex items-center gap-2 text-sm text-green-600 mb-1">
+                                <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="flex items-center gap-1 hover:underline font-bold">
+                                    <span>WhatsApp: {{ item.whatsapp }}</span>
+                                 </a>
+                            </div>
+                            {% endif %}
+
+                            {% if item.email %}
+                            <div class="flex items-center gap-2 text-sm text-brand-600 mb-2">
+                                <a href="mailto:{{ item.email }}" class="flex items-center gap-1 hover:underline">
+                                    <span>✉️ {{ item.email }}</span>
+                                </a>
                             </div>
                             {% endif %}
                             
@@ -291,11 +317,44 @@
                                 <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
                                 <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
                                 <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <div>
+                                        <label class="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">Telefone</label>
+                                        <input type="text" name="telefone" value="{{ item.telefone or '' }}"
+                                               placeholder="Telefone"
+                                               class="w-full text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">WhatsApp</label>
+                                        <input type="text" name="whatsapp" value="{{ item.whatsapp or '' }}"
+                                               placeholder="WhatsApp"
+                                               class="w-full text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                    </div>
+                                    <div class="col-span-2 grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">Responsável</label>
+                                            <input type="text" name="responsavel" value="{{ item.responsavel or '' }}"
+                                                   placeholder="Responsável"
+                                                   class="w-full text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">Email</label>
+                                            <input type="email" name="email" value="{{ item.email or '' }}"
+                                                   placeholder="E-mail"
+                                                   class="w-full text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="flex gap-1">
-                                    <input type="text" name="observacao" value="{{ item.observacao or '' }}"
-                                           placeholder="Adicionar observação..."
-                                           class="flex-1 text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-brand-600 text-white hover:bg-brand-700">Salvar</button>
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">Observação</label>
+                                        <input type="text" name="observacao" value="{{ item.observacao or '' }}"
+                                               placeholder="Atualizar observação..."
+                                               class="w-full text-xs rounded border-gray-300 px-2 py-1 focus:border-brand-500 focus:ring-brand-500">
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button type="submit" class="px-4 py-1.5 text-xs font-bold rounded bg-brand-600 text-white hover:bg-brand-700 shadow-sm transition-all active:scale-95">Salvar</button>
+                                    </div>
                                 </div>
                             </form>
 
@@ -492,6 +551,11 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-medium text-gray-700">Responsável</label>
+                        <input type="text" name="responsavel" id="f_responsavel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border" placeholder="Nome do contato">
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-medium text-gray-700">CNPJ</label>
                         <input type="text" name="cnpj" id="f_cnpj" autocomplete="off" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border" placeholder="00.000.000/0000-00">
                         <div class="mt-2 flex items-center gap-2">
@@ -518,6 +582,11 @@
                             <input type="text" name="site" id="f_site" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border" placeholder="ex: empresa.com.br">
                             <button type="button" id="f_site_btn" class="hidden px-3 rounded-md bg-gray-800 text-white text-xs font-medium hover:bg-gray-900">Abrir</button>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">Email</label>
+                        <input type="email" name="email" id="f_email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border" placeholder="exemplo@loja.com.br">
                     </div>
 
                     <div>

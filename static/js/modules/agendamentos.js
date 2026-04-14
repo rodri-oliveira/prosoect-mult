@@ -147,12 +147,28 @@ function openRegistrarModal(cardEl) {
     const wa = cardEl.getAttribute('data-whatsapp') || '';
     const seg = cardEl.getAttribute('data-segmento') || '';
     const obsAtual = cardEl.getAttribute('data-observacao') || '';
+    const resp = cardEl.getAttribute('data-responsavel') || '';
+    const mapsUrl = cardEl.getAttribute('data-maps-url') || '';
     const next = cardEl.getAttribute('data-next') || '/agendamentos';
 
-    document.getElementById('modalTitle').textContent = nome;
+    const titleEl = document.getElementById('modalTitle');
+    if (titleEl) {
+        if (mapsUrl) {
+            titleEl.innerHTML = `${nome} <a href="${mapsUrl}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">📍</a>`;
+        } else {
+            titleEl.textContent = nome;
+        }
+    }
     document.getElementById('modalPhone').textContent = tel ? `📞 ${tel}` : '📞 Sem telefone';
     const waEl = document.getElementById('modalWhatsapp');
     if (waEl) waEl.textContent = wa ? `WhatsApp: ${wa}` : 'WhatsApp: Sem WhatsApp';
+    
+    const respEl = document.getElementById('modalResponsavel');
+    if (respEl) {
+        respEl.textContent = resp ? `👤 ${resp}` : '👤 Responsável Não Informado';
+        respEl.classList.toggle('text-gray-400', !resp);
+        respEl.classList.toggle('text-brand-600', !!resp);
+    }
     document.getElementById('modalNext').value = next;
     document.getElementById('modalSegmento').value = seg;
     document.getElementById('modalResultado').value = '';

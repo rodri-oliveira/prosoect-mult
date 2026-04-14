@@ -25,6 +25,8 @@ class CreateProspecctionDraftRequest:
     status_prospeccao: str | None = None
     data_retorno: str | None = None
     hora_retorno: str | None = None
+    responsavel: str | None = None
+    email: str | None = None
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,8 @@ def create_prospeccao_draft_with_repo(
         "status_prospeccao": req.status_prospeccao,
         "data_retorno": req.data_retorno,
         "hora_retorno": req.hora_retorno,
+        "responsavel": req.responsavel,
+        "email": req.email,
     }
 
     prospeccao_id, created = repo.add(dados)

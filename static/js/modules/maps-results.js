@@ -230,6 +230,7 @@ const useItem = async (it) => {
     setVal('f_endereco', enriched.endereco || '');
     setVal('f_telefone', enriched.telefone || '');
     setVal('f_whatsapp', enriched.whatsapp || enriched.telefone || '');
+    setVal('f_email', enriched.email || '');
     setVal('f_site', enriched.website || enriched.site || '');
     setVal('f_maps_place_id', enriched.maps_place_id || enriched.id || '');
     setVal('f_maps_url', enriched.maps_url || '');
