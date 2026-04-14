@@ -229,8 +229,19 @@
                         {% if item.responsavel %}
                         <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
                         {% endif %}
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
                             <p class="text-sm text-red-600 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.telefone %}
+                                {% set clean_tel = item.telefone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') %}
+                                {% if clean_tel|length >= 10 %}
+                                    {% set first_digit = clean_tel[2:3] %}
+                                    {% if first_digit in ['2', '3', '4', '5'] %}
+                                        <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase">Fixo</span>
+                                    {% elif first_digit == '9' %}
+                                        <span class="text-[9px] font-bold bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 uppercase">Celular</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
                             {% if item.whatsapp %}
                             <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
                                 WhatsApp: {{ item.whatsapp }}
@@ -321,8 +332,19 @@
                         {% if item.responsavel %}
                         <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
                         {% endif %}
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
                             <p class="text-sm text-yellow-700 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.telefone %}
+                                {% set clean_tel = item.telefone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') %}
+                                {% if clean_tel|length >= 10 %}
+                                    {% set first_digit = clean_tel[2:3] %}
+                                    {% if first_digit in ['2', '3', '4', '5'] %}
+                                        <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase">Fixo</span>
+                                    {% elif first_digit == '9' %}
+                                        <span class="text-[9px] font-bold bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 uppercase">Celular</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
                             {% if item.whatsapp %}
                             <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
                                 WhatsApp: {{ item.whatsapp }}
@@ -395,8 +417,8 @@
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
-                 data-responsavel="{{ item.responsavel or \'\' }}"
-                 data-maps-url="{{ item.maps_url or \'\' }}"
+                 data-responsavel="{{ item.responsavel or '' }}"
+                 data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos?todos=1">
                 <div class="flex justify-between items-start">
                     <div>
@@ -410,8 +432,19 @@
                         {% if item.responsavel %}
                         <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
                         {% endif %}
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
                             <p class="text-sm text-blue-600 font-medium whitespace-nowrap">📞 {{ item.telefone or 'Sem telefone' }}</p>
+                            {% if item.telefone %}
+                                {% set clean_tel = item.telefone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') %}
+                                {% if clean_tel|length >= 10 %}
+                                    {% set first_digit = clean_tel[2:3] %}
+                                    {% if first_digit in ['2', '3', '4', '5'] %}
+                                        <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase">Fixo</span>
+                                    {% elif first_digit == '9' %}
+                                        <span class="text-[9px] font-bold bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 uppercase">Celular</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
                             {% if item.whatsapp %}
                             <a href="https://wa.me/55{{ item.whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') }}?text=Olá {{ item.responsavel or '' }}, aqui é o Rodrigo da Multi" target="_blank" class="text-sm text-green-600 font-bold hover:underline">
                                 WhatsApp: {{ item.whatsapp }}
@@ -476,76 +509,84 @@
 </div>
 
 <!-- Modal Registrar Tentativa -->
-<div id="registrarModal" class="hidden fixed inset-0 z-50">
+<div id="registrarModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40" onclick="closeRegistrarModal()"></div>
-    <div class="relative mx-auto mt-24 w-full max-w-xl bg-white rounded-lg shadow-xl border border-gray-200">
-        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+    <div class="relative w-full max-w-xl bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col max-h-[90vh]">
+        <!-- Cabeçalho Fixo -->
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
             <div>
-                <div class="text-sm text-gray-500">Registrar tentativa</div>
-                <div id="modalTitle" class="text-lg font-semibold text-gray-900">-</div>
-                <div id="modalPhone" class="text-sm text-gray-600 mt-0.5">-</div>
-                <div id="modalWhatsapp" class="text-sm text-green-600 mt-0.5">-</div>
-                <div id="modalResponsavel" class="text-xs font-bold text-brand-600 mt-1 uppercase">-</div>
+                <div class="text-[10px] uppercase font-bold text-gray-400">Registrar tentativa</div>
+                <div id="modalTitle" class="text-base font-bold text-gray-900 leading-tight">-</div>
+                <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                    <div id="modalPhone" class="text-xs text-gray-600">-</div>
+                    <div id="modalWhatsapp" class="text-xs text-green-600 font-medium">-</div>
+                </div>
+                <div id="modalResponsavel" class="text-[10px] font-bold text-brand-600 uppercase">-</div>
             </div>
-            <button type="button" class="text-gray-500 hover:text-gray-700" onclick="closeRegistrarModal()">✕</button>
+            <button type="button" class="text-gray-400 hover:text-gray-600 p-2" onclick="closeRegistrarModal()">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
-        <form id="registrarForm" method="POST" class="p-4 space-y-4">
-            <input type="hidden" name="next" id="modalNext">
 
-            <div id="modalObsAtualWrap" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observação atual</label>
-                <div id="modalObsAtual" class="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-3"></div>
+        <form id="registrarForm" method="POST" class="flex flex-col min-h-0">
+            <!-- Conteúdo Scrolável -->
+            <div class="p-4 space-y-3 overflow-y-auto">
+                <input type="hidden" name="next" id="modalNext">
+
+                <div id="modalObsAtualWrap" class="hidden">
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1">Observação atual</label>
+                    <div id="modalObsAtual" class="text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-2"></div>
+                </div>
+
+                <div id="modalHistoricoWrap" class="hidden">
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1">Histórico do contato</label>
+                    <div id="modalHistorico" class="space-y-2 text-[10px] text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-2 max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Resultado *</label>
+                    <select name="resultado" id="modalResultado" required class="block w-full rounded-md border-gray-300 py-1.5 pl-3 pr-10 text-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 border">
+                        <option value="">Selecione...</option>
+                        <option>Não atendeu</option>
+                        <option>Caixa postal</option>
+                        <option>Sem contato</option>
+                        <option>Em negociação</option>
+                        <option>Pediu preço</option>
+                        <option>Agendar retorno</option>
+                        <option>Interessado</option>
+                        <option>Solicitou portfólio</option>
+                        <option>Já tem consultor atendendo</option>
+                        <option>Sem interesse</option>
+                        <option>Descartado</option>
+                    </select>
+                </div>
+
+                <div id="modalSegmentoWrap" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Segmento *</label>
+                    <input type="text" name="segmento" id="modalSegmento" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border" placeholder="Ex: Informática">
+                </div>
+
+                <div id="modalDataRetornoWrap" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data de retorno *</label>
+                    <input type="date" name="data_retorno" id="modalDataRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border">
+                </div>
+
+                <div id="modalHoraRetornoWrap" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Horário de retorno *</label>
+                    <input type="time" name="hora_retorno" id="modalHoraRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea name="observacao" id="modalObs" rows="2" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border" placeholder="Opcional..."></textarea>
+                </div>
             </div>
 
-            <div id="modalHistoricoWrap" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Histórico do contato</label>
-                <div id="modalHistorico" class="space-y-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-3 max-h-48 overflow-y-auto"></div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Resultado *</label>
-                <select name="resultado" id="modalResultado" required class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-brand-500 focus:outline-none focus:ring-brand-500 sm:text-sm">
-                    <option value="">Selecione...</option>
-                    <option>Não atendeu</option>
-                    <option>Caixa postal</option>
-                    <option>Sem contato</option>
-                    <option>Em negociação</option>
-                    <option>Pediu preço</option>
-                    <option>Agendar retorno</option>
-                    <option>Interessado</option>
-                    <option>Solicitou portfólio</option>
-                    <option>Já tem consultor atendendo</option>
-                    <option>Sem interesse</option>
-                    <option>Descartado</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Use "Em negociação"/"Agendar retorno" quando houver próximo passo.</p>
-            </div>
-
-            <div id="modalSegmentoWrap" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Segmento *</label>
-                <input type="text" name="segmento" id="modalSegmento" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border" placeholder="Ex: Informática">
-            </div>
-
-            <div id="modalDataRetornoWrap" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data de retorno *</label>
-                <input type="date" name="data_retorno" id="modalDataRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
-            </div>
-
-            <div id="modalHoraRetornoWrap" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Horário de retorno *</label>
-                <input type="time" name="hora_retorno" id="modalHoraRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
-                <input type="text" name="observacao" id="modalObs" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-3 bg-gray-50 border" placeholder="Ex: enviou no WhatsApp, retornar amanhã 15h">
-                <p class="text-xs text-gray-500 mt-1">Obrigatória quando houver próximo passo (ex.: início de negociação, pediu preço).</p>
-            </div>
-
-            <div class="pt-2 border-t border-gray-100 flex gap-2 justify-end">
-                <button type="button" class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50" onclick="closeRegistrarModal()">Cancelar</button>
-                <button type="submit" name="pos_acao" value="salvar" class="px-4 py-2 rounded-md bg-brand-600 text-white font-semibold hover:bg-brand-700">Salvar</button>
-                <button id="btnSalvarConverter" type="submit" name="pos_acao" value="converter" class="hidden px-4 py-2 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700">Salvar e converter</button>
+            <!-- Rodapé Fixo -->
+            <div class="px-4 py-3 border-t border-gray-100 flex gap-2 justify-end shrink-0 bg-gray-50">
+                <button type="button" class="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100" onclick="closeRegistrarModal()">Cancelar</button>
+                <button type="submit" name="pos_acao" value="salvar" class="px-6 py-2 rounded-md bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-sm active:scale-95 transition-all">Salvar</button>
+                <button id="btnSalvarConverter" type="submit" name="pos_acao" value="converter" class="hidden px-6 py-2 rounded-md bg-purple-600 text-white font-bold hover:bg-purple-700 shadow-sm active:scale-95 transition-all">Salvar e converter</button>
             </div>
         </form>
     </div>

@@ -260,6 +260,15 @@
                             {% if item.telefone %}
                             <div class="flex items-center gap-2 text-sm text-gray-600 mb-1">
                                 <span>📞 {{ item.telefone }}</span>
+                                {% set clean_tel = item.telefone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') %}
+                                {% if clean_tel|length >= 10 %}
+                                    {% set first_digit = clean_tel[2:3] %}
+                                    {% if first_digit in ['2', '3', '4', '5'] %}
+                                        <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase">Fixo</span>
+                                    {% elif first_digit == '9' %}
+                                        <span class="text-[9px] font-bold bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 uppercase">Celular</span>
+                                    {% endif %}
+                                {% endif %}
                             </div>
                             {% endif %}
 
@@ -541,7 +550,10 @@
                     
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700">Telefone</label>
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-medium text-gray-700">Telefone</label>
+                                <span id="f_telefone_badge" class="hidden"></span>
+                            </div>
                             <input type="text" name="telefone" id="f_telefone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-1.5 border">
                         </div>
                         <div>

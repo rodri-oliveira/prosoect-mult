@@ -220,7 +220,7 @@ function updateModalRequirements() {
     const needsDate = v === 'em negociação' || v === 'agendar retorno';
     const needsTime = needsDate;
     const needsSeg = v === 'em negociação';
-    const needsObs = v === 'em negociação' || v === 'agendar retorno' || v === 'pediu preço';
+    const needsObs = false; // Tornar observação sempre opcional
     const shouldShowConverter = v === 'interessado';
 
     if (dateWrap && date) {
@@ -238,7 +238,7 @@ function updateModalRequirements() {
         seg.required = needsSeg;
     }
     if (obs) {
-        obs.required = needsObs;
+        obs.required = false;
     }
 
     const btnConv = document.getElementById('btnSalvarConverter');

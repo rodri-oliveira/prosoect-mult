@@ -105,10 +105,21 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
-        c.execute(
-            f"SELECT * FROM prospeccao_temp WHERE {where_clause} ORDER BY id DESC",
-            params,
-        )
+        # Lógica de ordenação: Priorizar Fixo (2-5) > Celular (9) > Outros/Vazio
+        # Limpa o telefone para pegar o dígito logo após o DDD (presumindo formato (XX)XXXX... ou similar)
+        tel_clean = "replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+        order_by = f"""
+            CASE 
+                WHEN substr({tel_clean}, 3, 1) IN ('2', '3', '4', '5') THEN 1
+                WHEN substr({tel_clean}, 3, 1) = '9' THEN 2
+                ELSE 3
+            END ASC,
+            id DESC
+        """
+
+        query = f"SELECT * FROM prospeccao_temp WHERE {where_clause} ORDER BY {order_by}"
+        
+        c.execute(query, params)
         rows = c.fetchall()
         conn.close()
         return [dict(row) for row in rows]

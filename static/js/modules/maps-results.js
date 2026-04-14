@@ -12,6 +12,37 @@ const DEFAULT_PAGE_SIZE = 50;
 let currentPage = 1;
 let pageSize = DEFAULT_PAGE_SIZE;
 
+/**
+ * Atualiza o selo de telefone (Fixo/Celular)
+ */
+const updatePhoneBadge = (tel) => {
+    const badge = document.getElementById('f_telefone_badge');
+    if (!badge) return;
+    if (!tel) {
+        badge.classList.add('hidden');
+        badge.innerHTML = '';
+        return;
+    }
+    const clean = tel.replace(/\D/g, '');
+    const hasDDD = clean.length >= 10;
+    const first = hasDDD ? clean.charAt(2) : clean.charAt(0);
+    
+    badge.classList.remove('hidden', 'text-brand-700', 'bg-brand-50', 'border-brand-100', 'text-gray-600', 'bg-gray-100', 'border-gray-200');
+    badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded border ';
+
+    if (['2','3','4','5'].includes(first)) {
+        badge.textContent = '📞 FIXO';
+        badge.classList.add('text-brand-700', 'bg-brand-50', 'border-brand-100');
+        badge.classList.remove('hidden');
+    } else if (first === '9') {
+        badge.textContent = '📱 CELULAR';
+        badge.classList.add('text-gray-600', 'bg-gray-100', 'border-gray-200');
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+};
+
 const deriveMapsKey = (mapsUrl, mapsPlaceId, id) => {
     const url = String(mapsUrl || '').trim();
     if (url) {
@@ -97,13 +128,24 @@ export const renderResults = (items) => {
                         <div class="text-sm font-bold text-gray-900 group-hover/label:text-brand-700 transition-colors truncate">${nome}</div>
                         <div class="text-[11px] leading-relaxed text-gray-500 mt-0.5 line-clamp-1">${endereco || '-'}</div>
                         
-                        <div class="flex flex-wrap items-center gap-x-2 mt-1.5">
+                         <div class="flex flex-wrap items-center gap-x-2 mt-1.5">
                             ${segmentos ? `
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium border border-gray-200">
                                     ${segmentos}
                                 </span>
                             ` : ''}
-                            ${telefone ? `<span class="text-[11px] text-gray-400 flex items-center gap-1"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>${telefone}</span>` : ''}
+                            ${telefone ? (function(tel){
+                                const clean = tel.replace(/\D/g, '');
+                                const hasDDD = clean.length >= 10;
+                                const first = hasDDD ? clean.charAt(2) : clean.charAt(0);
+                                let badge = '';
+                                if (['2','3','4','5'].includes(first)) {
+                                    badge = `<span class="text-[9px] font-bold text-brand-700 bg-brand-50 border border-brand-100 px-1 py-0.5 rounded mr-1">📞 FIXO</span>`;
+                                } else if (first === '9') {
+                                    badge = `<span class="text-[9px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-1 py-0.5 rounded mr-1">📱 CELULAR</span>`;
+                                }
+                                return `<span class="text-[11px] text-gray-400 flex items-center">${badge}${tel}</span>`;
+                            })(telefone) : ''}
                         </div>
                         
                         ${website ? `
@@ -236,6 +278,13 @@ const useItem = async (it) => {
     setVal('f_maps_url', enriched.maps_url || '');
     setVal('f_cidade', it.cidade || (document.getElementById('mapCidade')?.value || ''));
     setVal('f_estado', it.estado || (document.getElementById('mapEstado')?.value || ''));
+
+    // Atualiza badge de telefone
+    updatePhoneBadge(enriched.telefone || '');
+    const inputTel = document.getElementById('f_telefone');
+    if (inputTel) {
+        inputTel.oninput = (e) => updatePhoneBadge(e.target.value);
+    }
 
     try {
         const inputSite = document.getElementById('f_site');
