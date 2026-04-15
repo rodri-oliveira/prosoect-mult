@@ -1,0 +1,5 @@
+{% macro render_status_options(statuses, current_status) -%}
+{% for s in statuses %}
+<option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
+{% endfor %}
+{%- endmacro %}

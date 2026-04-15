@@ -7,6 +7,7 @@ from application.leads.add_contato import AddLeadContatoRequest, add_lead_contat
 from application.leads.create_lead import CreateLeadRequest, create_lead_with_repo
 from application.leads.list_leads import ListLeadsRequest, list_leads_with_repo
 from application.leads.update_status import UpdateLeadStatusRequest, update_lead_status_with_repo
+from application.shared.status import STATUS_LEADS
 from application.shared.phone_utils import normalize_phone
 from infrastructure.container import lead_repository, pedido_repository
 
@@ -61,6 +62,7 @@ def lead_detail(lead_id: int):
     return render_template(
         "lead_detalhe.html",
         lead=lead,
+        lead_statuses=STATUS_LEADS,
         contatos=contatos,
         segmentos=segmentos,
         pedidos=pedidos,

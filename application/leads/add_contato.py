@@ -33,7 +33,7 @@ def add_lead_contato_with_repo(req: AddLeadContatoRequest, repo: LeadRepository)
     resultado = req.resultado
 
     # Validações para resultados que exigem data/hora de retorno
-    if resultado in ("Envio do portifólio", "Agendar retorno"):
+    if resultado == "Agendar retorno":
         if not req.data_retorno:
             return AddLeadContatoResult(
                 ok=False,

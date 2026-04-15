@@ -17,7 +17,7 @@ function shouldRequireObs(value) {
 function shouldRequireReturnDate(value) {
     if (!value) return false;
     const v = value.toLowerCase();
-    return v === 'em negociação' || v === 'agendar retorno';
+    return v === 'agendar retorno';
 }
 
 /**
