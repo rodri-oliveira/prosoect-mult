@@ -76,6 +76,8 @@ def lead_update_status(lead_id: int):
             UpdateLeadStatusRequest(lead_id=lead_id, novo_status=novo_status),
             lead_repository(),
         )
+        if novo_status == "Sem interesse":
+            return redirect(url_for("prospeccao_view"))
     return redirect(request.form.get("next", url_for("leads_list")))
 
 

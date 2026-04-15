@@ -78,6 +78,7 @@ class SqliteLeadRepository(LeadRepository):
                     ORDER BY data DESC
                     LIMIT 1
                 )
+                WHERE COALESCE(l.status, '') <> 'Sem interesse'
                 ORDER BY l.id DESC
             """
             )
@@ -265,3 +266,36 @@ class SqliteLeadRepository(LeadRepository):
         affected = c.rowcount
         conn.close()
         return affected > 0
+
+    def devolver_para_prospeccao(self, lead_id: int) -> bool:
+        """Devolve lead para prospecção: desarquiva a prospecção original e atualiza status."""
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Buscar a prospecção original que gerou este lead
+        c.execute(
+            "SELECT id FROM prospeccao_temp WHERE convertido_lead_id = ?",
+            (lead_id,),
+        )
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return False
+
+        prospeccao_id = row[0]
+
+        # Desarquivar e atualizar status da prospecção
+        c.execute(
+            "UPDATE prospeccao_temp SET arquivado = 0, status_prospeccao = 'Sem interesse', convertido_lead_id = NULL WHERE id = ?",
+            (prospeccao_id,),
+        )
+
+        # Registrar evento no histórico da prospecção
+        c.execute(
+            "INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe) VALUES (?, ?, ?)",
+            (prospeccao_id, "STATUS_CHANGE", "Sem interesse | Devolvido de Lead"),
+        )
+
+        conn.commit()
+        conn.close()
+        return True

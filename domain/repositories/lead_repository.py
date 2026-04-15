@@ -50,3 +50,7 @@ class LeadRepository(Protocol):
     def update(self, lead_id: int, data: dict) -> bool:
         """Atualiza os dados de um lead."""
         raise NotImplementedError
+
+    def devolver_para_prospeccao(self, lead_id: int) -> bool:
+        """Devolve lead para prospecção: desarquiva a prospecção original e atualiza status."""
+        raise NotImplementedError

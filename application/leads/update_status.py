@@ -24,4 +24,9 @@ def update_lead_status(req: UpdateLeadStatusRequest) -> UpdateLeadStatusResponse
 
 def update_lead_status_with_repo(req: UpdateLeadStatusRequest, repo: LeadRepository) -> UpdateLeadStatusResponse:
     ok = repo.update_status(req.lead_id, req.novo_status)
+
+    # Se status mudou para "Sem interesse", devolver para prospecção
+    if ok and req.novo_status == "Sem interesse":
+        repo.devolver_para_prospeccao(req.lead_id)
+
     return UpdateLeadStatusResponse(ok=ok)
