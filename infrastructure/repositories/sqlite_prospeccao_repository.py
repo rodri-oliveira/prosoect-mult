@@ -381,7 +381,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
-        fields = ["status_prospeccao = ?"]
+        fields = ["status_prospeccao = ?", "data_prospeccao = CURRENT_DATE"]
         params: list[Any] = [novo_status]
 
         if observacao is not None:
@@ -438,6 +438,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         c = conn.cursor()
 
         # Buscar dados atuais para histórico e comparação
+        # Atualizamos a data_prospeccao também ao editar rascunho (pois é uma interação/contato)
         c.execute(
             "SELECT observacao, telefone, whatsapp, responsavel, email FROM prospeccao_temp WHERE id = ?",
             (prospeccao_id,),
@@ -466,6 +467,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if observacao is not None:
             updates.append("observacao = ?")
             params.append((observacao or "").strip() or None)
+            updates.append("data_prospeccao = CURRENT_DATE")
         
         if telefone is not None:
             from application.shared.phone_utils import normalize_phone
@@ -639,7 +641,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno < ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje_date,),
@@ -651,7 +653,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje_date,),
@@ -664,7 +666,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
               AND (arquivado = 0 OR arquivado IS NULL)
               AND (hora_retorno <= ? OR hora_retorno IS NULL)
         """,

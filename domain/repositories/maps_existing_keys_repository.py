@@ -8,6 +8,7 @@ from typing import Protocol
 class ExistingMapsKeys:
     prospeccao_keys: set[str]
     lead_keys: set[str]
+    key_status_map: dict[str, str] = None
 
 
 class MapsExistingKeysRepository(Protocol):

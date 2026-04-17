@@ -157,7 +157,7 @@ export const renderResults = (items) => {
                             </div>
                         ` : ''}
                         
-                        ${already ? '<div class="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded mt-1.5">✓ Já adicionado</div>' : ''}
+                        ${already ? '<div class="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded mt-1.5">✓ Já adicionado ' + (it.existing_status ? '(' + it.existing_status + ')' : '') + '</div>' : ''}
                     </div>
                 </label>
                 

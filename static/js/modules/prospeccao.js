@@ -209,20 +209,21 @@ async function toggleHistorico(prospeccaoId) {
                 return;
             }
 
-            const obsEventos = data.eventos.filter(e => e.tipo_evento === 'OBSERVACAO_CHANGE');
-            if (obsEventos.length === 0) {
-                historicoDiv.innerHTML = '<div class="text-gray-500 italic">Nenhum histórico de observações.</div>';
+            const eventos = data.eventos || [];
+            if (eventos.length === 0) {
+                historicoDiv.innerHTML = '<div class="text-gray-500 italic">Nenhum histórico disponível.</div>';
                 return;
             }
 
             let html = '<div class="space-y-1">';
-            obsEventos.forEach(evt => {
-                const dataEvento = evt.data_evento || '';
+            eventos.forEach(evt => {
+                const dataEvento = (evt.data_evento || '').substring(0, 16);
                 const detalhe = evt.detalhe || '';
+                const tipo = evt.tipo_evento === 'STATUS_CHANGE' ? '🔵' : '📝';
                 html += `
-                    <div class="flex items-start gap-2">
-                        <span class="text-gray-400 text-[10px] whitespace-nowrap">${dataEvento}</span>
-                        <span class="text-gray-600">${detalhe}</span>
+                    <div class="flex items-start gap-2 py-1 border-b border-gray-100 last:border-0">
+                        <span class="text-gray-400 text-[9px] font-mono whitespace-nowrap mt-0.5">${dataEvento}</span>
+                        <span class="text-[11px] text-gray-600"><span class="mr-1">${tipo}</span>${detalhe}</span>
                     </div>
                 `;
             });

@@ -231,7 +231,9 @@
                                         </a>
                                         {% endif %}
                                     </p>
-
+                                    {% if item.responsavel %}
+                                    <p class="text-[11px] font-bold text-brand-600 mt-1 uppercase">👤 {{ item.responsavel }}</p>
+                                    {% endif %}
                                     {% if item.segmento %}
                                     <span class="inline-block mt-1 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{{ item.segmento }}</span>
                                     {% endif %}
@@ -241,24 +243,19 @@
                                     </div>
                                 </div>
                                 {% set status_options = [
-                                    ('Não contatado', 'bg-gray-50 text-gray-600 border-gray-200'),
                                     ('Não atendeu', 'bg-red-50 text-red-700 border-red-100'),
                                     ('Caixa postal', 'bg-gray-50 text-gray-700 border-gray-100'),
                                     ('Enviado Portfólio Whats', 'bg-indigo-50 text-indigo-700 border-indigo-100'),
                                     ('Enviado Portfólio por E-mail', 'bg-teal-50 text-teal-700 border-teal-100'),
                                     ('Agendamento', 'bg-yellow-50 text-yellow-700 border-yellow-100'),
                                     ('Pediu para retornar', 'bg-yellow-50 text-yellow-700 border-yellow-100'),
-                                    ('Solicitou portfólio', 'bg-blue-50 text-blue-700 border-blue-100'),
                                     ('Portfólio', 'bg-blue-50 text-blue-700 border-blue-100'),
-                                    ('Em negociação', 'bg-indigo-50 text-indigo-700 border-indigo-100'),
                                     ('Negociação', 'bg-indigo-50 text-indigo-700 border-indigo-100'),
                                     ('Interessado', 'bg-green-50 text-green-700 border-green-100'),
                                     ('Tem consultor', 'bg-orange-50 text-orange-700 border-orange-100'),
-                                    ('Já tem consultor atendendo', 'bg-orange-50 text-orange-700 border-orange-100'),
                                     ('Sem interesse', 'bg-gray-100 text-gray-700 border-gray-200'),
                                     ('Descartado', 'bg-red-50 text-red-600 border-red-100'),
-                                    ('Aguard. Lista Prod.', 'bg-amber-50 text-amber-700 border-amber-100'),
-                                    ('Convertido em Lead', 'bg-purple-50 text-purple-700 border-purple-100')
+                                    ('Aguard. Lista Prod.', 'bg-amber-50 text-amber-700 border-amber-100')
                                 ] %}
                                 {% set badge_class = 'bg-gray-100 text-gray-600 border-gray-200' %}
                                 {% set display_status = item.status_prospeccao %}
@@ -302,15 +299,18 @@
                             </div>
                             {% endif %}
 
-
-                            
+                            {% if item.email %}
+                            <div class="flex items-center gap-2 text-sm text-brand-600 mb-2">
+                                <a href="mailto:{{ item.email }}" class="flex items-center gap-1 hover:underline">
+                                    <span>✉️ {{ item.email }}</span>
+                                </a>
+                            </div>
+                            {% endif %}
                             {% if item.data_retorno %}
                             <div class="text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2">
                                 📅 Retornar em: {{ item.data_retorno }}
                             </div>
                             {% endif %}
-                            
-
 
                             <!-- Formulário para adicionar/editar observação -->
                             <form action="/prospeccao/rascunho/{{ item.id }}/observacao" method="POST" class="mb-2">

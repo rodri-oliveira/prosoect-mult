@@ -301,8 +301,9 @@ def search_maps_results_with_repo(
             k = _key_from_item(it)
             if k and k in existing_set:
                 it["already_added"] = True
-                logger.warning("[DEBUG] Marcado already_added: nome=%s | key=%s", 
-                              it.get("nome", "?"), k)
+                it["existing_status"] = existing.key_status_map.get(k)
+                logger.warning("[DEBUG] Marcado already_added: nome=%s | key=%s | status=%s", 
+                              it.get("nome", "?"), k, it["existing_status"])
 
     return SearchMapsResultsResponse(
         ok=True,
