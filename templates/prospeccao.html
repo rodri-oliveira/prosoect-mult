@@ -155,7 +155,7 @@
                     </div>
                     
                     <!-- Filtros -->
-                    <form method="GET" action="/prospeccao" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end bg-white p-3 rounded-lg border border-gray-100 shadow-sm mb-4">
+                    <form method="GET" action="/prospeccao" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end bg-white p-3 rounded-lg border border-gray-100 shadow-sm mb-4">
                         <div class="lg:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nome</label>
                             <input type="text" name="nome" value="{{ filtro_nome or '' }}"
@@ -202,6 +202,15 @@
                                 <option value="Sem interesse" {% if filtro_status == 'Sem interesse' %}selected{% endif %}>Sem interesse</option>
                                 <option value="Descartado" {% if filtro_status == 'Descartado' %}selected{% endif %}>Descartado</option>
                                 <option value="Convertido em Lead" {% if filtro_status == 'Convertido em Lead' %}selected{% endif %}>Convertido em Lead</option>
+                            </select>
+                        </div>
+                        <div class="lg:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Tipo Tel.</label>
+                            <select name="tipo_telefone" class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all appearance-none bg-no-repeat bg-right" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
+                                <option value="">Todos</option>
+                                <option value="Fixo" {% if tipo_telefone == 'Fixo' %}selected{% endif %}>📞 Fixo</option>
+                                <option value="Celular" {% if tipo_telefone == 'Celular' %}selected{% endif %}>📱 Celular</option>
+                                <option value="Sem telefone" {% if tipo_telefone == 'Sem telefone' %}selected{% endif %}>🚫 Sem telefone</option>
                             </select>
                         </div>
                         <div class="lg:col-span-1 flex gap-1">

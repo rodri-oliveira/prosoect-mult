@@ -17,6 +17,7 @@ class ProspecctionListViewRequest:
     data_inicio: str | None
     data_fim: str | None
     mostrar_arquivados: bool
+    tipo_telefone: str | None = None
     default_to_today_when_no_dates: bool = True
 
 
@@ -49,6 +50,7 @@ def build_prospeccao_list_view_with_repo(
             req.cidade,
             req.estado,
             req.telefone,
+            req.tipo_telefone,
         ]
     )
     if (
@@ -71,6 +73,7 @@ def build_prospeccao_list_view_with_repo(
         data_inicio=data_inicio,
         data_fim=data_fim,
         mostrar_arquivados=req.mostrar_arquivados,
+        tipo_telefone=req.tipo_telefone,
     )
 
     # Adicionar eventos em cada prospecção
@@ -86,6 +89,7 @@ def build_prospeccao_list_view_with_repo(
         cidade=req.cidade,
         estado=req.estado,
         telefone=req.telefone,
+        tipo_telefone=req.tipo_telefone,
     )
     resumo_prospeccao = {
         "total": resumo.total,

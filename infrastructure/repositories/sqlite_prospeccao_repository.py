@@ -28,6 +28,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         data_inicio: str | None = None,
         data_fim: str | None = None,
         mostrar_arquivados: bool = False,
+        tipo_telefone: str | None = None,
     ) -> list[dict]:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -92,6 +93,16 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             params.append(tel_pattern)
             params.append(tel_pattern)
 
+        # Filtro por tipo de telefone (Fixo/Celular)
+        if tipo_telefone:
+            tel_clean_sql = "replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            if tipo_telefone == 'Fixo':
+                where_parts.append(f"substr({tel_clean_sql}, 3, 1) IN ('2', '3', '4', '5')")
+            elif tipo_telefone == 'Celular':
+                where_parts.append(f"substr({tel_clean_sql}, 3, 1) = '9'")
+            elif tipo_telefone == 'Sem telefone':
+                where_parts.append("(telefone IS NULL OR telefone = '')")
+
         if not is_phone_search:
             if data_inicio and data_fim:
                 where_parts.append("date(data_prospeccao) BETWEEN date(?) AND date(?)")
@@ -134,6 +145,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         cidade: str | None = None,
         estado: str | None = None,
         telefone: str | None = None,
+        tipo_telefone: str | None = None,
     ) -> ProspecctionSummary:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -186,6 +198,16 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             where_parts.append(f"({tel_sql} LIKE ? OR {wa_sql} LIKE ?)")
             params.append(tel_pattern)
             params.append(tel_pattern)
+
+        # Filtro por tipo de telefone (Fixo/Celular)
+        if tipo_telefone:
+            tel_clean_sql = "replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '')"
+            if tipo_telefone == 'Fixo':
+                where_parts.append(f"substr({tel_clean_sql}, 3, 1) IN ('2', '3', '4', '5')")
+            elif tipo_telefone == 'Celular':
+                where_parts.append(f"substr({tel_clean_sql}, 3, 1) = '9'")
+            elif tipo_telefone == 'Sem telefone':
+                where_parts.append("(telefone IS NULL OR telefone = '')")
 
         if not is_phone_search:
             if data_inicio and data_fim:

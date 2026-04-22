@@ -18,6 +18,7 @@ def _build_prospeccao_url_with_filters():
     cidade = request.args.get("cidade") or request.form.get("filtro_cidade")
     estado = request.args.get("estado") or request.form.get("filtro_estado")
     telefone = request.args.get("telefone") or request.form.get("filtro_telefone")
+    tipo_telefone = request.args.get("tipo_telefone") or request.form.get("filtro_tipo_telefone")
     data_inicio = request.args.get("data_inicio") or request.form.get("filtro_data_inicio")
     data_fim = request.args.get("data_fim") or request.form.get("filtro_data_fim")
     mostrar_arquivados = request.args.get("arquivados") or request.form.get("filtro_arquivados")
@@ -35,6 +36,8 @@ def _build_prospeccao_url_with_filters():
         kwargs["estado"] = estado
     if telefone:
         kwargs["telefone"] = telefone
+    if tipo_telefone:
+        kwargs["tipo_telefone"] = tipo_telefone
     if data_inicio:
         kwargs["data_inicio"] = data_inicio
     if data_fim:
@@ -52,6 +55,7 @@ def prospeccao_view():
     cidade = request.args.get("cidade")
     estado = request.args.get("estado")
     telefone = request.args.get("telefone")
+    tipo_telefone = request.args.get("tipo_telefone")
     data_inicio = request.args.get("data_inicio")
     data_fim = request.args.get("data_fim")
     mostrar_arquivados = request.args.get("arquivados") == "1"
@@ -67,6 +71,7 @@ def prospeccao_view():
             data_inicio=data_inicio,
             data_fim=data_fim,
             mostrar_arquivados=mostrar_arquivados,
+            tipo_telefone=tipo_telefone,
         ),
         prospeccao_repository(),
     )
@@ -82,6 +87,7 @@ def prospeccao_view():
         cidade=cidade,
         estado=estado,
         telefone=telefone,
+        tipo_telefone=tipo_telefone,
         data_inicio=data_inicio,
         data_fim=data_fim,
         mostrar_arquivados=mostrar_arquivados,
