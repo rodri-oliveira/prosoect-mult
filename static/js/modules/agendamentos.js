@@ -217,7 +217,7 @@ function updateModalRequirements() {
     const obs = document.getElementById('modalObs');
     const v = (resultado.value || '').toLowerCase();
 
-    const needsDate = v === 'em negociação' || v === 'agendar retorno';
+    const needsDate = v === 'em negociação' || v === 'agendar retorno' || v === 'não analisou ainda o material';
     const needsTime = needsDate;
     const needsSeg = v === 'em negociação';
     const needsObs = false; // Tornar observação sempre opcional

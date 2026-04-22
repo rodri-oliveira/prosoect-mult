@@ -127,9 +127,13 @@ export function initFormListeners() {
     const statusSelect = document.querySelector('select[name="status_prospeccao"]');
     if (statusSelect) {
         statusSelect.addEventListener('change', function() {
+            const v = this.value.toLowerCase();
+            const needsDate = v === 'pediu para retornar' || v === 'em negociação' || v === 'não analisou ainda o material';
+            
             const campoData = document.getElementById('campo-data-retorno');
             const campoHora = document.getElementById('campo-hora-retorno');
-            if (this.value === 'Pediu para retornar' || this.value === 'Em negociação') {
+            
+            if (needsDate) {
                 if (campoData) campoData.classList.remove('hidden');
                 if (campoHora) campoHora.classList.remove('hidden');
             } else {

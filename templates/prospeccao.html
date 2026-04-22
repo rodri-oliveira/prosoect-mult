@@ -193,6 +193,7 @@
                                 <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
                                 <option value="Enviado Portfólio Whats" {% if filtro_status == 'Enviado Portfólio Whats' %}selected{% endif %}>Enviado Portfólio Whats</option>
                                 <option value="Enviado Portfólio por E-mail" {% if filtro_status == 'Enviado Portfólio por E-mail' %}selected{% endif %}>Enviado Portfólio por E-mail</option>
+                                <option value="Não analisou ainda o material" {% if filtro_status == 'Não analisou ainda o material' %}selected{% endif %}>Não analisou ainda o material</option>
                                 <option value="Aguard. Lista Prod." {% if filtro_status == 'Aguard. Lista Prod.' %}selected{% endif %}>Aguard. Lista Prod.</option>
                                 <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Agendamento</option>
                                 <option value="Solicitou portfólio" {% if filtro_status == 'Solicitou portfólio' %}selected{% endif %}>Solicitou portfólio</option>
@@ -255,6 +256,7 @@
                                     ('Caixa postal', 'bg-gray-50 text-gray-700 border-gray-100'),
                                     ('Enviado Portfólio Whats', 'bg-indigo-50 text-indigo-700 border-indigo-100'),
                                     ('Enviado Portfólio por E-mail', 'bg-teal-50 text-teal-700 border-teal-100'),
+                                    ('Não analisou ainda o material', 'bg-amber-50 text-amber-700 border-amber-100'),
                                     ('Agendamento', 'bg-yellow-50 text-yellow-700 border-yellow-100'),
                                     ('Pediu para retornar', 'bg-yellow-50 text-yellow-700 border-yellow-100'),
                                     ('Solicitou portfólio', 'bg-blue-50 text-blue-700 border-blue-100'),
@@ -372,158 +374,233 @@
                                 </div>
                             </form>
 
-                            <!-- Botões de Classificação -->
-                            <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Não atendeu">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100">Não atendeu</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Caixa postal">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Caixa postal</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Enviado Portfólio Whats">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Env. Portfólio Whats</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Enviado Portfólio por E-mail">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-teal-50 text-teal-700 hover:bg-teal-100">Env. Portfólio Email</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
-                                    <input type="hidden" name="status" value="Pediu para retornar">
-                                    <input type="hidden" name="data_retorno" class="data-retorno-input">
-                                    <input type="hidden" name="hora_retorno" class="hora-retorno-input">
-                                    <input type="hidden" name="observacao" class="observacao-retorno-input">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">Agendamento</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Solicitou portfólio">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">Portfólio</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Em negociação">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-800 hover:bg-blue-100">Negociação</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Interessado">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-green-50 text-green-800 hover:bg-green-100">Interessado</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Já tem consultor atendendo">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-orange-50 text-orange-800 hover:bg-orange-100">Tem consultor</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Sem interesse">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Sem interesse</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Descartado">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100">Descartado</button>
-                                </form>
+                            <!-- Box de Ações e Status -->
+                            <div class="mt-4 p-3 bg-gray-50/50 rounded-2xl border border-gray-100 shadow-sm">
+                                <div class="flex items-center gap-2 mb-3 px-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resultado do Contato</span>
+                                </div>
                                 
-                                {% if not item.convertido_lead_id %}
-                                <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline ml-auto">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">Converter Lead</button>
-                                </form>
-                                {% endif %}
-                                
-                                <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
-                                    <input type="hidden" name="status" value="Aguard. Lista Prod.">
-                                    <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
-                                    <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
-                                    <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
-                                    <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
-                                    <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
-                                    <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
-                                    <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
-                                    <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-amber-50 text-amber-700 hover:bg-amber-100">Aguard. Lista</button>
-                                </form>
-                                <form action="/prospeccao/rascunho/{{ item.id }}/excluir" method="POST" class="inline" onsubmit="return confirm('Arquivar este item?')">
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-500 hover:bg-gray-200">Arquivar</button>
-                                </form>
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <!-- Grupo: Tentativa -->
+                                    <div class="flex flex-wrap gap-1 items-center mr-2 pr-2 border-r border-gray-200">
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Não atendeu">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-red-50 text-red-700 hover:bg-red-100 border border-red-100 transition-all active:scale-95">Não atendeu</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Caixa postal">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 transition-all active:scale-95">Caixa postal</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Grupo: Portfólio -->
+                                    <div class="flex flex-wrap gap-1 items-center mr-2 pr-2 border-r border-gray-200">
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Enviado Portfólio Whats">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 transition-all active:scale-95" title="Enviado via WhatsApp">Env. Whats</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Enviado Portfólio por E-mail">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-100 transition-all active:scale-95" title="Enviado via E-mail">Env. Email</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
+                                            <input type="hidden" name="status" value="Não analisou ainda o material">
+                                            <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                            <input type="hidden" name="hora_retorno" class="hora-retorno-input">
+                                            <input type="hidden" name="observacao" class="observacao-retorno-input">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-100 transition-all active:scale-95">Não analisou ainda</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Grupo: Avanço/Interesse -->
+                                    <div class="flex flex-wrap gap-1 items-center mr-2 pr-2 border-r border-gray-200">
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onsubmit="return pedirDataRetorno(this)">
+                                            <input type="hidden" name="status" value="Pediu para retornar">
+                                            <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                            <input type="hidden" name="hora_retorno" class="hora-retorno-input">
+                                            <input type="hidden" name="observacao" class="observacao-retorno-input">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100 border border-yellow-100 transition-all active:scale-95">Agendamento</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Solicitou portfólio">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-100 transition-all active:scale-95">Solicitou Portfólio</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Em negociação">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-blue-100 text-blue-900 hover:bg-blue-200 border border-blue-200 transition-all active:scale-95">Negociação</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Interessado">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-green-50 text-green-800 hover:bg-green-100 border border-green-100 transition-all active:scale-95">Interessado</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Grupo: Descarte -->
+                                    <div class="flex flex-wrap gap-1 items-center">
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Já tem consultor atendendo">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-orange-50 text-orange-800 hover:bg-orange-100 border border-orange-100 transition-all active:scale-95">Já tem consultor</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Sem interesse">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300 transition-all active:scale-95">Sem interesse</button>
+                                        </form>
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Descartado">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-2 py-1 text-[10px] font-bold rounded bg-red-100 text-red-800 hover:bg-red-200 border border-red-200 transition-all active:scale-95">Descartado</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Ações de Sistema -->
+                                <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                                    <div class="flex gap-2">
+                                        {% if not item.convertido_lead_id %}
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-purple-600 text-white hover:bg-purple-700 shadow-md shadow-purple-200 transition-all active:scale-95">
+                                                ✨ Converter Lead
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline">
+                                            <input type="hidden" name="status" value="Aguard. Lista Prod.">
+                                            <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                            <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                            <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                            <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                            <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                            <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                            <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                            <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                            <button type="submit" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-200 transition-all active:scale-95">
+                                                ⏳ Aguard. Lista
+                                            </button>
+                                        </form>
+                                    </div>
+                                    
+                                    <form action="/prospeccao/rascunho/{{ item.id }}/excluir" method="POST" class="inline" onsubmit="return confirm('Arquivar este item?')">
+                                        <input type="hidden" name="filtro_status" value="{{ filtro_status or '' }}">
+                                        <input type="hidden" name="filtro_nome" value="{{ filtro_nome or '' }}">
+                                        <input type="hidden" name="filtro_segmento" value="{{ segmento or '' }}">
+                                        <input type="hidden" name="filtro_cidade" value="{{ cidade or '' }}">
+                                        <input type="hidden" name="filtro_estado" value="{{ estado or '' }}">
+                                        <input type="hidden" name="filtro_data_inicio" value="{{ data_inicio or '' }}">
+                                        <input type="hidden" name="filtro_data_fim" value="{{ data_fim or '' }}">
+                                        <input type="hidden" name="filtro_arquivados" value="{% if mostrar_arquivados %}1{% endif %}">
+                                        <button type="submit" class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all active:scale-95">
+                                            📁 Arquivar
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
+
+
                             
                             <!-- Histórico de Eventos (colapsável) -->
                             {% if item.eventos %}
@@ -725,6 +802,7 @@
                             <option value="Caixa postal">Caixa postal</option>
                             <option value="Enviado Portfólio Whats">Enviado Portfólio Whats</option>
                             <option value="Enviado Portfólio por E-mail">Enviado Portfólio por E-mail</option>
+                            <option value="Não analisou ainda o material">Não analisou ainda o material</option>
                             <option value="Pediu para retornar">Agendamento</option>
                             <option value="Solicitou portfólio">Solicitou portfólio</option>
                             <option value="Em negociação">Em negociação</option>

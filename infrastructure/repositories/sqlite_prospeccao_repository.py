@@ -53,7 +53,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         # Excluir agendamentos da lista de prospeccao (esses ficam em /agendamentos)
         if not is_phone_search:
-            agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Em negociacao')
+            agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Em negociacao', 'Não analisou ainda o material')
             if status not in agendamento_statuses:
                 where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
 
@@ -663,7 +663,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno < ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.', 'Não analisou ainda o material')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje_date,),
@@ -675,7 +675,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.', 'Não analisou ainda o material')
               AND (arquivado = 0 OR arquivado IS NULL)
         """,
             (hoje_date,),
@@ -688,7 +688,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             """
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno = ?
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.')
+              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Aguard. Lista Prod.', 'Não analisou ainda o material')
               AND (arquivado = 0 OR arquivado IS NULL)
               AND (hora_retorno <= ? OR hora_retorno IS NULL)
         """,

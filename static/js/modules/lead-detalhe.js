@@ -8,7 +8,7 @@
 function shouldRequireObs(value) {
     if (!value) return false;
     const v = value.toLowerCase();
-    return v.includes('agendar retorno') || v.includes('em negociação') || v.includes('pediu') || v.includes('preço');
+    return v.includes('agendar retorno') || v.includes('em negociação') || v.includes('pediu') || v.includes('preço') || v === 'não analisou ainda o material';
 }
 
 /**
@@ -17,7 +17,7 @@ function shouldRequireObs(value) {
 function shouldRequireReturnDate(value) {
     if (!value) return false;
     const v = value.toLowerCase();
-    return v === 'agendar retorno';
+    return v === 'agendar retorno' || v === 'não analisou ainda o material';
 }
 
 /**
@@ -71,13 +71,6 @@ function init() {
     const btnSalvar = document.getElementById('btn-salvar-lead');
     const btnCancelar = document.getElementById('btn-cancelar-edit');
     const fieldContainer = document.getElementById('lead-fields-container');
-
-    console.log("Lead-detalhe IDs encontrados:", {
-        btnEditar: !!btnEditar,
-        btnSalvar: !!btnSalvar,
-        btnCancelar: !!btnCancelar,
-        fieldContainer: !!fieldContainer
-    });
 
     if (btnEditar && fieldContainer) {
         const toggleEdit = (active) => {

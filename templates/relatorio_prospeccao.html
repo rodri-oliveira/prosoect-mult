@@ -109,6 +109,7 @@
                                 {% elif status == 'Caixa postal' %}Caixa postal
                                 {% elif status == 'Interessado' %}Interessado
                                 {% elif status == 'Convertido em Lead' %}Convertido em Lead
+                                {% elif status == 'Não analisou ainda o material' %}Não analisou ainda
                                 {% else %}{{ status }}{% endif %}
                             </td>
                             <td class="px-4 py-2 text-sm font-bold text-gray-900 text-right">{{ total }}</td>
@@ -144,6 +145,7 @@
                             {% elif item.status_prospeccao == 'Caixa postal' %}Caixa postal
                             {% elif item.status_prospeccao == 'Interessado' %}Interessado
                             {% elif item.status_prospeccao == 'Convertido em Lead' %}Convertido em Lead
+                            {% elif item.status_prospeccao == 'Não analisou ainda o material' %}Não analisou ainda
                             {% else %}{{ item.status_prospeccao }}{% endif %}
                         </span>
                         <span class="font-medium text-gray-900">{{ item.total }}</span>
@@ -201,6 +203,7 @@
                                 'Sem interesse': ('bg-gray-300 text-gray-700', 'Sem interesse'),
                                 'Descartado': ('bg-red-50 text-red-600', 'Descartado'),
                                 'Aguard. Lista Prod.': ('bg-amber-100 text-amber-800', 'Aguard. Lista Prod.'),
+                                'Não analisou ainda o material': ('bg-amber-50 text-amber-800', 'Não analisou ainda'),
                                 'Convertido em Lead': ('bg-purple-100 text-purple-800', 'Convertido em Lead')
                             } %}
                             {% set config = status_map.get(item.status_prospeccao, ('bg-gray-100 text-gray-600', item.status_prospeccao)) %}
