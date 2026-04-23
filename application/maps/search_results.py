@@ -281,6 +281,7 @@ def search_maps_results_with_repo(
             merged_before_dedupe = len(itens)
             merged_after_dedupe = len(itens)
 
+    existing_data = existing_keys_repo.get_existing_maps_keys()
     existing_keys = _find_existing_keys(itens, existing_keys_repo)
     
     # DEBUG: Log detalhado de chaves
@@ -301,7 +302,7 @@ def search_maps_results_with_repo(
             k = _key_from_item(it)
             if k and k in existing_set:
                 it["already_added"] = True
-                it["existing_status"] = existing.key_status_map.get(k)
+                it["existing_status"] = existing_data.key_status_map.get(k) if existing_data.key_status_map else None
                 logger.warning("[DEBUG] Marcado already_added: nome=%s | key=%s | status=%s", 
                               it.get("nome", "?"), k, it["existing_status"])
 
