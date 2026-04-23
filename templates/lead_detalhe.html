@@ -32,11 +32,6 @@
                         </svg>
                         {{ lead.cidade }}{% if lead.estado %} - {{ lead.estado }}{% endif %}
                     </div>
-                    <div class="mt-2 flex items-center text-sm text-gray-500">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {{ lead.status }}
-                        </span>
-                    </div>
                 </div>
             </div>
             
@@ -65,11 +60,8 @@
             
             <!-- Card de Status -->
             <div class="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                   <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Status do Lead</span>
-                   <span class="px-3 py-1 rounded-full text-[10px] font-black bg-brand-50 text-brand-600 border border-brand-100 uppercase">
-                     ● {{ lead.status }}
-                   </span>
+                <div class="flex items-center justify-between mb-4 pl-1">
+                   <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status do Lead</span>
                 </div>
                 <form action="/leads/{{ lead.id }}/status" method="POST" class="w-full">
                     <select name="status" class="block w-full text-xs border-gray-100 focus:ring-brand-500 rounded-xl shadow-xs font-bold text-gray-700 bg-gray-50/50 p-3" onchange="this.form.submit()">

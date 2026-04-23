@@ -82,6 +82,24 @@ def agendamento_registrar_tentativa(prospeccao_id: int):
     return redirect(request.form.get("next", url_for("agendamentos_view")))
 
 
+def agendamento_registrar_lead(lead_id: int):
+    from application.leads.add_contato import AddLeadContatoRequest, add_lead_contato_with_repo
+    from infrastructure.container import lead_repository
+    
+    add_lead_contato_with_repo(
+        AddLeadContatoRequest(
+            lead_id=lead_id,
+            tipo_contato="Ligação", # Padrão para agendamentos
+            resultado=(request.form.get("resultado") or "").strip(),
+            observacao=(request.form.get("observacao") or "").strip() or None,
+            data_retorno=(request.form.get("data_retorno") or "").strip() or None,
+            hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
+        ),
+        lead_repository(),
+    )
+    return redirect(request.form.get("next", url_for("agendamentos_view")))
+
+
 def register_agendamentos_routes(app: Flask) -> None:
     app.add_url_rule("/agendamentos", endpoint="agendamentos_view", view_func=agendamentos_view)
     app.add_url_rule(
@@ -94,5 +112,11 @@ def register_agendamentos_routes(app: Flask) -> None:
         "/agendamentos/<int:prospeccao_id>/registrar-tentativa",
         endpoint="agendamento_registrar_tentativa",
         view_func=agendamento_registrar_tentativa,
+        methods=["POST"],
+    )
+    app.add_url_rule(
+        "/agendamentos/lead/<int:lead_id>/registrar",
+        endpoint="agendamento_registrar_lead",
+        view_func=agendamento_registrar_lead,
         methods=["POST"],
     )

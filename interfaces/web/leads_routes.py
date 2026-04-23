@@ -95,8 +95,14 @@ def add_lead_contato(lead_id: int):
         ),
         lead_repository(),
     )
+
     if not result.ok:
         return redirect(url_for(result.redirect_to, **result.redirect_kwargs))
+    
+    # Se o serviço sugeriu um redirecionamento específico (ex: voltar para a lista após descarte)
+    if result.redirect_to:
+        return redirect(url_for(result.redirect_to, **result.redirect_kwargs))
+        
     return redirect(request.form.get("next", url_for("leads_list")))
 
 

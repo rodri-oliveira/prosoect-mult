@@ -235,6 +235,20 @@ def api_retornos_stats():
         return jsonify({"hoje": 0, "atrasados": 0, "urgentes": 0, "total": 0}), 500
 
 
+def api_leads_historico(lead_id: int):
+    """API: Obter histórico de contatos de um lead."""
+    try:
+        from infrastructure.container import lead_repository
+        res = lead_repository().get_by_id(lead_id)
+        if not res:
+            return jsonify({"ok": False, "message": "Lead não encontrado"}), 404
+        _, contatos, _ = res
+        return jsonify({"ok": True, "historico": contatos})
+    except Exception as e:
+        logger.error(f"Erro em api_leads_historico: {e}", exc_info=True)
+        return jsonify({"ok": False, "message": "Erro ao buscar histórico"}), 500
+
+
 def register_api_routes(app: Flask) -> None:
     """Registra todas as rotas de API."""
     app.add_url_rule(
@@ -271,6 +285,12 @@ def register_api_routes(app: Flask) -> None:
         "/api/prospeccao/<int:prospeccao_id>/eventos",
         endpoint="api_prospeccao_eventos",
         view_func=api_prospeccao_eventos,
+        methods=["GET"],
+    )
+    app.add_url_rule(
+        "/api/leads/<int:lead_id>/historico",
+        endpoint="api_leads_historico",
+        view_func=api_leads_historico,
         methods=["GET"],
     )
     app.add_url_rule(

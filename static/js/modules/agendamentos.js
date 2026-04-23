@@ -100,7 +100,7 @@ function renderHistoricoItens(itens) {
     });
 }
 
-async function loadHistorico(prospeccaoId) {
+async function loadHistorico(id, type = 'prospeccao') {
     const wrap = document.getElementById('modalHistoricoWrap');
     const list = document.getElementById('modalHistorico');
     if (!wrap || !list) return;
@@ -112,19 +112,21 @@ async function loadHistorico(prospeccaoId) {
     loading.textContent = 'Carregando histórico...';
     list.appendChild(loading);
 
-    if (historicoCache.has(prospeccaoId)) {
-        renderHistoricoItens(historicoCache.get(prospeccaoId));
+    const cacheKey = `${type}_${id}`;
+    if (historicoCache.has(cacheKey)) {
+        renderHistoricoItens(historicoCache.get(cacheKey));
         return;
     }
 
     try {
-        const resp = await fetch(`/api/prospeccao/${prospeccaoId}/eventos`);
+        const url = type === 'lead' ? `/api/leads/${id}/historico` : `/api/prospeccao/${id}/eventos`;
+        const resp = await fetch(url);
         const data = await resp.json().catch(() => null);
         if (!resp.ok || !data || !data.ok) {
             throw new Error((data && data.message) || 'Erro ao carregar histórico');
         }
-        historicoCache.set(prospeccaoId, data.eventos || []);
-        renderHistoricoItens(data.eventos || []);
+        historicoCache.set(cacheKey, data.eventos || data.historico || []);
+        renderHistoricoItens(data.eventos || data.historico || []);
     } catch (err) {
         list.innerHTML = '';
         const fail = document.createElement('div');
@@ -135,7 +137,59 @@ async function loadHistorico(prospeccaoId) {
 }
 
 /**
- * Abre modal de registro
+ * Abre modal de registro para Lead
+ */
+function openRegistrarModalLead(btnEl) {
+    if (!btnEl) return;
+    const modal = document.getElementById('registrarModal');
+    const form = document.getElementById('registrarForm');
+    
+    const id = btnEl.getAttribute('data-lead-id');
+    const nome = btnEl.getAttribute('data-nome-loja') || '-';
+    const tel = btnEl.getAttribute('data-telefone') || '';
+    const wa = btnEl.getAttribute('data-whatsapp') || '';
+    const resp = btnEl.getAttribute('data-responsavel') || '';
+    const mapsUrl = btnEl.getAttribute('data-maps-url') || '';
+    const next = btnEl.getAttribute('data-next') || '/agendamentos';
+
+    const titleEl = document.getElementById('modalTitle');
+    if (titleEl) {
+        if (mapsUrl) {
+            titleEl.innerHTML = `${nome} <a href="${mapsUrl}" target="_blank" class="ml-1 text-brand-500 hover:text-brand-700" title="Ver no Google Maps">📍</a>`;
+        } else {
+            titleEl.textContent = nome;
+        }
+    }
+    
+    document.getElementById('modalPhone').textContent = tel ? `📞 ${tel}` : '📞 Sem telefone';
+    const waEl = document.getElementById('modalWhatsapp');
+    if (waEl) waEl.textContent = wa ? `WhatsApp: ${wa}` : 'WhatsApp: Sem WhatsApp';
+    
+    const respEl = document.getElementById('modalResponsavel');
+    if (respEl) {
+        respEl.textContent = resp ? `👤 ${resp}` : '👤 Responsável Não Informado';
+    }
+
+    document.getElementById('modalNext').value = next;
+    document.getElementById('modalResultado').value = '';
+    document.getElementById('modalObs').value = '';
+    document.getElementById('modalDataRetorno').value = '';
+    const hr = document.getElementById('modalHoraRetorno');
+    if (hr) hr.value = '';
+
+    // Esconde campos irrelevantes para Lead no agendamento por enquanto
+    document.getElementById('modalObsAtualWrap').classList.add('hidden');
+    document.getElementById('modalSegmentoWrap').classList.add('hidden');
+    document.getElementById('btnSalvarConverter').classList.add('hidden');
+
+    form.action = `/agendamentos/lead/${id}/registrar`;
+    modal.classList.remove('hidden');
+    updateModalRequirements();
+    loadHistorico(id, 'lead');
+}
+
+/**
+ * Abre modal de registro para Prospecção
  */
 function openRegistrarModal(cardEl) {
     if (!cardEl) return;
@@ -192,7 +246,7 @@ function openRegistrarModal(cardEl) {
     form.action = `/agendamentos/${id}/registrar-tentativa`;
     modal.classList.remove('hidden');
     updateModalRequirements();
-    loadHistorico(id);
+    loadHistorico(id, 'prospeccao');
 }
 
 /**
@@ -269,5 +323,6 @@ if (document.readyState === 'loading') {
 // Expõe globalmente para onclick no HTML
 window.pedirDataRetorno = pedirDataRetorno;
 window.openRegistrarModal = openRegistrarModal;
+window.openRegistrarModalLead = openRegistrarModalLead;
 window.closeRegistrarModal = closeRegistrarModal;
 window.scrollToHash = scrollToHash;

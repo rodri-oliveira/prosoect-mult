@@ -75,8 +75,26 @@ def add_lead_contato_with_repo(req: AddLeadContatoRequest, repo: LeadRepository)
         hora_retorno=req.hora_retorno,
     )
 
+    # Sincronizar Status do Lead com o Resultado da Interação
+    # Se o resultado for um status válido de Lead, atualiza o status principal
+    from application.shared.status import STATUS_LEADS
+    status_alvo = resultado
+    if resultado == "Agendar retorno":
+        status_alvo = "Interessado" # Ou manter o status atual se preferir
+    
+    if status_alvo in STATUS_LEADS:
+        repo.update_status(req.lead_id, status_alvo)
+
+    # Lógica Inteligente de Redirecionamento
+    # Se for um status de "saída", mandamos para a lista para que ele suma da frente do usuário
+    status_saida = ["Sem interesse", "Descartado", "Já tem consultor atendendo", "Cliente ativo"]
+    
+    redirect_to = ""
+    if status_alvo in status_saida:
+        redirect_to = "leads_list"
+
     return AddLeadContatoResult(
         ok=True,
-        redirect_to="leads_list",
+        redirect_to=redirect_to,
         redirect_kwargs={},
     )

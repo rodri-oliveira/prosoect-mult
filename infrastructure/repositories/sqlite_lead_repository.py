@@ -144,6 +144,14 @@ class SqliteLeadRepository(LeadRepository):
             "UPDATE leads SET status = ? WHERE id = ?",
             (novo_status, lead_id),
         )
+        
+        # Se for sem interesse, limpa as datas de retorno futuras para sair do agendamento
+        if novo_status == "Sem interesse":
+            c.execute(
+                "UPDATE contatos SET data_retorno = NULL, hora_retorno = NULL WHERE lead_id = ?",
+                (lead_id,),
+            )
+            
         conn.commit()
         affected = c.rowcount
         conn.close()
