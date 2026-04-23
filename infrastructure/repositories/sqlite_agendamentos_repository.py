@@ -90,8 +90,8 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 data_retorno, hora_retorno
             """,
                 (data,),
-            )
-            retornos_futuros = [dict(row) for row in c.fetchall()]
+            )
+            retornos_futuros = [dict(row) for row in c.fetchall()]
 
         # Agendamentos de leads
         c.execute(
@@ -127,16 +127,17 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 ) as ultimo_observacao
             FROM contatos c2
             JOIN leads l ON c2.lead_id = l.id
-            WHERE c2.id = (
-                SELECT id
-                FROM contatos
-                WHERE lead_id = l.id
-                  AND data_retorno = ?
-                ORDER BY data DESC, id DESC
-                LIMIT 1
-            )
-            ORDER BY 
-                CASE 
+            WHERE c2.id = (
+                SELECT id
+                FROM contatos
+                WHERE lead_id = l.id
+                  AND data_retorno IS NOT NULL
+                ORDER BY id DESC
+                LIMIT 1
+            )
+              AND c2.data_retorno = ?
+            ORDER BY 
+                CASE 
                     WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
                     WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                     ELSE 3
@@ -181,17 +182,17 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 ) as ultimo_observacao
             FROM contatos c2
             JOIN leads l ON c2.lead_id = l.id
-            WHERE c2.id = (
-                SELECT id
-                FROM contatos
-                WHERE lead_id = l.id
-                  AND data_retorno < ?
-                  AND data_retorno IS NOT NULL
-                ORDER BY data_retorno ASC, (hora_retorno IS NULL) ASC, hora_retorno ASC, id DESC
-                LIMIT 1
-            )
-            ORDER BY 
-                CASE 
+            WHERE c2.id = (
+                SELECT id
+                FROM contatos
+                WHERE lead_id = l.id
+                  AND data_retorno IS NOT NULL
+                ORDER BY id DESC
+                LIMIT 1
+            )
+              AND c2.data_retorno < ?
+            ORDER BY 
+                CASE 
                     WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
                     WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                     ELSE 3
@@ -245,14 +246,16 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                     (SELECT observacao FROM contatos WHERE lead_id = l.id ORDER BY data DESC LIMIT 1) as ultimo_observacao
                 FROM contatos c2
                 JOIN leads l ON c2.lead_id = l.id
-                WHERE c2.id = (
-                    SELECT id FROM contatos
-                    WHERE lead_id = l.id AND data_retorno > ?
-                    ORDER BY data_retorno ASC, (hora_retorno IS NULL) ASC, hora_retorno ASC, id DESC
-                    LIMIT 1
-                )
-                ORDER BY 
-                    CASE 
+                WHERE c2.id = (
+                    SELECT id FROM contatos
+                    WHERE lead_id = l.id
+                      AND data_retorno IS NOT NULL
+                    ORDER BY id DESC
+                    LIMIT 1
+                )
+                  AND c2.data_retorno > ?
+                ORDER BY 
+                    CASE 
                         WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
                         WHEN substr(replace(replace(replace(replace(replace(l.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                         ELSE 3
@@ -282,15 +285,16 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             SELECT COUNT(*)
             FROM contatos c2
             JOIN leads l ON c2.lead_id = l.id
-            WHERE c2.id = (
-                SELECT id
-                FROM contatos
-                WHERE lead_id = l.id
-                  AND data_retorno > ?
-                ORDER BY data_retorno ASC, id DESC
-                LIMIT 1
-            )
-        """,
+            WHERE c2.id = (
+                SELECT id
+                FROM contatos
+                WHERE lead_id = l.id
+                  AND data_retorno IS NOT NULL
+                ORDER BY id DESC
+                LIMIT 1
+            )
+              AND c2.data_retorno > ?
+        """,
             (data,),
         )
         total_leads_futuros = int(c.fetchone()[0])

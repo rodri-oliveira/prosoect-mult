@@ -134,19 +134,19 @@
 
     <!-- Cards de Resumo -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 p-4 {% if total_hoje > 0 %}cursor-pointer hover:shadow-md transition-shadow{% endif %}" {% if total_hoje > 0 %}onclick="scrollToHash('#retornos-hoje')"{% endif %} role="button" tabindex="0">
+        <div class="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 p-4 {% if total_hoje_geral > 0 %}cursor-pointer hover:shadow-md transition-shadow{% endif %}" {% if total_hoje_geral > 0 %}onclick="scrollToHash('{{ resumo_hoje_target }}')"{% endif %} role="button" tabindex="0">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-yellow-700">Retornos para Hoje</p>
-                    <p class="text-3xl font-bold text-yellow-800">{{ total_hoje }}</p>
+                    <p class="text-3xl font-bold text-yellow-800">{{ total_hoje_geral }}</p>
                 </div>
                 <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
                     📞
                 </div>
             </div>
-            {% if total_hoje > 0 %}
+            {% if total_hoje_geral > 0 %}
             <div class="mt-3 pt-3 border-t border-yellow-200">
-                <a href="#retornos-hoje" class="js-scroll text-sm font-medium text-yellow-700 hover:text-yellow-900">
+                <a href="{{ resumo_hoje_target }}" class="js-scroll text-sm font-medium text-yellow-700 hover:text-yellow-900">
                     Ver lista →
                 </a>
             </div>

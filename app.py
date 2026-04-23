@@ -1,11 +1,12 @@
 import os
 import logging
+from datetime import date
 from database import init_db
 from flask import Flask, jsonify, render_template, request
 
 from interfaces.api.routes import register_api_routes
 from interfaces.web.routes import register_web_routes
-from infrastructure.container import prospeccao_repository
+from infrastructure.container import agendamentos_repository, prospeccao_repository
 
 # Configuração de logging
 logging.basicConfig(
@@ -20,8 +21,15 @@ app = Flask(__name__)
 @app.context_processor
 def inject_globals():
     try:
+        stats = prospeccao_repository().get_retornos_stats()
+        view = agendamentos_repository().get_view_data(date.today().isoformat(), mostrar_todos=False)
+
+        # Badge lateral consolidado: prospeccao + leads.
+        stats["hoje"] = int(stats.get("hoje", 0)) + int(view.total_leads_hoje or 0)
+        stats["atrasados"] = int(stats.get("atrasados", 0)) + int(view.total_leads_atrasados or 0)
+        stats["total"] = int(stats.get("hoje", 0)) + int(stats.get("atrasados", 0))
         return {
-            'retornos_stats': prospeccao_repository().get_retornos_stats()
+            'retornos_stats': stats
         }
     except Exception as e:
         logger.error(f"Erro ao injetar globais: {e}")

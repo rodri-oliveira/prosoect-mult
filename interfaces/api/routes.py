@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from flask import Flask, jsonify, request
 
 from application.maps.add_selected import AddMapsItemsRequest, add_maps_items_with_repo
@@ -12,7 +13,12 @@ from application.maps.search_results import (
 )
 from application.prospeccao.create_draft import CreateProspecctionDraftRequest, create_prospeccao_draft_with_repo
 from application.shared.cnpj_utils import is_valid_cnpj, normalize_cnpj
-from infrastructure.container import maps_existing_keys_repository, prospeccao_repository, prospeccao_temp_repository
+from infrastructure.container import (
+    agendamentos_repository,
+    maps_existing_keys_repository,
+    prospeccao_repository,
+    prospeccao_temp_repository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +223,12 @@ def api_retornos_stats():
     """API: Obter estatísticas de agendamento (hoje, atrasados, urgentes)."""
     try:
         stats = prospeccao_repository().get_retornos_stats()
+        view = agendamentos_repository().get_view_data(date.today().isoformat(), mostrar_todos=False)
+
+        # Badge lateral consolidado: prospeccao + leads.
+        stats["hoje"] = int(stats.get("hoje", 0)) + int(view.total_leads_hoje or 0)
+        stats["atrasados"] = int(stats.get("atrasados", 0)) + int(view.total_leads_atrasados or 0)
+        stats["total"] = int(stats.get("hoje", 0)) + int(stats.get("atrasados", 0))
         return jsonify(stats)
     except Exception as e:
         logger.error(f"Erro em api_retornos_stats: {e}", exc_info=True)

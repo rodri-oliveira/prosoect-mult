@@ -22,6 +22,8 @@ def agendamentos_view():
     )
 
     view = result.view_data
+    total_hoje_geral = int(view.total_hoje) + int(view.total_leads_hoje)
+    resumo_hoje_target = "#leads-hoje" if int(view.total_leads_hoje) > 0 else "#retornos-hoje"
 
     return render_template(
         "agendamentos.html",
@@ -34,11 +36,13 @@ def agendamentos_view():
         hoje=view.hoje,
         mostrar_todos=mostrar_todos,
         total_hoje=view.total_hoje,
+        total_hoje_geral=total_hoje_geral,
         total_atrasados=view.total_atrasados,
         total_futuros=view.total_futuros,
         total_leads_hoje=view.total_leads_hoje,
         total_leads_atrasados=view.total_leads_atrasados,
         total_leads_futuros=view.total_leads_futuros,
+        resumo_hoje_target=resumo_hoje_target,
         data_filtro=data_filtro,
         active_page="agendamentos",
     )
