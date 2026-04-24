@@ -58,6 +58,7 @@ class SqliteLeadRepository(LeadRepository):
                     LIMIT 1
                 )
                 WHERE l.status = ?
+                  AND (c2.data_retorno IS NULL)
                 ORDER BY l.id DESC
             """,
                 (status,),
@@ -70,7 +71,8 @@ class SqliteLeadRepository(LeadRepository):
                     c2.tipo_contato as ultimo_tipo_contato,
                     c2.resultado as ultimo_resultado,
                     c2.observacao as ultimo_observacao,
-                    c2.data as ultimo_contato_data
+                    c2.data as ultimo_contato_data,
+                    c2.data_retorno as data_retorno
                 FROM leads l
                 LEFT JOIN contatos c2 ON c2.id = (
                     SELECT id FROM contatos
@@ -79,6 +81,7 @@ class SqliteLeadRepository(LeadRepository):
                     LIMIT 1
                 )
                 WHERE COALESCE(l.status, '') <> 'Sem interesse'
+                  AND c2.data_retorno IS NULL
                 ORDER BY l.id DESC
             """
             )

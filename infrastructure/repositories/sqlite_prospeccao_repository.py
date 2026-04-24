@@ -235,6 +235,9 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         return ProspecctionSummary(total=total, por_status=por_status)
 
     def add(self, dados: dict) -> tuple[int, bool]:
+        import logging
+        _logger = logging.getLogger(__name__)
+
         def _norm_text(v: str) -> str:
             return " ".join((v or "").strip().lower().split())
 
@@ -257,11 +260,17 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         cnpj = (dados.get("cnpj") or "").strip() or None
         site = (dados.get("site") or dados.get("website") or "").strip() or None
 
+        _logger.warning(
+            "[DEDUP_DEBUG] add() chamado: nome=%s | cidade=%s | estado=%s | maps_place_id=%s | maps_url=%s | cnpj=%s",
+            dados.get("nome_loja"), dados.get("cidade"), dados.get("estado"),
+            maps_place_id, (maps_url or "")[:80], cnpj,
+        )
+
         existente_id = None
         if maps_place_id:
             c.execute(
                 """
-                SELECT id FROM prospeccao_temp
+                SELECT id, nome_loja, cidade FROM prospeccao_temp
                 WHERE maps_place_id = ?
                   AND (arquivado = 0 OR arquivado IS NULL)
                 ORDER BY id DESC
@@ -270,12 +279,17 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 (maps_place_id,),
             )
             row = c.fetchone()
-            existente_id = row[0] if row else None
+            if row:
+                existente_id = row[0]
+                _logger.warning(
+                    "[DEDUP_DEBUG] >>> MATCH por maps_place_id! existente_id=%s | nome_existente=%s | cidade_existente=%s | maps_place_id=%s",
+                    row[0], row[1], row[2], maps_place_id,
+                )
 
         if not existente_id and cnpj:
             c.execute(
                 """
-                SELECT id FROM prospeccao_temp
+                SELECT id, nome_loja, cidade FROM prospeccao_temp
                 WHERE cnpj = ?
                   AND (arquivado = 0 OR arquivado IS NULL)
                 ORDER BY id DESC
@@ -284,7 +298,12 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 (cnpj,),
             )
             row = c.fetchone()
-            existente_id = row[0] if row else None
+            if row:
+                existente_id = row[0]
+                _logger.warning(
+                    "[DEDUP_DEBUG] >>> MATCH por CNPJ! existente_id=%s | nome_existente=%s | cidade_existente=%s | cnpj=%s",
+                    row[0], row[1], row[2], cnpj,
+                )
 
         if not existente_id:
             nome_n = _norm_text(dados.get("nome_loja"))
@@ -304,7 +323,14 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 for r in rows:
                     if _norm_text(r[1]) == nome_n and _norm_text(r[2]) == cidade_n and _norm_text(r[3]) == estado_n:
                         existente_id = r[0]
+                        _logger.warning(
+                            "[DEDUP_DEBUG] >>> MATCH por NOME+CIDADE+ESTADO! existente_id=%s | nome_existente=%s | cidade_existente=%s | nome_novo=%s | cidade_nova=%s",
+                            r[0], r[1], r[2], dados.get("nome_loja"), dados.get("cidade"),
+                        )
                         break
+
+        if not existente_id:
+            _logger.warning("[DEDUP_DEBUG] Nenhum match encontrado. Sera criado novo registro.")
 
         if existente_id:
             update_parts: list[str] = []

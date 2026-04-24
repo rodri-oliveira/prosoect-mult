@@ -116,10 +116,25 @@ export async function submitLeadFormAsJsonIfFromMaps() {
  * Inicializa listeners do formulário
  */
 export function initFormListeners() {
-    // Atualizar botão de buscar CNPJ no Google
+    // Atualizar botão de buscar CNPJ no Google e limpar vinculo com Maps se editar manualmente
     ['f_nome', 'f_cidade', 'f_estado', 'f_endereco'].forEach((id) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', updateBtnBuscarCnpjGoogle);
+        if (el) {
+            el.addEventListener('input', (e) => {
+                updateBtnBuscarCnpjGoogle();
+                
+                // Se o usuário editar manualmente os dados vitais da loja (nome, cidade),
+                // devemos remover o vínculo com o Google Maps do item anterior para evitar colisão.
+                // Mas permitimos pequenas correções apenas no nome sem apagar?
+                // O mais seguro é: se ele digitar (isTrusted), limpar as chaves do maps.
+                if (e.isTrusted && (id === 'f_nome' || id === 'f_cidade')) {
+                    const mpid = document.getElementById('f_maps_place_id');
+                    const murl = document.getElementById('f_maps_url');
+                    if (mpid && mpid.value) mpid.value = '';
+                    if (murl && murl.value) murl.value = '';
+                }
+            });
+        }
     });
     updateBtnBuscarCnpjGoogle();
 

@@ -648,6 +648,10 @@ export function initFormSubmitListener() {
             if (res.data && res.data.created === false) {
                 if (statusEl) statusEl.textContent = 'Já existia na sua lista.';
                 alert('Este item já existe na sua lista de prospecção.');
+                const elMpid = document.getElementById('f_maps_place_id');
+                const elMurl = document.getElementById('f_maps_url');
+                if (elMpid) elMpid.value = '';
+                if (elMurl) elMurl.value = '';
                 return;
             }
 
