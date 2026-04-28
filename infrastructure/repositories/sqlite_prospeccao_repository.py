@@ -64,9 +64,10 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if nome:
             nome_raw = (nome or "").strip().lower()
             nome_nospace = nome_raw.replace(" ", "")
-            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ? OR lower(responsavel) LIKE ?)")
             params.append(f"%{nome_raw}%")
             params.append(f"%{nome_nospace}%")
+            params.append(f"%{nome_raw}%")
 
         if segmento:
             where_parts.append("segmento LIKE ?")
@@ -170,9 +171,10 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if nome:
             nome_raw = (nome or "").strip().lower()
             nome_nospace = nome_raw.replace(" ", "")
-            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ?)")
+            where_parts.append("(lower(nome_loja) LIKE ? OR lower(replace(nome_loja, ' ', '')) LIKE ? OR lower(responsavel) LIKE ?)")
             params.append(f"%{nome_raw}%")
             params.append(f"%{nome_nospace}%")
+            params.append(f"%{nome_raw}%")
 
         if segmento:
             where_parts.append("segmento LIKE ?")
