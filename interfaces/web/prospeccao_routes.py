@@ -49,7 +49,15 @@ def _build_prospeccao_url_with_filters():
 
 
 def prospeccao_view():
-    filtro_status = request.args.get("status")
+    filtro_status_list = request.args.getlist("status")
+    # Se houver apenas um item e for vazio ou "Todos", limpamos a lista
+    if not filtro_status_list or (len(filtro_status_list) == 1 and not filtro_status_list[0]):
+        filtro_status_list = []
+    
+    filtro_status = filtro_status_list[0] if len(filtro_status_list) == 1 else None
+    if len(filtro_status_list) > 1:
+        filtro_status = ",".join(filtro_status_list)
+
     filtro_nome = request.args.get("nome")
     segmento = request.args.get("segmento")
     cidade = request.args.get("cidade")
@@ -82,6 +90,7 @@ def prospeccao_view():
         resumo_prospeccao=view.resumo_prospeccao,
         active_page="prospeccao",
         filtro_status=filtro_status,
+        filtro_status_list=filtro_status_list,
         filtro_nome=filtro_nome,
         segmento=segmento,
         cidade=cidade,

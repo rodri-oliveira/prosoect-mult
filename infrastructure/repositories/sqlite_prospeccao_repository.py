@@ -58,8 +58,14 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
 
         if status:
-            where_parts.append("status_prospeccao = ?")
-            params.append(status)
+            if "," in status:
+                status_list = [s.strip() for s in status.split(",") if s.strip()]
+                placeholders = ",".join(["?"] * len(status_list))
+                where_parts.append(f"status_prospeccao IN ({placeholders})")
+                params.extend(status_list)
+            else:
+                where_parts.append("status_prospeccao = ?")
+                params.append(status)
 
         if nome:
             nome_raw = (nome or "").strip().lower()
@@ -141,6 +147,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         data_inicio: str | None,
         data_fim: str | None,
         mostrar_arquivados: bool = False,
+        status: str | None = None,
         nome: str | None = None,
         segmento: str | None = None,
         cidade: str | None = None,
@@ -167,6 +174,16 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
 
         if not mostrar_arquivados and not is_phone_search:
             where_parts.append("(arquivado = 0 OR arquivado IS NULL)")
+
+        if status:
+            if "," in status:
+                status_list = [s.strip() for s in status.split(",") if s.strip()]
+                placeholders = ",".join(["?"] * len(status_list))
+                where_parts.append(f"status_prospeccao IN ({placeholders})")
+                params.extend(status_list)
+            else:
+                where_parts.append("status_prospeccao = ?")
+                params.append(status)
 
         if nome:
             nome_raw = (nome or "").strip().lower()

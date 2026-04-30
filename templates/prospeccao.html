@@ -196,27 +196,83 @@
                             <input type="date" name="data_fim" value="{{ data_fim or '' }}" 
                                    class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all">
                         </div>
-                        <div class="lg:col-span-1">
+                        <div class="lg:col-span-1 relative group" id="statusFilterGroup">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Status</label>
-                            <select name="status" class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all appearance-none bg-no-repeat bg-right" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">
-                                <option value="">Todos</option>
-                                <option value="Não contatado" {% if filtro_status == 'Não contatado' %}selected{% endif %}>Não contatado</option>
-                                <option value="Não atendeu" {% if filtro_status == 'Não atendeu' %}selected{% endif %}>Não atendeu</option>
-                                <option value="Caixa postal" {% if filtro_status == 'Caixa postal' %}selected{% endif %}>Caixa postal</option>
-                                <option value="Enviado Portfólio Whats" {% if filtro_status == 'Enviado Portfólio Whats' %}selected{% endif %}>Enviado Portfólio Whats</option>
-                                <option value="Enviado Portfólio por E-mail" {% if filtro_status == 'Enviado Portfólio por E-mail' %}selected{% endif %}>Enviado Portfólio por E-mail</option>
-                                <option value="Não analisou ainda o material" {% if filtro_status == 'Não analisou ainda o material' %}selected{% endif %}>Não analisou ainda o material</option>
-                                <option value="Aguard. Lista Prod." {% if filtro_status == 'Aguard. Lista Prod.' %}selected{% endif %}>Aguard. Lista Prod.</option>
-                                <option value="Pediu para retornar" {% if filtro_status == 'Pediu para retornar' %}selected{% endif %}>Agendamento</option>
-                                <option value="Solicitou portfólio" {% if filtro_status == 'Solicitou portfólio' %}selected{% endif %}>Solicitou portfólio</option>
-                                <option value="Em negociação" {% if filtro_status == 'Em negociação' %}selected{% endif %}>Em negociação</option>
-                                <option value="Interessado" {% if filtro_status == 'Interessado' %}selected{% endif %}>Interessado</option>
-                                <option value="Já tem consultor atendendo" {% if filtro_status == 'Já tem consultor atendendo' %}selected{% endif %}>Já tem consultor atendendo</option>
-                                <option value="Sem interesse" {% if filtro_status == 'Sem interesse' %}selected{% endif %}>Sem interesse</option>
-                                <option value="Descartado" {% if filtro_status == 'Descartado' %}selected{% endif %}>Descartado</option>
-                                <option value="Convertido em Lead" {% if filtro_status == 'Convertido em Lead' %}selected{% endif %}>Convertido em Lead</option>
-                            </select>
+                            <div id="statusDropdownBtn" class="w-full rounded-lg border-gray-200 shadow-none text-sm px-3 py-2 border transition-all bg-white cursor-pointer flex justify-between items-center overflow-hidden h-[38px]">
+                                <span class="truncate text-gray-600" id="selectedStatusText">Todos</span>
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                            <!-- Menu do Dropdown -->
+                            <div id="statusDropdownMenu" class="hidden absolute left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto p-2 space-y-1">
+                                <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors border-b border-gray-50 mb-1">
+                                    <input type="checkbox" id="checkAllStatus" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                    <span class="text-xs font-bold text-gray-700">TODOS</span>
+                                </label>
+                                {% set statuses = [
+                                    'Não contatado', 'Não atendeu', 'Caixa postal', 'Enviado Portfólio Whats', 
+                                    'Enviado Portfólio por E-mail', 'Não analisou ainda o material', 
+                                    'Aguard. Lista Prod.', 'Pediu para retornar', 'Solicitou portfólio', 
+                                    'Em negociação', 'Interessado', 'Já tem consultor atendendo', 
+                                    'Sem interesse', 'Descartado', 'Convertido em Lead'
+                                ] %}
+                                {% for s in statuses %}
+                                <label class="flex items-center gap-2 p-1.5 hover:bg-brand-50 rounded cursor-pointer transition-colors">
+                                    <input type="checkbox" name="status" value="{{ s }}" 
+                                           class="status-checkbox rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                           {% if s in filtro_status_list %}checked{% endif %}>
+                                    <span class="text-xs text-gray-600">{{ s }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
                         </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const btn = document.getElementById('statusDropdownBtn');
+                                const menu = document.getElementById('statusDropdownMenu');
+                                const checkboxes = document.querySelectorAll('.status-checkbox');
+                                const checkAll = document.getElementById('checkAllStatus');
+                                const text = document.getElementById('selectedStatusText');
+
+                                function updateText() {
+                                    const checked = Array.from(checkboxes).filter(cb => cb.checked);
+                                    if (checked.length === 0) {
+                                        text.textContent = 'Todos';
+                                        text.className = 'truncate text-gray-400';
+                                    } else if (checked.length === checkboxes.length) {
+                                        text.textContent = 'Todos selecionados';
+                                        text.className = 'truncate text-brand-600 font-bold';
+                                        checkAll.checked = true;
+                                    } else {
+                                        text.textContent = checked.length + ' selecionados';
+                                        text.className = 'truncate text-brand-600 font-bold';
+                                        checkAll.checked = false;
+                                    }
+                                }
+
+                                btn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    menu.classList.toggle('hidden');
+                                });
+
+                                document.addEventListener('click', (e) => {
+                                    if (!menu.contains(e.target) && e.target !== btn) {
+                                        menu.classList.add('hidden');
+                                    }
+                                });
+
+                                checkAll.addEventListener('change', function() {
+                                    checkboxes.forEach(cb => cb.checked = checkAll.checked);
+                                    updateText();
+                                });
+
+                                checkboxes.forEach(cb => {
+                                    cb.addEventListener('change', updateText);
+                                });
+
+                                updateText();
+                            });
+                        </script>
                         <div class="lg:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Tipo Tel.</label>
                             <select name="tipo_telefone" class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all appearance-none bg-no-repeat bg-right" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">

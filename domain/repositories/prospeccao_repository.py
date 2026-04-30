@@ -36,11 +36,13 @@ class ProspeccaoRepository(Protocol):
         data_inicio: str | None,
         data_fim: str | None,
         mostrar_arquivados: bool = False,
+        status: str | None = None,
         nome: str | None = None,
         segmento: str | None = None,
         cidade: str | None = None,
         estado: str | None = None,
         telefone: str | None = None,
+        tipo_telefone: str | None = None,
     ) -> ProspecctionSummary:
         """Retorna resumo de prospecções (total e por status)."""
         raise NotImplementedError

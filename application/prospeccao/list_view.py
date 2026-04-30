@@ -84,6 +84,7 @@ def build_prospeccao_list_view_with_repo(
         data_inicio,
         data_fim,
         req.mostrar_arquivados,
+        status=req.filtro_status,
         nome=req.filtro_nome,
         segmento=req.segmento,
         cidade=req.cidade,
