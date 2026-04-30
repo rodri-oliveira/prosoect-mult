@@ -233,8 +233,15 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         )
         por_status = {row[0]: row[1] for row in c.fetchall()}
 
+        # Buscar cidades únicas acionadas no período
+        c.execute(
+            f"SELECT DISTINCT cidade FROM prospeccao_temp WHERE {where_clause} AND cidade IS NOT NULL AND cidade != '' ORDER BY cidade",
+            params,
+        )
+        cidades = [row[0] for row in c.fetchall()]
+
         conn.close()
-        return ProspecctionSummary(total=total, por_status=por_status)
+        return ProspecctionSummary(total=total, por_status=por_status, cidades=cidades)
 
     def add(self, dados: dict) -> tuple[int, bool]:
         import logging

@@ -94,6 +94,7 @@ def build_prospeccao_list_view_with_repo(
     resumo_prospeccao = {
         "total": resumo.total,
         "por_status": list((resumo.por_status or {}).items()),
+        "cidades": resumo.cidades or [],
     }
 
     return ProspecctionListViewResponse(

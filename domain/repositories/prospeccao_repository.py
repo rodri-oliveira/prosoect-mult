@@ -8,6 +8,7 @@ from typing import Any, Protocol
 class ProspecctionSummary:
     total: int
     por_status: dict[str, int]
+    cidades: list[str] = None
 
 
 class ProspeccaoRepository(Protocol):

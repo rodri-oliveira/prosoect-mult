@@ -137,6 +137,18 @@
                     </a>
                     {% endfor %}
                 </div>
+                
+                {% if resumo_prospeccao.cidades %}
+                <div class="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-2 items-center">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase mr-2">Cidades Acionadas no Período:</span>
+                    {% for cid in resumo_prospeccao.cidades %}
+                    <a href="/prospeccao?cidade={{ cid }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}"
+                       class="px-2 py-0.5 rounded bg-gray-50 text-gray-500 hover:bg-brand-50 hover:text-brand-700 text-[10px] border border-gray-200 transition-all {% if cidade == cid %}border-brand-300 bg-brand-50 text-brand-700{% endif %}">
+                        📍 {{ cid }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             {% endif %}
 
