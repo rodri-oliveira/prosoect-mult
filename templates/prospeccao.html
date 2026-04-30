@@ -203,10 +203,10 @@
                                 <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 9l-7 7-7-7"/></svg>
                             </div>
                             <!-- Menu do Dropdown -->
-                            <div id="statusDropdownMenu" class="hidden absolute left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto p-2 space-y-1">
-                                <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors border-b border-gray-50 mb-1">
+                            <div id="statusDropdownMenu" class="hidden absolute right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto p-2 space-y-1 min-w-[260px]">
+                                <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors border-b border-gray-50 mb-1 whitespace-nowrap">
                                     <input type="checkbox" id="checkAllStatus" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
-                                    <span class="text-xs font-bold text-gray-700">TODOS</span>
+                                    <span class="text-xs font-bold text-gray-700">TODOS OS STATUS</span>
                                 </label>
                                 {% set statuses = [
                                     'Não contatado', 'Não atendeu', 'Caixa postal', 'Enviado Portfólio Whats', 
@@ -216,7 +216,7 @@
                                     'Sem interesse', 'Descartado', 'Convertido em Lead'
                                 ] %}
                                 {% for s in statuses %}
-                                <label class="flex items-center gap-2 p-1.5 hover:bg-brand-50 rounded cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-1.5 hover:bg-brand-50 rounded cursor-pointer transition-colors whitespace-nowrap">
                                     <input type="checkbox" name="status" value="{{ s }}" 
                                            class="status-checkbox rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                                            {% if s in filtro_status_list %}checked{% endif %}>
