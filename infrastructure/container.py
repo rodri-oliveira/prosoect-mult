@@ -17,12 +17,12 @@ from infrastructure.repositories.sqlite_prospeccao_repository import SqliteProsp
 from infrastructure.repositories.sqlite_prospeccao_temp_repository import SqliteProspecctionTempRepository
 from infrastructure.repositories.sqlite_relatorio_repository import SqliteRelatorioRepository
 from infrastructure.repositories.sqlite_pedido_repository import SqlitePedidoRepository
-from infrastructure.gateways.brasil_api_cnpj_gateway import BrasilApiCnpjGateway
+from infrastructure.gateways.fallback_cnpj_gateway import FallbackCnpjGateway
 
 
 @lru_cache(maxsize=1)
 def cnpj_gateway() -> CnpjGateway:
-    return BrasilApiCnpjGateway()
+    return FallbackCnpjGateway()
 
 
 @lru_cache(maxsize=1)

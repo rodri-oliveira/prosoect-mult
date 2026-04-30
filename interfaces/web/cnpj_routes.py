@@ -21,7 +21,7 @@ def api_consultar_cnpj():
     info = gateway.consultar(cnpj)
     
     if not info:
-        return jsonify({"ok": False, "cnpj": cnpj, "valid_local": True, "message": "Falha ao consultar"}), 502
+        return jsonify({"ok": False, "cnpj": cnpj, "valid_local": True, "message": "CNPJ não encontrado ou APIs de consulta indisponíveis"}), 502
 
     return jsonify({
         "ok": True,

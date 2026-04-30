@@ -25,7 +25,16 @@ export async function consultarCNPJ() {
         const data = await resp.json();
 
         if (!resp.ok || !data.ok) {
-            status.textContent = data.message || 'CNPJ inválido';
+            const msg = data.message || '';
+            if (resp.status === 502 || msg.includes('indisponíveis') || msg.includes('Falha')) {
+                status.textContent = 'Serviço de consulta temporariamente indisponível. Tente novamente em alguns segundos.';
+            } else if (msg.includes('inválido')) {
+                status.textContent = 'CNPJ inválido. Verifique o número digitado.';
+            } else if (msg.includes('não encontrado')) {
+                status.textContent = 'CNPJ não encontrado na base de dados.';
+            } else {
+                status.textContent = msg || 'Erro ao consultar CNPJ';
+            }
             status.className = 'text-xs text-red-700';
             return;
         }
@@ -51,8 +60,15 @@ export async function consultarCNPJ() {
                 const aberturaFmt = String(aberturaRaw).substring(0, 10).split('-').reverse().join('/');
                 msg += ` | Abertura: ${aberturaFmt}`;
                 if (diffDays >= 0 && diffDays < 365) {
-                    msg += ' | ATENÇÃO: empresa < 1 ano (pagamento à vista)';
-                    cls = 'text-xs text-yellow-800';
+                    const meses = Math.floor(diffDays / 30);
+                    msg += ` | ATENÇÃO: CNPJ com ${meses} meses (Multilaser exige 12+ meses para faturado)`;
+                    cls = 'text-xs text-red-700 font-bold';
+                } else {
+                    const anos = Math.floor(diffDays / 365);
+                    const meses = Math.floor((diffDays % 365) / 30);
+                    if (anos >= 1) {
+                        msg += ` | OK: ${anos} ano${anos > 1 ? 's' : ''} e ${meses} meses (aprovado para faturado)`;
+                    }
                 }
             }
         }
@@ -61,7 +77,7 @@ export async function consultarCNPJ() {
         status.className = cls;
         el.value = data.cnpj;
     } catch (e) {
-        status.textContent = 'Erro ao consultar';
+        status.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
         status.className = 'text-xs text-red-700';
     }
 }
