@@ -72,6 +72,10 @@ def agendamento_registrar_tentativa(prospeccao_id: int):
             hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
             segmento=segmento,
             pos_acao=(request.form.get("pos_acao") or "").strip() or None,
+            responsavel=(request.form.get("responsavel") or "").strip() or None,
+            email=(request.form.get("email") or "").strip() or None,
+            telefone=(request.form.get("telefone") or "").strip() or None,
+            whatsapp=(request.form.get("whatsapp") or "").strip() or None,
         ),
         agendamentos_repository(),
         prospeccao_repository(),
@@ -86,6 +90,22 @@ def agendamento_registrar_lead(lead_id: int):
     from application.leads.add_contato import AddLeadContatoRequest, add_lead_contato_with_repo
     from infrastructure.container import lead_repository
     
+    # Atualizar dados básicos do lead se fornecidos
+    l_repo = lead_repository()
+    responsavel = (request.form.get("responsavel") or "").strip() or None
+    email = (request.form.get("email") or "").strip() or None
+    telefone = (request.form.get("telefone") or "").strip() or None
+    whatsapp = (request.form.get("whatsapp") or "").strip() or None
+    
+    if any([responsavel, email, telefone, whatsapp]):
+        l_repo.update_basic_info(
+            lead_id=lead_id,
+            responsavel=responsavel,
+            email=email,
+            telefone=telefone,
+            whatsapp=whatsapp
+        )
+    
     add_lead_contato_with_repo(
         AddLeadContatoRequest(
             lead_id=lead_id,
@@ -95,7 +115,7 @@ def agendamento_registrar_lead(lead_id: int):
             data_retorno=(request.form.get("data_retorno") or "").strip() or None,
             hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
         ),
-        lead_repository(),
+        l_repo,
     )
     return redirect(request.form.get("next", url_for("agendamentos_view")))
 

@@ -66,6 +66,7 @@
                                         data-telefone="{{ lead.telefone or '' }}"
                                         data-whatsapp="{{ lead.whatsapp or '' }}"
                                         data-responsavel="{{ lead.responsavel or '' }}"
+                                        data-email="{{ lead.email or '' }}"
                                         data-maps-url="{{ lead.maps_url or '' }}"
                                         data-next="/agendamentos#leads-atrasados">
                                     📝 Tabular
@@ -118,6 +119,7 @@
                                         data-telefone="{{ lead.telefone or '' }}"
                                         data-whatsapp="{{ lead.whatsapp or '' }}"
                                         data-responsavel="{{ lead.responsavel or '' }}"
+                                        data-email="{{ lead.email or '' }}"
                                         data-maps-url="{{ lead.maps_url or '' }}"
                                         data-next="/agendamentos#leads-hoje">
                                     📝 Tabular
@@ -243,6 +245,7 @@
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
+                 data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos#retornos-atrasados">
                 <div class="flex justify-between items-start">
@@ -346,6 +349,7 @@
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
+                 data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos#retornos-hoje">
                 <div class="flex justify-between items-start">
@@ -446,6 +450,7 @@
                  data-segmento="{{ item.segmento or '' }}"
                  data-observacao="{{ item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
+                 data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
                  data-next="/agendamentos?todos=1">
                 <div class="flex justify-between items-start">
@@ -560,6 +565,29 @@
             <!-- Conteúdo Scrolável -->
             <div class="p-4 space-y-3 overflow-y-auto">
                 <input type="hidden" name="next" id="modalNext">
+
+                <!-- Dados de Contato Editáveis -->
+                <div class="bg-brand-50/50 p-3 rounded-lg border border-brand-100 mb-2">
+                    <div class="text-[10px] font-bold text-brand-400 uppercase mb-2">Dados de Contato (Atualize se necessário)</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-0.5">Responsável</label>
+                            <input type="text" name="responsavel" id="modalInputResponsavel" class="block w-full rounded border-gray-300 text-xs p-1.5 focus:border-brand-500 focus:ring-brand-500 border bg-white" placeholder="Nome do responsável">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-0.5">E-mail</label>
+                            <input type="email" name="email" id="modalInputEmail" class="block w-full rounded border-gray-300 text-xs p-1.5 focus:border-brand-500 focus:ring-brand-500 border bg-white" placeholder="Email do contato">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-0.5">Telefone</label>
+                            <input type="text" name="telefone" id="modalInputPhone" class="block w-full rounded border-gray-300 text-xs p-1.5 focus:border-brand-500 focus:ring-brand-500 border bg-white" placeholder="(00) 0000-0000">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-0.5">WhatsApp</label>
+                            <input type="text" name="whatsapp" id="modalInputWhatsapp" class="block w-full rounded border-gray-300 text-xs p-1.5 focus:border-brand-500 focus:ring-brand-500 border bg-white" placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                </div>
 
                 <div id="modalObsAtualWrap" class="hidden">
                     <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1">Observação atual</label>

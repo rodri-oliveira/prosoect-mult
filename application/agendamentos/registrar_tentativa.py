@@ -18,6 +18,10 @@ class RegistrarTentativaRequest:
     hora_retorno: str | None
     segmento: str | None
     pos_acao: str | None  # "converter" ou None
+    responsavel: str | None = None
+    email: str | None = None
+    telefone: str | None = None
+    whatsapp: str | None = None
 
 
 @dataclass(frozen=True)
@@ -87,6 +91,16 @@ def registrar_tentativa_with_repo(
                 )
         else:
             agendamentos_repo.update_segmento(req.prospeccao_id, req.segmento)
+
+    # Atualizar dados de contato se fornecidos
+    if any([req.responsavel, req.email, req.telefone, req.whatsapp]):
+        prospeccao_repo.update_draft(
+            prospeccao_id=req.prospeccao_id,
+            responsavel=req.responsavel,
+            email=req.email,
+            telefone=req.telefone,
+            whatsapp=req.whatsapp
+        )
 
     # Processar resultado
     if resultado in resultados_tentativa:

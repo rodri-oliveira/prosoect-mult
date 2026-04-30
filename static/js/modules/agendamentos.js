@@ -149,6 +149,7 @@ function openRegistrarModalLead(btnEl) {
     const tel = btnEl.getAttribute('data-telefone') || '';
     const wa = btnEl.getAttribute('data-whatsapp') || '';
     const resp = btnEl.getAttribute('data-responsavel') || '';
+    const email = btnEl.getAttribute('data-email') || '';
     const mapsUrl = btnEl.getAttribute('data-maps-url') || '';
     const next = btnEl.getAttribute('data-next') || '/agendamentos';
 
@@ -169,6 +170,12 @@ function openRegistrarModalLead(btnEl) {
     if (respEl) {
         respEl.textContent = resp ? `👤 ${resp}` : '👤 Responsável Não Informado';
     }
+
+    // Preenche campos de input editáveis
+    document.getElementById('modalInputResponsavel').value = resp;
+    document.getElementById('modalInputEmail').value = email;
+    document.getElementById('modalInputPhone').value = tel;
+    document.getElementById('modalInputWhatsapp').value = wa;
 
     document.getElementById('modalNext').value = next;
     document.getElementById('modalResultado').value = '';
@@ -202,6 +209,7 @@ function openRegistrarModal(cardEl) {
     const seg = cardEl.getAttribute('data-segmento') || '';
     const obsAtual = cardEl.getAttribute('data-observacao') || '';
     const resp = cardEl.getAttribute('data-responsavel') || '';
+    const email = cardEl.getAttribute('data-email') || '';
     const mapsUrl = cardEl.getAttribute('data-maps-url') || '';
     const next = cardEl.getAttribute('data-next') || '/agendamentos';
 
@@ -223,6 +231,13 @@ function openRegistrarModal(cardEl) {
         respEl.classList.toggle('text-gray-400', !resp);
         respEl.classList.toggle('text-brand-600', !!resp);
     }
+
+    // Preenche campos de input editáveis
+    document.getElementById('modalInputResponsavel').value = resp;
+    document.getElementById('modalInputEmail').value = email;
+    document.getElementById('modalInputPhone').value = tel;
+    document.getElementById('modalInputWhatsapp').value = wa;
+
     document.getElementById('modalNext').value = next;
     document.getElementById('modalSegmento').value = seg;
     document.getElementById('modalResultado').value = '';

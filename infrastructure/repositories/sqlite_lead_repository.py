@@ -310,3 +310,42 @@ class SqliteLeadRepository(LeadRepository):
         conn.commit()
         conn.close()
         return True
+
+    def update_basic_info(
+        self,
+        lead_id: int,
+        responsavel: str | None = None,
+        email: str | None = None,
+        telefone: str | None = None,
+        whatsapp: str | None = None,
+    ) -> bool:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        updates = []
+        params = []
+
+        if responsavel is not None:
+            updates.append("responsavel = ?")
+            params.append(responsavel)
+        if email is not None:
+            updates.append("email = ?")
+            params.append(email)
+        if telefone is not None:
+            updates.append("telefone = ?")
+            params.append(telefone)
+        if whatsapp is not None:
+            updates.append("whatsapp = ?")
+            params.append(whatsapp)
+
+        if not updates:
+            conn.close()
+            return False
+
+        params.append(lead_id)
+        query = f"UPDATE leads SET {', '.join(updates)} WHERE id = ?"
+        c.execute(query, tuple(params))
+        conn.commit()
+        affected = c.rowcount
+        conn.close()
+        return affected > 0
