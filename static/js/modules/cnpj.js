@@ -48,7 +48,7 @@ export async function consultarCNPJ() {
         }
 
         const razao = data.data?.razao_social || data.data?.nome_fantasia;
-        const aberturaRaw = data.data?.data_inicio_atividade || data.data?.data_abertura;
+        const aberturaRaw = data.data?.data_abertura || data.data?.data_inicio_atividade;
         let msg = razao ? `OK: ${razao}` : 'OK';
         let cls = 'text-xs text-green-700';
 

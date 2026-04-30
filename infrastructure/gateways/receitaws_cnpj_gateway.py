@@ -75,13 +75,24 @@ class ReceitaWsCnpjGateway(CnpjGateway):
             endereco_parts.append(data["bairro"])
         endereco = ", ".join(endereco_parts) if endereco_parts else None
 
+        data_abertura_raw = data.get("abertura")
+        data_abertura_fmt = None
+        if data_abertura_raw and "/" in data_abertura_raw:
+            try:
+                partes = data_abertura_raw.split("/")
+                data_abertura_fmt = f"{partes[2]}-{partes[1]}-{partes[0]}"
+            except Exception:
+                data_abertura_fmt = data_abertura_raw
+        else:
+            data_abertura_fmt = data_abertura_raw
+
         return CnpjInfo(
             cnpj=cnpj,
             razao_social=data.get("nome", ""),
             nome_fantasia=data.get("fantasia"),
             situacao=situacao,
             ativo=ativo,
-            data_abertura=data.get("abertura"),
+            data_abertura=data_abertura_fmt,
             endereco=endereco,
             cidade=data.get("municipio"),
             estado=data.get("uf"),

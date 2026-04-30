@@ -914,6 +914,9 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "distribuidor de componentes de computador",
             "atacadista de hardware",
             "distribuidor de hardware",
+
+            # Papelarias que vendem acessórios de informática (B2B)
+            "papelaria e informática",
         ],
         "Celulares": [
             # O Alto Volume
