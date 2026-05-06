@@ -166,10 +166,24 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={},
         )
 
-    if resultado in ("Em negociação", "Agendar retorno"):
+    if resultado == "Agendar retorno":
+        prospeccao_repo.agendar_retorno(
+            req.prospeccao_id,
+            data_retorno=req.data_retorno,
+            hora_retorno=req.hora_retorno,
+            observacao=req.observacao,
+        )
+        agendamentos_repo.registrar_resultado_retorno(req.prospeccao_id, resultado, observacao=req.observacao)
+        return RegistrarTentativaResult(
+            ok=True,
+            redirect_to="agendamentos_view",
+            redirect_kwargs={},
+        )
+
+    if resultado == "Em negociação":
         prospeccao_repo.update_status(
             req.prospeccao_id,
-            "Pediu para retornar",
+            "Em negociação",
             observacao=req.observacao,
             data_retorno=req.data_retorno,
             hora_retorno=req.hora_retorno,

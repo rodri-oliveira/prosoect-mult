@@ -130,7 +130,7 @@
                         Todos ({{ resumo_prospeccao.total }})
                     </a>
                     {% for status, total in resumo_prospeccao.por_status %}
-                    <a href="/prospeccao?status={{ status }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}" 
+                    <a href="/prospeccao?status={{ status|urlencode }}{% if data_inicio %}&data_inicio={{ data_inicio }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}" 
                        class="px-3 py-1 rounded-full text-xs font-medium transition
                               {% if filtro_status == status %}bg-brand-600 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
                         {{ status }}: {{ total }}
@@ -226,53 +226,6 @@
                             </div>
                         </div>
 
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const btn = document.getElementById('statusDropdownBtn');
-                                const menu = document.getElementById('statusDropdownMenu');
-                                const checkboxes = document.querySelectorAll('.status-checkbox');
-                                const checkAll = document.getElementById('checkAllStatus');
-                                const text = document.getElementById('selectedStatusText');
-
-                                function updateText() {
-                                    const checked = Array.from(checkboxes).filter(cb => cb.checked);
-                                    if (checked.length === 0) {
-                                        text.textContent = 'Todos';
-                                        text.className = 'truncate text-gray-400';
-                                    } else if (checked.length === checkboxes.length) {
-                                        text.textContent = 'Todos selecionados';
-                                        text.className = 'truncate text-brand-600 font-bold';
-                                        checkAll.checked = true;
-                                    } else {
-                                        text.textContent = checked.length + ' selecionados';
-                                        text.className = 'truncate text-brand-600 font-bold';
-                                        checkAll.checked = false;
-                                    }
-                                }
-
-                                btn.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    menu.classList.toggle('hidden');
-                                });
-
-                                document.addEventListener('click', (e) => {
-                                    if (!menu.contains(e.target) && e.target !== btn) {
-                                        menu.classList.add('hidden');
-                                    }
-                                });
-
-                                checkAll.addEventListener('change', function() {
-                                    checkboxes.forEach(cb => cb.checked = checkAll.checked);
-                                    updateText();
-                                });
-
-                                checkboxes.forEach(cb => {
-                                    cb.addEventListener('change', updateText);
-                                });
-
-                                updateText();
-                            });
-                        </script>
                         <div class="lg:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Tipo Tel.</label>
                             <select name="tipo_telefone" class="w-full rounded-lg border-gray-200 shadow-none focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border transition-all appearance-none bg-no-repeat bg-right" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E'); background-position: right 0.5rem center; background-size: 1.5em 1.5em;">

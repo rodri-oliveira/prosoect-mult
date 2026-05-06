@@ -192,6 +192,71 @@ function restorePendingDrawer() {
 /**
  * Carrega e mostra histórico de observações de uma prospecção
  */
+function initStatusDropdown() {
+    const group = document.getElementById('statusFilterGroup');
+    const btn = document.getElementById('statusDropdownBtn');
+    const menu = document.getElementById('statusDropdownMenu');
+    const checkboxes = Array.from(document.querySelectorAll('.status-checkbox'));
+    const checkAll = document.getElementById('checkAllStatus');
+    const text = document.getElementById('selectedStatusText');
+
+    if (!group || !btn || !menu || !checkAll || !text || checkboxes.length === 0) return;
+
+    if (window.__statusDropdownAbort) {
+        window.__statusDropdownAbort.abort();
+    }
+
+    const controller = new AbortController();
+    window.__statusDropdownAbort = controller;
+    const signal = controller.signal;
+
+    const updateText = () => {
+        const checked = checkboxes.filter((cb) => cb.checked);
+        checkAll.checked = checked.length === checkboxes.length;
+        checkAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+
+        if (checked.length === 0) {
+            text.textContent = 'Todos';
+            text.className = 'truncate text-gray-400';
+            return;
+        }
+
+        if (checked.length === checkboxes.length) {
+            text.textContent = 'Todos selecionados';
+            text.className = 'truncate text-brand-600 font-bold';
+            return;
+        }
+
+        text.textContent = `${checked.length} selecionados`;
+        text.className = 'truncate text-brand-600 font-bold';
+    };
+
+    btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    }, { signal });
+
+    document.addEventListener('click', (event) => {
+        if (!group.contains(event.target)) {
+            menu.classList.add('hidden');
+        }
+    }, { signal });
+
+    checkAll.addEventListener('change', () => {
+        checkboxes.forEach((cb) => {
+            cb.checked = checkAll.checked;
+        });
+        updateText();
+    }, { signal });
+
+    checkboxes.forEach((cb) => {
+        cb.addEventListener('change', updateText, { signal });
+    });
+
+    updateText();
+}
+
 async function toggleHistorico(prospeccaoId) {
     const historicoDiv = document.getElementById(`historico-${prospeccaoId}`);
     if (!historicoDiv) return;
@@ -270,6 +335,7 @@ function init() {
 
     // Inicializar listeners do formulário
     initFormListeners();
+    initStatusDropdown();
 
     // Inicializar listeners de botões do drawer
     initDrawerButtonListeners();
@@ -298,8 +364,10 @@ function init() {
 // Inicializa quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
+    window.addEventListener('pageshow', initStatusDropdown);
 } else {
     init();
+    window.addEventListener('pageshow', initStatusDropdown);
 }
 
 // Exporta funções para uso externo

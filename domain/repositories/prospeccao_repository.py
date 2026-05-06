@@ -65,6 +65,16 @@ class ProspeccaoRepository(Protocol):
         """Atualiza o status de uma prospecção."""
         raise NotImplementedError
 
+    def agendar_retorno(
+        self,
+        prospeccao_id: int,
+        data_retorno: str,
+        hora_retorno: str | None = None,
+        observacao: str | None = None,
+    ) -> bool:
+        """Agenda retorno sem alterar o status de tabulacao."""
+        raise NotImplementedError
+
     def arquivar(self, prospeccao_id: int) -> bool:
         """Arquiva uma prospecção."""
         raise NotImplementedError

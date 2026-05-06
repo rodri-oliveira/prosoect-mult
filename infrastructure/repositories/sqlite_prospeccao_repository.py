@@ -55,7 +55,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         if not is_phone_search:
             agendamento_statuses = ('Pediu para retornar', 'Agendamento', 'Em negociação', 'Em negociacao', 'Não analisou ainda o material')
             if status not in agendamento_statuses:
-                where_parts.append("(status_prospeccao NOT IN ('Pediu para retornar', 'Agendamento') OR status_prospeccao IS NULL)")
+                where_parts.append("(data_retorno IS NULL OR data_retorno = '')")
 
         if status:
             if "," in status:
@@ -391,6 +391,18 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                     tuple(update_params + [existente_id]),
                 )
                 conn.commit()
+                if status not in ("Não contatado", "NÃ£o contatado", "NĂŁo contatado", "Năo contatado"):
+                    detalhe = status
+                    if obs:
+                        detalhe = f"{status} | {obs}"
+                    c.execute(
+                        """
+                        INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
+                        VALUES (?, ?, ?)
+                    """,
+                        (existente_id, "STATUS_CHANGE", detalhe),
+                    )
+                    conn.commit()
             conn.close()
             return existente_id, False
 
@@ -492,6 +504,68 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
                 VALUES (?, ?, ?)
             """,
                 (prospeccao_id, "STATUS_CHANGE", detalhe),
+            )
+            conn.commit()
+
+        conn.close()
+        return affected > 0
+
+    def agendar_retorno(
+        self,
+        prospeccao_id: int,
+        data_retorno: str,
+        hora_retorno: str | None = None,
+        observacao: str | None = None,
+    ) -> bool:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+
+        c.execute(
+            "SELECT data_retorno FROM prospeccao_temp WHERE id = ?",
+            (prospeccao_id,),
+        )
+        atual = c.fetchone()
+        if not atual:
+            conn.close()
+            return False
+
+        updates = [
+            "data_retorno = ?",
+            "hora_retorno = ?",
+            "data_prospeccao = CURRENT_DATE",
+            "data_ultima_tentativa = CURRENT_DATE",
+            "tentativas_retorno = COALESCE(tentativas_retorno, 0) + 1",
+        ]
+        params: list[Any] = [data_retorno, hora_retorno]
+
+        if not atual["data_retorno"]:
+            updates.append("data_primeiro_agendamento = COALESCE(data_primeiro_agendamento, ?)")
+            params.append(data_retorno)
+
+        if observacao is not None:
+            updates.append("observacao = ?")
+            params.append((observacao or "").strip() or None)
+
+        params.append(prospeccao_id)
+        c.execute(
+            f"UPDATE prospeccao_temp SET {', '.join(updates)} WHERE id = ?",
+            params,
+        )
+        affected = c.rowcount
+
+        if affected > 0:
+            detalhe = "Agendamento"
+            if observacao:
+                detalhe = f"Agendamento | {observacao}"
+            c.execute(
+                """
+                INSERT INTO prospeccao_eventos (
+                    prospeccao_id, tipo_evento, detalhe, data_retorno_antes, data_retorno_depois
+                )
+                VALUES (?, 'RETORNO_AGENDADO', ?, ?, ?)
+            """,
+                (prospeccao_id, detalhe, atual["data_retorno"], data_retorno),
             )
             conn.commit()
 

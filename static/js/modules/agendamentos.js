@@ -80,11 +80,48 @@ function renderHistoricoItens(itens) {
         row.className = 'border-b border-gray-200 last:border-b-0 pb-2 last:pb-0';
 
         const line = document.createElement('div');
-        line.className = 'text-xs text-gray-700';
+        line.className = 'text-xs text-gray-700 leading-relaxed';
         const when = formatEventoDate(ev.data_evento);
-        const tipo = ev.tipo_evento ? String(ev.tipo_evento).replace(/_/g, ' ') : 'Evento';
-        const detalhe = ev.detalhe ? String(ev.detalhe) : '';
-        line.textContent = `${when ? when + ' • ' : ''}${tipo}${detalhe ? ': ' + detalhe : ''}`;
+        
+        let detalhe = ev.detalhe ? String(ev.detalhe) : '';
+        const tipo = ev.tipo_evento ? String(ev.tipo_evento) : '';
+        
+        if (tipo === 'STATUS_CHANGE' || tipo === 'RETORNO_TENTATIVA' || tipo === 'RETORNO_RESULTADO') {
+            let status = detalhe;
+            let obs = '';
+            
+            if (detalhe.includes(' | ')) {
+                const parts = detalhe.split(' | ');
+                status = parts[0].trim();
+                obs = parts.slice(1).join(' | ').trim();
+            }
+            
+            let label = tipo === 'RETORNO_TENTATIVA' ? 'Tentativa:' : 
+                        tipo === 'RETORNO_RESULTADO' ? 'Resultado:' : 'Status:';
+
+            line.innerHTML = `<div class="font-bold text-gray-900 text-[11px]">${when}</div>` +
+                            `<div class="flex flex-col gap-1 mt-1">` +
+                                `<div class="flex items-center gap-1">` +
+                                    `<span class="text-[9px] font-bold text-gray-400 uppercase">${label}</span>` +
+                                    `<span class="inline-block px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-bold text-[10px] w-fit uppercase border border-brand-100">${status}</span>` +
+                                `</div>` +
+                                (obs ? `<span class="text-gray-700 font-medium bg-white p-1 rounded border border-gray-50">${obs}</span>` : '') +
+                            `</div>`;
+        } else if (tipo === 'OBSERVACAO_CHANGE') {
+            line.innerHTML = `<div class="font-bold text-gray-900 text-[11px]">${when}</div>` +
+                            `<div class="mt-1 flex flex-col gap-1">` +
+                                `<span class="text-[9px] font-bold text-gray-400 uppercase">Edição de Observação:</span>` +
+                                `<span class="text-gray-600 italic bg-gray-50 p-1 rounded border border-gray-100">${detalhe}</span>` +
+                            `</div>`;
+        } else {
+            const tipoAmigavel = tipo.replace(/_/g, ' ');
+            line.innerHTML = `<div class="font-bold text-gray-900 text-[11px]">${when}</div>` +
+                            `<div class="mt-1">` +
+                                `<span class="text-[9px] font-bold text-gray-400 uppercase mr-1">${tipoAmigavel}:</span>` +
+                                `<span class="text-gray-600">${detalhe}</span>` +
+                            `</div>`;
+        }
+        
         row.appendChild(line);
 
         if (ev.data_retorno_antes || ev.data_retorno_depois) {
@@ -185,6 +222,12 @@ function openRegistrarModalLead(btnEl) {
     if (hr) hr.value = '';
 
     // Esconde campos irrelevantes para Lead no agendamento por enquanto
+    const statusWrap = document.getElementById('modalStatusAtualWrap');
+    const statusEl = document.getElementById('modalStatusAtual');
+    if (statusWrap && statusEl) {
+        statusEl.textContent = '';
+        statusWrap.classList.add('hidden');
+    }
     document.getElementById('modalObsAtualWrap').classList.add('hidden');
     document.getElementById('modalSegmentoWrap').classList.add('hidden');
     document.getElementById('btnSalvarConverter').classList.add('hidden');
@@ -207,6 +250,7 @@ function openRegistrarModal(cardEl) {
     const tel = cardEl.getAttribute('data-telefone') || '';
     const wa = cardEl.getAttribute('data-whatsapp') || '';
     const seg = cardEl.getAttribute('data-segmento') || '';
+    const statusAtual = cardEl.getAttribute('data-status') || '';
     const obsAtual = cardEl.getAttribute('data-observacao') || '';
     const resp = cardEl.getAttribute('data-responsavel') || '';
     const email = cardEl.getAttribute('data-email') || '';
@@ -248,6 +292,18 @@ function openRegistrarModal(cardEl) {
 
     const obsWrap = document.getElementById('modalObsAtualWrap');
     const obsEl = document.getElementById('modalObsAtual');
+    const statusWrap = document.getElementById('modalStatusAtualWrap');
+    const statusEl = document.getElementById('modalStatusAtual');
+    if (statusWrap && statusEl) {
+        if (statusAtual) {
+            statusEl.textContent = statusAtual;
+            statusWrap.classList.remove('hidden');
+        } else {
+            statusEl.textContent = '';
+            statusWrap.classList.add('hidden');
+        }
+    }
+
     if (obsWrap && obsEl) {
         if (obsAtual) {
             obsEl.textContent = obsAtual;

@@ -243,7 +243,8 @@
                  data-telefone="{{ item.telefone or '' }}"
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
-                 data-observacao="{{ item.observacao or '' }}"
+                 data-status="{{ item.status_tabulacao or 'Sem status de tabulação salvo' }}"
+                 data-observacao="{{ item.observacao_tabulacao or item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
                  data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
@@ -284,24 +285,21 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.ultima_tentativa_detalhe %}
-                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
-                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
-                        <div class="mt-1">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
-                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
-                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
-                                {% else %}bg-brand-50 text-brand-800{% endif %}">
-                                {% if 'não atendeu' in _ult %}📵
-                                {% elif 'caixa postal' in _ult %}📮
-                                {% elif 'sem contato' in _ult %}🚫
-                                {% else %}📝{% endif %}
-                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
-                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                        
+                        <!-- Status e Observação em Destaque -->
+                        {% set display_status = item.status_tabulacao or 'Sem status de tabulação salvo' %}
+                        {% set display_obs = item.observacao_tabulacao or item.observacao %}
+                        <div class="mt-2 flex flex-col gap-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100 w-fit">
+                                📋 {{ display_status }}
                             </span>
+                            {% if display_obs %}
+                            <span class="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-100 italic font-medium">
+                                📝 {{ display_obs }}
+                            </span>
+                            {% endif %}
                         </div>
-                        {% endif %}
+                        
                         {% if item.tentativas_retorno %}
                         <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
                         {% endif %}
@@ -347,7 +345,8 @@
                  data-telefone="{{ item.telefone or '' }}"
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
-                 data-observacao="{{ item.observacao or '' }}"
+                 data-status="{{ item.status_tabulacao or 'Sem status de tabulação salvo' }}"
+                 data-observacao="{{ item.observacao_tabulacao or item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
                  data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
@@ -388,24 +387,21 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.ultima_tentativa_detalhe %}
-                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
-                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
-                        <div class="mt-1">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
-                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
-                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
-                                {% else %}bg-brand-50 text-brand-800{% endif %}">
-                                {% if 'não atendeu' in _ult %}📵
-                                {% elif 'caixa postal' in _ult %}📮
-                                {% elif 'sem contato' in _ult %}🚫
-                                {% else %}📝{% endif %}
-                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
-                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                        
+                        <!-- Status e Observação em Destaque -->
+                        {% set display_status = item.status_tabulacao or 'Sem status de tabulação salvo' %}
+                        {% set display_obs = item.observacao_tabulacao or item.observacao %}
+                        <div class="mt-2 flex flex-col gap-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100 w-fit">
+                                📋 {{ display_status }}
                             </span>
+                            {% if display_obs %}
+                            <span class="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-100 italic font-medium">
+                                📝 {{ display_obs }}
+                            </span>
+                            {% endif %}
                         </div>
-                        {% endif %}
+                        
                         {% if item.tentativas_retorno %}
                         <p class="text-xs text-gray-500 mt-1">📌 Tentativas: {{ item.tentativas_retorno }}</p>
                         {% endif %}
@@ -448,7 +444,8 @@
                  data-telefone="{{ item.telefone or '' }}"
                  data-whatsapp="{{ item.whatsapp or '' }}"
                  data-segmento="{{ item.segmento or '' }}"
-                 data-observacao="{{ item.observacao or '' }}"
+                 data-status="{{ item.status_tabulacao or 'Sem status de tabulação salvo' }}"
+                 data-observacao="{{ item.observacao_tabulacao or item.observacao or '' }}"
                  data-responsavel="{{ item.responsavel or '' }}"
                  data-email="{{ item.email or '' }}"
                  data-maps-url="{{ item.maps_url or '' }}"
@@ -489,20 +486,20 @@
                         {% if item.hora_retorno %}
                         <p class="text-xs text-gray-600 mt-1">⏰ {{ item.hora_retorno }}</p>
                         {% endif %}
-                        {% if item.ultima_tentativa_detalhe %}
-                        {% set _ult = (item.ultima_tentativa_detalhe|string)|lower %}
-                        {% set _hora = (item.ultima_tentativa_data_evento|string)[11:16] if item.ultima_tentativa_data_evento else '' %}
-                        <div class="mt-1">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                                {% if 'não atendeu' in _ult %}bg-red-100 text-red-800
-                                {% elif 'caixa postal' in _ult %}bg-gray-200 text-gray-800
-                                {% elif 'sem contato' in _ult %}bg-amber-100 text-amber-900
-                                {% else %}bg-brand-50 text-brand-800{% endif %}">
-                                <span>Última: {{ item.ultima_tentativa_detalhe }}</span>
-                                {% if _hora %}<span class="opacity-75">{{ _hora }}</span>{% endif %}
+                        
+                        <!-- Status e Observação em Destaque -->
+                        {% set display_status = item.status_tabulacao or 'Sem status de tabulação salvo' %}
+                        {% set display_obs = item.observacao_tabulacao or item.observacao %}
+                        <div class="mt-2 flex flex-col gap-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100 w-fit">
+                                📋 {{ display_status }}
                             </span>
+                            {% if display_obs %}
+                            <span class="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-100 italic font-medium">
+                                📝 {{ display_obs }}
+                            </span>
+                            {% endif %}
                         </div>
-                        {% endif %}
                     </div>
                     <div class="text-right">
                         <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
@@ -587,6 +584,11 @@
                             <input type="text" name="whatsapp" id="modalInputWhatsapp" class="block w-full rounded border-gray-300 text-xs p-1.5 focus:border-brand-500 focus:ring-brand-500 border bg-white" placeholder="(00) 00000-0000">
                         </div>
                     </div>
+                </div>
+
+                <div id="modalStatusAtualWrap" class="hidden">
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1">Status da tabulação</label>
+                    <div id="modalStatusAtual" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100"></div>
                 </div>
 
                 <div id="modalObsAtualWrap" class="hidden">
@@ -676,5 +678,5 @@
     </div>
 </div>
 
-<script type="module" src="{{ url_for('static', filename='js/modules/agendamentos.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/modules/agendamentos.js') }}?v=status-tabulacao-2"></script>
 {% endblock %}

@@ -8,6 +8,62 @@ from domain.repositories.agendamentos_repository import AgendamentosRepository, 
 
 
 class SqliteAgendamentosRepository(AgendamentosRepository):
+    AGENDAMENTO_STATUSES = {"Pediu para retornar", "Agendamento"}
+
+    @staticmethod
+    def _split_detalhe(detalhe: str | None) -> tuple[str, str]:
+        if not detalhe:
+            return "", ""
+        status, sep, observacao = str(detalhe).partition(" | ")
+        return status.strip(), observacao.strip() if sep else ""
+
+    def _hydrate_tabulacao(self, c: sqlite3.Cursor, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        for row in rows:
+            eventos = c.execute(
+                """
+                SELECT tipo_evento, detalhe, data_evento
+                FROM prospeccao_eventos
+                WHERE prospeccao_id = ?
+                ORDER BY data_evento DESC
+                """,
+                (row["id"],),
+            ).fetchall()
+
+            status_tabulacao = ""
+            observacao_tabulacao = ""
+            ultima_tabulacao_detalhe = ""
+            ultima_tabulacao_data_evento = ""
+
+            for evento in eventos:
+                if evento["tipo_evento"] != "STATUS_CHANGE":
+                    continue
+
+                status, observacao = self._split_detalhe(evento["detalhe"])
+                if status in self.AGENDAMENTO_STATUSES:
+                    continue
+
+                status_tabulacao = status
+                observacao_tabulacao = observacao
+                ultima_tabulacao_detalhe = evento["detalhe"] or ""
+                ultima_tabulacao_data_evento = evento["data_evento"] or ""
+                break
+
+            row["status_agendamento"] = row.get("status_prospeccao") or ""
+            if not status_tabulacao:
+                status_atual = row.get("status_prospeccao") or ""
+                if status_atual == "Pediu para retornar":
+                    status_tabulacao = "Agendamento"
+                    observacao_tabulacao = row.get("observacao") or ""
+                elif status_atual and status_atual not in self.AGENDAMENTO_STATUSES:
+                    status_tabulacao = status_atual
+                    observacao_tabulacao = row.get("observacao") or ""
+            row["status_tabulacao"] = status_tabulacao
+            row["observacao_tabulacao"] = observacao_tabulacao
+            row["ultima_tabulacao_detalhe"] = ultima_tabulacao_detalhe
+            row["ultima_tabulacao_data_evento"] = ultima_tabulacao_data_evento
+
+        return rows
+
     def rolar_agendamentos_pendentes(self, data_limite: str) -> int:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -19,7 +75,6 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             WHERE data_retorno < ?
               AND data_retorno IS NOT NULL
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
         """,
             (data_limite,),
         )
@@ -36,62 +91,107 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
         # Agendamentos de prospecções
         c.execute(
             """
-            SELECT * FROM prospeccao_temp
-            WHERE data_retorno = ?
-              AND (arquivado = 0 OR arquivado IS NULL)
-            AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+            SELECT 
+                p.*,
+                (
+                    SELECT detalhe FROM prospeccao_eventos 
+                    WHERE prospeccao_id = p.id 
+                    AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                    ORDER BY data_evento DESC 
+                    LIMIT 1
+                ) as ultima_tentativa_detalhe,
+                (
+                    SELECT data_evento FROM prospeccao_eventos 
+                    WHERE prospeccao_id = p.id 
+                    AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                    ORDER BY data_evento DESC 
+                    LIMIT 1
+                ) as ultima_tentativa_data_evento
+            FROM prospeccao_temp p
+            WHERE p.data_retorno = ?
+              AND (p.arquivado = 0 OR p.arquivado IS NULL)
             ORDER BY 
                 CASE 
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                     ELSE 3
                 END ASC,
-                hora_retorno
+                p.hora_retorno
         """,
             (data,),
         )
-        retornos_hoje = [dict(row) for row in c.fetchall()]
+        retornos_hoje = self._hydrate_tabulacao(c, [dict(row) for row in c.fetchall()])
 
         c.execute(
             """
-            SELECT * FROM prospeccao_temp
-            WHERE data_retorno < ?
-              AND data_retorno IS NOT NULL
-              AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+            SELECT 
+                p.*,
+                (
+                    SELECT detalhe FROM prospeccao_eventos 
+                    WHERE prospeccao_id = p.id 
+                    AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                    ORDER BY data_evento DESC 
+                    LIMIT 1
+                ) as ultima_tentativa_detalhe,
+                (
+                    SELECT data_evento FROM prospeccao_eventos 
+                    WHERE prospeccao_id = p.id 
+                    AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                    ORDER BY data_evento DESC 
+                    LIMIT 1
+                ) as ultima_tentativa_data_evento
+            FROM prospeccao_temp p
+            WHERE p.data_retorno < ?
+              AND p.data_retorno IS NOT NULL
+              AND (p.arquivado = 0 OR p.arquivado IS NULL)
             ORDER BY 
                 CASE 
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                     ELSE 3
                 END ASC,
-                data_retorno, 
-                hora_retorno
+                p.data_retorno, 
+                p.hora_retorno
         """,
             (data,),
         )
-        retornos_atrasados = [dict(row) for row in c.fetchall()]
+        retornos_atrasados = self._hydrate_tabulacao(c, [dict(row) for row in c.fetchall()])
 
         retornos_futuros = []
         if mostrar_todos:
             c.execute(
                 """
-                SELECT * FROM prospeccao_temp
-                WHERE data_retorno > ?
-                  AND data_retorno IS NOT NULL
-                  AND (arquivado = 0 OR arquivado IS NULL)
-                  AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
+                SELECT 
+                    p.*,
+                    (
+                        SELECT detalhe FROM prospeccao_eventos 
+                        WHERE prospeccao_id = p.id 
+                        AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                        ORDER BY data_evento DESC 
+                        LIMIT 1
+                    ) as ultima_tentativa_detalhe,
+                    (
+                        SELECT data_evento FROM prospeccao_eventos 
+                        WHERE prospeccao_id = p.id 
+                        AND tipo_evento IN ('STATUS_CHANGE', 'RETORNO_TENTATIVA', 'RETORNO_RESULTADO')
+                        ORDER BY data_evento DESC 
+                        LIMIT 1
+                    ) as ultima_tentativa_data_evento
+                FROM prospeccao_temp p
+                WHERE p.data_retorno > ?
+                  AND p.data_retorno IS NOT NULL
+                  AND (p.arquivado = 0 OR p.arquivado IS NULL)
                 ORDER BY 
                 CASE 
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
-                    WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
+                    WHEN substr(replace(replace(replace(replace(replace(p.telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) = '9' THEN 2
                     ELSE 3
                 END ASC,
-                data_retorno, hora_retorno
+                p.data_retorno, p.hora_retorno
             """,
                 (data,),
             )
-            retornos_futuros = [dict(row) for row in c.fetchall()]
+            retornos_futuros = self._hydrate_tabulacao(c, [dict(row) for row in c.fetchall()])
 
         # Agendamentos de leads
         c.execute(
@@ -217,7 +317,6 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
                 SELECT * FROM prospeccao_temp
                 WHERE data_retorno > ?
                   AND (arquivado = 0 OR arquivado IS NULL)
-                  AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
                 ORDER BY 
                 CASE 
                     WHEN substr(replace(replace(replace(replace(replace(telefone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), 3, 1) IN ('2', '3', '4', '5') THEN 1
@@ -228,7 +327,7 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             """,
                 (data,),
             )
-            retornos_futuros = [dict(row) for row in c.fetchall()]
+            retornos_futuros = self._hydrate_tabulacao(c, [dict(row) for row in c.fetchall()])
 
             c.execute(
                 """
@@ -277,7 +376,6 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
             SELECT COUNT(*) FROM prospeccao_temp
             WHERE data_retorno > ?
               AND (arquivado = 0 OR arquivado IS NULL)
-              AND status_prospeccao IN ('Pediu para retornar', 'Agendamento', 'Em negociação')
         """,
             (data,),
         )
@@ -324,6 +422,19 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
     def registrar_tentativa_retorno(self, prospeccao_id: int, observacao: str) -> bool:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
+        
+        # Extrair a observação do detalhe (formato: "Resultado | Observação")
+        obs_extraida = None
+        if " | " in observacao:
+            obs_extraida = observacao.split(" | ", 1)[1]
+        
+        # Atualizar o campo observacao na prospeccao_temp se houver observação
+        if obs_extraida:
+            c.execute(
+                "UPDATE prospeccao_temp SET observacao = ? WHERE id = ?",
+                (obs_extraida, prospeccao_id),
+            )
+        
         c.execute(
             """
             INSERT INTO prospeccao_eventos (prospeccao_id, tipo_evento, detalhe)
@@ -346,6 +457,13 @@ class SqliteAgendamentosRepository(AgendamentosRepository):
         conn = sqlite3.connect(DB_PATH)
 
         c = conn.cursor()
+
+        # Atualizar o campo observacao na prospeccao_temp se houver observação
+        if observacao:
+            c.execute(
+                "UPDATE prospeccao_temp SET observacao = ? WHERE id = ?",
+                (observacao, prospeccao_id),
+            )
 
         c.execute(
 

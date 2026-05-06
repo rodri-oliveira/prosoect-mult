@@ -54,13 +54,21 @@ def update_prospecction_status_with_repo(
         )
 
     # Atualização de status via repository
-    repo.update_status(
-        req.prospeccao_id,
-        novo_status,
-        observacao=observacao,
-        data_retorno=data_retorno,
-        hora_retorno=hora_retorno,
-    )
+    if novo_status == "Pediu para retornar":
+        repo.agendar_retorno(
+            req.prospeccao_id,
+            data_retorno=data_retorno,
+            hora_retorno=hora_retorno,
+            observacao=observacao,
+        )
+    else:
+        repo.update_status(
+            req.prospeccao_id,
+            novo_status,
+            observacao=observacao,
+            data_retorno=data_retorno,
+            hora_retorno=hora_retorno,
+        )
 
     # Ações derivadas por status
     if novo_status == "Pediu para retornar":
