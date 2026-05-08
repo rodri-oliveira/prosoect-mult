@@ -25,8 +25,10 @@ def list_agendamentos_with_repo(
     req: ListAgendamentosRequest,
     repo: AgendamentosRepository,
 ) -> ListAgendamentosResponse:
-    # Rolar agendamentos pendentes antes de listar
-    repo.rolar_agendamentos_pendentes(req.data)
-
+    # NOTA: rolar_agendamentos_pendentes foi removido propositalmente.
+    # Ele movia datas passadas para 'hoje', impedindo que aparecessem como
+    # 'Retornos Atrasados'. As queries SQL já separam corretamente entre
+    # data_retorno = hoje (Hoje), data_retorno < hoje (Atrasados) e
+    # data_retorno > hoje (Próximos).
     view_data = repo.get_view_data(req.data, req.mostrar_todos)
     return ListAgendamentosResponse(view_data=view_data)

@@ -636,9 +636,9 @@
                     <input type="time" name="hora_retorno" id="modalHoraRetorno" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border">
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
-                    <textarea name="observacao" id="modalObs" rows="2" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-gray-50 border" placeholder="Opcional..."></textarea>
+                <div id="modalObsWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observação <span class="text-gray-400 font-normal text-xs">(edite ou adicione)</span></label>
+                    <textarea name="observacao" id="modalObs" rows="3" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm p-2 bg-white border" placeholder="Adicione ou edite a observação..."></textarea>
                 </div>
             </div>
 
@@ -678,5 +678,5 @@
     </div>
 </div>
 
-<script type="module" src="{{ url_for('static', filename='js/modules/agendamentos.js') }}?v=status-tabulacao-2"></script>
+<script type="module" src="{{ url_for('static', filename='js/modules/agendamentos.js') }}?v=fix-modal-listener-1"></script>
 {% endblock %}

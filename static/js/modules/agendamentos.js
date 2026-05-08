@@ -235,6 +235,12 @@ function openRegistrarModalLead(btnEl) {
     form.action = `/agendamentos/lead/${id}/registrar`;
     modal.classList.remove('hidden');
     updateModalRequirements();
+    // Re-aplicar requisitos ao mudar resultado (importante: só um listener por vez)
+    const resultado = document.getElementById('modalResultado');
+    if (resultado) {
+        resultado.removeEventListener('change', updateModalRequirements);
+        resultado.addEventListener('change', updateModalRequirements);
+    }
     loadHistorico(id, 'lead');
 }
 
@@ -285,7 +291,7 @@ function openRegistrarModal(cardEl) {
     document.getElementById('modalNext').value = next;
     document.getElementById('modalSegmento').value = seg;
     document.getElementById('modalResultado').value = '';
-    document.getElementById('modalObs').value = '';
+    document.getElementById('modalObs').value = obsAtual;
     document.getElementById('modalDataRetorno').value = '';
     const hr = document.getElementById('modalHoraRetorno');
     if (hr) hr.value = '';
@@ -317,6 +323,12 @@ function openRegistrarModal(cardEl) {
     form.action = `/agendamentos/${id}/registrar-tentativa`;
     modal.classList.remove('hidden');
     updateModalRequirements();
+    // Re-aplicar requisitos ao mudar resultado (importante: só um listener por vez)
+    const resultado = document.getElementById('modalResultado');
+    if (resultado) {
+        resultado.removeEventListener('change', updateModalRequirements);
+        resultado.addEventListener('change', updateModalRequirements);
+    }
     loadHistorico(id, 'prospeccao');
 }
 
@@ -345,7 +357,6 @@ function updateModalRequirements() {
     const needsDate = v === 'em negociação' || v === 'agendar retorno' || v === 'não analisou ainda o material';
     const needsTime = needsDate;
     const needsSeg = v === 'em negociação';
-    const needsObs = false; // Tornar observação sempre opcional
     const shouldShowConverter = v === 'interessado';
 
     if (dateWrap && date) {
@@ -362,9 +373,10 @@ function updateModalRequirements() {
         segWrap.classList.toggle('hidden', !needsSeg);
         seg.required = needsSeg;
     }
-    if (obs) {
-        obs.required = false;
-    }
+    // Observação sempre visível e editável
+    const obsWrap = document.getElementById('modalObsWrap');
+    if (obsWrap) obsWrap.classList.remove('hidden');
+    if (obs) obs.required = false;
 
     const btnConv = document.getElementById('btnSalvarConverter');
     if (btnConv) {
@@ -382,7 +394,12 @@ function init() {
     highlightByTime();
 
     const r = document.getElementById('modalResultado');
-    if (r) r.addEventListener('change', updateModalRequirements);
+    // O listener de change é agora adicionado ao abrir o modal (para evitar duplicatas)
+    // Mas mantemos aqui para garantir na inicialização
+    if (r && !r._reqListenerAdded) {
+        r.addEventListener('change', updateModalRequirements);
+        r._reqListenerAdded = true;
+    }
 }
 
 if (document.readyState === 'loading') {
