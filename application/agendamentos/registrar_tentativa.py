@@ -56,8 +56,15 @@ def registrar_tentativa_with_repo(
         )
 
     resultados_tentativa = ("Não atendeu", "Caixa postal", "Sem contato")
-    resultados_proximo_passo = ("Em negociação", "Agendar retorno", "Pediu preço")
-    resultados_status = ("Solicitou portfólio", "Já tem consultor atendendo", "Sem interesse")
+    resultados_proximo_passo = ("Em negociação", "Agendar retorno", "Pediu preço", "Não analisou ainda o material")
+    resultados_status = (
+        "Solicitou portfólio",
+        "Já tem consultor atendendo",
+        "Sem interesse",
+        "Aguard. Lista Prod.",
+        "Enviado Portfólio Whats",
+        "Enviado Portfólio por E-mail"
+    )
 
     if resultado in resultados_proximo_passo and not req.observacao:
         return RegistrarTentativaResult(
@@ -66,13 +73,13 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={"erro": "Observação obrigatória para registrar o próximo passo."},
         )
 
-    if resultado in ("Em negociação", "Agendar retorno") and not req.data_retorno:
+    if resultado in ("Em negociação", "Agendar retorno", "Não analisou ainda o material") and not req.data_retorno:
         return RegistrarTentativaResult(
             ok=False,
             redirect_to="agendamentos_view",
             redirect_kwargs={"erro": "Informe a data de retorno para continuar."},
         )
-    if resultado in ("Em negociação", "Agendar retorno") and req.data_retorno and not req.hora_retorno:
+    if resultado in ("Em negociação", "Agendar retorno", "Não analisou ainda o material") and req.data_retorno and not req.hora_retorno:
         return RegistrarTentativaResult(
             ok=False,
             redirect_to="agendamentos_view",
@@ -166,7 +173,7 @@ def registrar_tentativa_with_repo(
             redirect_kwargs={},
         )
 
-    if resultado == "Agendar retorno":
+    if resultado in ("Agendar retorno", "Não analisou ainda o material"):
         prospeccao_repo.agendar_retorno(
             req.prospeccao_id,
             data_retorno=req.data_retorno,

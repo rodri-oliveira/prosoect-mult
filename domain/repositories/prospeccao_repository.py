@@ -61,6 +61,7 @@ class ProspeccaoRepository(Protocol):
         observacao: str | None = None,
         data_retorno: str | None = None,
         hora_retorno: str | None = None,
+        clear_retorno: bool = False,
     ) -> bool:
         """Atualiza o status de uma prospecção."""
         raise NotImplementedError
@@ -75,6 +76,18 @@ class ProspeccaoRepository(Protocol):
         """Agenda retorno sem alterar o status de tabulacao."""
         raise NotImplementedError
 
+    def update_draft(
+        self,
+        prospeccao_id: int,
+        observacao: str | None = None,
+        telefone: str | None = None,
+        whatsapp: str | None = None,
+        responsavel: str | None = None,
+        email: str | None = None,
+    ) -> bool:
+        """Atualiza campos do rascunho."""
+        raise NotImplementedError
+
     def arquivar(self, prospeccao_id: int) -> bool:
         """Arquiva uma prospecção."""
         raise NotImplementedError
@@ -87,8 +100,8 @@ class ProspeccaoRepository(Protocol):
         """Exclui uma prospecção permanentemente."""
         raise NotImplementedError
 
-    def get_total_retornos_hoje(self) -> int:
-        """Retorna quantidade de retornos agendados para hoje (somente não arquivados)."""
+    def get_retornos_stats(self) -> dict:
+        """Retorna estatísticas de retornos (hoje, atrasados, urgentes)."""
         raise NotImplementedError
 
     def get_eventos(self, prospeccao_id: int) -> list[dict]:
