@@ -24,13 +24,15 @@ Este projeto foi construído com foco em **escalabilidade**, **manutenibilidade*
 
 ## 🏗️ Arquitetura e Design Patterns
 
-O sistema segue padrões modernos de desenvolvimento de software:
+O projeto foi estruturado seguindo os princípios de **Clean Architecture (Arquitetura Limpa / Hexagonal)** e **Domain-Driven Design (DDD)**. Esta abordagem separa as regras de negócio de detalhes de implementação como frameworks web ou bancos de dados.
 
-*   **Domain-Driven Design (DDD)**: Domínio rico com interfaces de repositório bem definidas.
-*   **Dependency Injection**: Container de serviços para desacoplamento de componentes.
-*   **Repository Pattern**: Abstração total do acesso a dados (SQLite).
-*   **Use Cases (Application Layer)**: Lógica de negócio encapsulada em casos de uso independentes.
-*   **Modular JS**: Interface frontend reativa e modularizada sem a necessidade de frameworks pesados.
+O sistema é dividido em três camadas fundamentais com fluxos de dependência unidirecionais:
+
+*   **`domain/` (Domínio / Core)**: Contém as regras de negócio fundamentais e define as interfaces de repositórios e serviços externos usando `Protocol` em Python. É uma camada pura, sem dependências de frameworks ou infraestrutura.
+*   **`application/` (Casos de Uso)**: Contém a lógica de aplicação e orquestração do sistema (ex: registro de tentativas de contato, conversão de lead). Cada caso de uso é isolado, facilitando testes de unidade.
+*   **`infrastructure/` & `interfaces/` (Detalhes)**: Contém as implementações concretas (acesso a dados com SQLite usando o **Repository Pattern**, gateways de API externa como a BrasilAPI e integradores de busca do Google Maps) e a camada de entrega da aplicação (rotas do Flask e templates web).
+
+A fiação e o ciclo de vida dessas camadas são desacoplados por meio de um contêiner central de **Injeção de Dependências** (`infrastructure/container.py`).
 
 ---
 
