@@ -1,0 +1,7 @@
+# Configuração do Pyrefly para o projeto prospect-mult
+# Aponta para o ambiente virtual do projeto onde Flask e demais dependências estão instaladas
+
+python_interpreter = ".venv/Scripts/python.exe"
+
+# Garante que o Pyrefly encontre todos os módulos instalados no .venv
+search_path = ["."]
