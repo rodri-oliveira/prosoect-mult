@@ -4,6 +4,7 @@ from application.leads.add_contato import AddLeadContatoRequest, add_lead_contat
 class FakeLeadRepository:
     def __init__(self):
         self.contatos: list[dict] = []
+        self.status_updates: list[dict] = []
 
     def get_by_id(self, lead_id: int):
         return ({"id": lead_id}, [], ["Moda"])
@@ -27,6 +28,10 @@ class FakeLeadRepository:
                 "hora_retorno": hora_retorno,
             }
         )
+        return True
+
+    def update_status(self, lead_id: int, novo_status: str) -> bool:
+        self.status_updates.append({"lead_id": lead_id, "novo_status": novo_status})
         return True
 
 

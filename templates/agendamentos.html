@@ -313,6 +313,13 @@
                         </span>
                         <div class="mt-2 flex gap-1 justify-end">
                             <button type="button" class="px-2 py-1 text-xs rounded bg-brand-50 text-brand-700 hover:bg-brand-100" onclick="event.stopPropagation(); openRegistrarModal(this.closest('[data-prospeccao-id]'))">📝 Registrar tentativa</button>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onclick="event.stopPropagation();" onsubmit="return pedirDataRetorno(this)">
+                                <input type="hidden" name="status" value="Pediu para retornar">
+                                <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                <input type="hidden" name="hora_retorno" class="hora-retorno-input">
+                                <input type="hidden" name="next" value="/agendamentos#retornos-atrasados">
+                                <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100">🔄 Reagendar</button>
+                            </form>
                             <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline" onclick="event.stopPropagation();">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter</button>
                             </form>
@@ -418,6 +425,13 @@
                         </div>
                         <div class="mt-2 flex gap-1 justify-end">
                             <button type="button" class="px-2 py-1 text-xs rounded bg-brand-50 text-brand-700 hover:bg-brand-100" onclick="event.stopPropagation(); openRegistrarModal(this.closest('[data-prospeccao-id]'))">📝 Registrar tentativa</button>
+                            <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onclick="event.stopPropagation();" onsubmit="return pedirDataRetorno(this)">
+                                <input type="hidden" name="status" value="Pediu para retornar">
+                                <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                <input type="hidden" name="hora_retorno" class="hora-retorno-input">
+                                <input type="hidden" name="next" value="/agendamentos#retornos-hoje">
+                                <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100">🔄 Reagendar</button>
+                            </form>
                             <form action="/prospeccao/rascunho/{{ item.id }}/converter" method="POST" class="inline" onclick="event.stopPropagation();">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium">🎯 Converter</button>
                             </form>
@@ -513,6 +527,8 @@
                             <form action="/prospeccao/rascunho/{{ item.id }}/status" method="POST" class="inline" onclick="event.stopPropagation();" onsubmit="return pedirDataRetorno(this)">
                                 <input type="hidden" name="status" value="Pediu para retornar">
                                 <input type="hidden" name="data_retorno" class="data-retorno-input">
+                                <input type="hidden" name="hora_retorno" class="hora-retorno-input">
+                                <input type="hidden" name="next" value="/agendamentos?todos=1">
                                 <button type="submit" class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100">🔄 Reagendar</button>
                             </form>
                         </div>

@@ -57,6 +57,7 @@ def registrar_tentativa_with_repo(
 
     resultados_tentativa = ("Não atendeu", "Caixa postal", "Sem contato")
     resultados_proximo_passo = ("Em negociação", "Agendar retorno", "Pediu preço", "Não analisou ainda o material")
+    resultados_com_observacao_obrigatoria = ("Em negociação", "Pediu preço", "Não analisou ainda o material")
     resultados_status = (
         "Solicitou portfólio",
         "Já tem consultor atendendo",
@@ -66,7 +67,7 @@ def registrar_tentativa_with_repo(
         "Enviado Portfólio por E-mail"
     )
 
-    if resultado in resultados_proximo_passo and not req.observacao:
+    if resultado in resultados_com_observacao_obrigatoria and not req.observacao:
         return RegistrarTentativaResult(
             ok=False,
             redirect_to="agendamentos_view",
