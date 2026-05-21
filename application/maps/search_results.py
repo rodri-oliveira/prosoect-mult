@@ -246,7 +246,15 @@ def search_maps_results_with_repo(
                     if first == '9': return 2
                 return 3 # Outros/Sem tel
 
-            merged.sort(key=_get_sort_priority)
+            if any((s or "").strip() == "Sennheiser" for s in segs):
+                merged.sort(
+                    key=lambda it: (
+                        -int(it.get("sennheiser_fit_score") or 0),
+                        _get_sort_priority(it),
+                    )
+                )
+            else:
+                merged.sort(key=_get_sort_priority)
             
             itens = merged[:limit]
             for it in itens:
@@ -468,14 +476,171 @@ _INFO_NOISE_NAMES = [
 
 _SENNHEISER_NOISE_NAMES = [
     "som automotivo",
+    "audio automotivo",
+    "audio car",
     "acessorios para carro",
+    "acessorios automotivos",
     "central multimidia",
+    "dvd automotivo",
     "som residencial",
     "home theater",
+    "home cinema",
     "conserto de tv",
     "conserto de radio",
+    "assistencia tecnica",
+    "assistencia eletronica",
+    "reparo eletronico",
+    "manutencao eletronica",
     "eletronica de bairro",
     "alto falante de carro",
+    "alto falante automotivo",
+    "alarme automotivo",
+    "insulfilm",
+    "pelicula",
+    "envelopamento",
+    "sound e film",
+    "sound & film",
+    "som e film",
+    "som & film",
+    "auto som",
+    "sound car",
+]
+
+_SENNHEISER_BUYER_PROFILE_TERMS = [
+    "audio profissional",
+    "pro audio",
+    "loja de audio",
+    "instrumentos musicais",
+    "microfone",
+    "microfones",
+    "fone profissional",
+    "equipamentos de som",
+    "estudio",
+    "gravacao",
+    "podcast",
+    "produtora",
+    "audiovisual",
+    "radio",
+    "tv",
+    "broadcast",
+    "igreja",
+    "templo",
+    "auditorio",
+    "teatro",
+    "casa de show",
+    "centro de convencoes",
+    "casa de eventos",
+    "hotel",
+    "universidade",
+    "escola de musica",
+    "sonorizacao",
+    "locacao de som",
+    "locadora de som",
+    "eventos",
+    "integrador",
+    "audio e video",
+    "videoconferencia",
+    "conferencia",
+    "corporativo",
+]
+
+_SENNHEISER_STRONG_QUERY_TERMS = [
+    "broadcast audio",
+    "emissora de radio",
+    "emissora de tv",
+    "estudio de gravacao",
+    "estudio de podcast",
+    "produtora audiovisual",
+    "produtora de video",
+    "som para igreja",
+    "sonorizacao para igrejas",
+    "sonorizacao de eventos",
+    "locadora de som",
+    "locacao de som para eventos",
+    "loja de instrumentos musicais",
+    "loja de audio profissional",
+    "integrador audio e video",
+    "integrador av",
+    "audio corporativo",
+    "sistemas de conferencia",
+]
+
+_SENNHEISER_HIGH_INTENT_TERMS = [
+    "podcast",
+    "estudio",
+    "gravacao",
+    "radio",
+    "emissora",
+    "broadcast",
+    "loja de audio",
+    "audio profissional",
+    "instrumentos musicais",
+    "escola de musica",
+    "conservatorio",
+    "microfone",
+    "microfones",
+    "sonorizacao",
+    "locadora de som",
+    "locacao de som",
+    "integrador audio",
+    "integrador av",
+]
+
+_SENNHEISER_MEDIUM_INTENT_TERMS = [
+    "produtora",
+    "audiovisual",
+    "foto video",
+    "film",
+    "eventos",
+    "casa de eventos",
+    "centro de convencoes",
+    "anfiteatro",
+    "auditorio",
+    "teatro",
+    "casa de show",
+    "igreja",
+    "templo",
+    "hotel",
+    "universidade",
+    "videoconferencia",
+    "conferencia",
+    "corporativo",
+]
+
+_SENNHEISER_LOW_CONFIDENCE_TERMS = [
+    "recanto",
+    "chacara",
+    "sitio",
+    "espaco",
+    "salao de festas",
+    "festa infantil",
+    "buffet infantil",
+    "casa da alegria",
+]
+
+_SENNHEISER_BUSINESS_HINTS = [
+    "radio",
+    "fm",
+    "studio",
+    "estudio",
+    "podcast",
+    "music",
+    "musical",
+    "som",
+    "sound",
+    "audio",
+    "video",
+    "film",
+    "eventos",
+    "producoes",
+    "produtora",
+    "igreja",
+    "conservatorio",
+    "instituto",
+    "escola",
+    "teatro",
+    "anfiteatro",
+    "eventos",
 ]
 
 
@@ -546,19 +711,45 @@ def _filter_noise_sennheiser(results: list[dict]) -> list[dict]:
     filtered = []
     for item in results:
         nome = _norm_key(item.get("nome") or "")
+        raw_text = _norm_key(item.get("__raw_text") or "")
         categorias_list = item.get("segmentos") or []
         categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        query_sources = item.get("query_sources") or []
+        query_sources_str = " ".join([_norm_key(str(q)) for q in query_sources])
         
-        texto_para_busca = f"{nome} {categorias_str}"
+        texto_para_bloqueio = f"{nome} {raw_text} {categorias_str}"
+        texto_para_score = f"{texto_para_bloqueio} {query_sources_str}"
 
-        is_noise = any(t in texto_para_busca for t in _SENNHEISER_NOISE_NAMES)
+        is_noise = any(t in texto_para_bloqueio for t in _SENNHEISER_NOISE_NAMES)
         
         if is_noise:
             continue
 
+        item["sennheiser_fit_score"] = _score_sennheiser_fit(texto_para_score, nome)
         filtered.append(item)
 
-    return filtered
+    return sorted(filtered, key=lambda it: int(it.get("sennheiser_fit_score") or 0), reverse=True)
+
+
+def _score_sennheiser_fit(texto: str, nome: str = "") -> int:
+    texto_norm = _norm_key(texto or "")
+    nome_norm = _norm_key(nome or "")
+    profile_score = sum(1 for term in _SENNHEISER_BUYER_PROFILE_TERMS if term in texto_norm)
+    source_score = sum(2 for term in _SENNHEISER_STRONG_QUERY_TERMS if term in texto_norm)
+    high_score = sum(5 for term in _SENNHEISER_HIGH_INTENT_TERMS if term in texto_norm)
+    medium_score = sum(2 for term in _SENNHEISER_MEDIUM_INTENT_TERMS if term in texto_norm)
+    low_penalty = sum(3 for term in _SENNHEISER_LOW_CONFIDENCE_TERMS if term in texto_norm)
+    person_penalty = 5 if _looks_like_person_name(nome_norm) else 0
+    return profile_score + source_score + high_score + medium_score - low_penalty - person_penalty
+
+
+def _looks_like_person_name(nome_norm: str) -> bool:
+    parts = [p for p in (nome_norm or "").split() if p]
+    if len(parts) < 2 or len(parts) > 4:
+        return False
+    if any(term in nome_norm for term in _SENNHEISER_BUSINESS_HINTS):
+        return False
+    return True
 
 
 def _filter_large_retail(results: list[dict]) -> list[dict]:
@@ -1061,6 +1252,44 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "boneca",
     ]
 
+    # Sennheiser: CNPJ com necessidade profissional de audio, mesmo quando for
+    # consumidor final empresarial, e nao apenas revenda em volume.
+    anchor_groups["Sennheiser"] = [
+        "loja de audio profissional",
+        "equipamentos de audio profissional",
+        "loja de instrumentos musicais",
+        "instrumentos musicais e audio profissional",
+        "microfones profissionais",
+        "sistemas de microfone sem fio",
+        "estudio de gravacao",
+        "estudio de podcast",
+        "produtora audiovisual",
+        "produtora de video",
+        "emissora de radio",
+        "emissora de tv",
+        "broadcast audio",
+        "equipamentos para radio e tv",
+        "sonorizacao profissional",
+        "sonorizacao de eventos",
+        "locadora de som",
+        "locacao de som para eventos",
+        "som para igreja",
+        "sonorizacao para igrejas",
+        "audio para auditorio",
+        "teatro e auditorio",
+        "casa de show",
+        "casa de eventos",
+        "centro de convencoes",
+        "hotel eventos",
+        "universidade auditorio",
+        "escola de musica",
+        "audio corporativo",
+        "integrador audio e video",
+        "integrador av",
+        "videoconferencia corporativa",
+        "sistemas de conferencia",
+    ]
+
     queries: list[dict[str, str]] = []
     num_segs = len(segs)
     
@@ -1144,6 +1373,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     for spec in out:
         seg = spec.get("segmento") or ""
         all_excludes = exclude_terms
+        if seg == "Sennheiser":
+            all_excludes = exclude_terms + _SENNHEISER_NOISE_NAMES
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     
