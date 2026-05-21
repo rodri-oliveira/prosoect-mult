@@ -559,6 +559,9 @@ _SENNHEISER_STRONG_QUERY_TERMS = [
     "locacao de som para eventos",
     "loja de instrumentos musicais",
     "loja de audio profissional",
+    "revenda de audio profissional",
+    "distribuidor de instrumentos musicais",
+    "revenda de instrumentos musicais",
     "integrador audio e video",
     "integrador av",
     "audio corporativo",
@@ -1256,8 +1259,11 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # consumidor final empresarial, e nao apenas revenda em volume.
     anchor_groups["Sennheiser"] = [
         "loja de audio profissional",
+        "revenda de audio profissional",
         "equipamentos de audio profissional",
         "loja de instrumentos musicais",
+        "distribuidor de instrumentos musicais",
+        "revenda de instrumentos musicais",
         "instrumentos musicais e audio profissional",
         "microfones profissionais",
         "sistemas de microfone sem fio",
