@@ -35,6 +35,7 @@ STATUS_LEADS = [
     "Interessado",
     "Em negociação",
     "Já tem consultor atendendo",
+    "Aguardando dados para cadastro",
     "Cliente ativo",
     "Sem interesse",
     "Descartado",
@@ -50,6 +51,7 @@ RESULTADOS_INTERACAO = [
     "Envio de documentação",
     "Em análise de documentação",
     "Envio de orçamento",
+    "Aguardando dados para cadastro",
     "Agendar retorno",
     "Pediu preço",
     "Solicitou portfólio",
@@ -88,6 +90,7 @@ STATUS_COLORS = {
     "Envio de orçamento": "bg-cyan-100 text-cyan-800",
     "Falou com responsável": "bg-green-100 text-green-800",
     "Apresentação feita": "bg-blue-100 text-blue-800",
+    "Aguardando dados para cadastro": "bg-purple-100 text-purple-800",
     "Cliente ativo": "bg-green-200 text-green-900",
 }
 

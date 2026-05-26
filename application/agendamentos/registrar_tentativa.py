@@ -64,7 +64,8 @@ def registrar_tentativa_with_repo(
         "Sem interesse",
         "Aguard. Lista Prod.",
         "Enviado Portfólio Whats",
-        "Enviado Portfólio por E-mail"
+        "Enviado Portfólio por E-mail",
+        "Aguardando dados para cadastro",
     )
 
     if resultado in resultados_com_observacao_obrigatoria and not req.observacao:
