@@ -403,6 +403,9 @@ def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
     if "sennheiser" in seg_clean:
         return _filter_noise_sennheiser(results)
 
+    if "brinquedo" in seg_clean:
+        return _filter_noise_brinquedos(results)
+
     return results
 
 
@@ -472,6 +475,63 @@ _INFO_NOISE_NAMES = [
     "moveis para escritorio",
     "servicos de ti",
     "desentupidora",
+]
+
+_BRINQUEDOS_POSITIVE_TERMS = [
+    "brinquedo",
+    "brinquedos",
+    "toy store",
+    "loja de brinquedos",
+    "distribuidor de brinquedos",
+    "atacadista de brinquedos",
+    "atacado de brinquedos",
+    "revenda de brinquedos",
+    "importadora de brinquedos",
+    "brinquedos educativos",
+    "jogos educativos",
+    "jogos infantis",
+    "artigos infantis",
+    "loja infantil",
+    "loja kids",
+    "baby store",
+    "bebe e brinquedos",
+    "crianca e brinquedos",
+]
+
+_BRINQUEDOS_NOISE_NAMES = [
+    "buffet",
+    "festa",
+    "festas",
+    "decoracao",
+    "decoracoes",
+    "locacao",
+    "locadora",
+    "aluguel",
+    "aluga",
+    "recreacao",
+    "animacao",
+    "animador",
+    "playground",
+    "parque",
+    "brinquedoteca",
+    "escola",
+    "creche",
+    "bercario",
+    "curso",
+    "terapia",
+    "clinica",
+    "odontopediatria",
+    "fotografia",
+    "estudio fotografico",
+    "roupa infantil",
+    "moda infantil",
+    "calcados infantis",
+    "enxoval",
+    "maternidade",
+    "fralda",
+    "fraldas",
+    "salao infantil",
+    "cabelo infantil",
 ]
 
 _SENNHEISER_NOISE_NAMES = [
@@ -700,6 +760,30 @@ def _filter_noise_informatica(results: list[dict]) -> list[dict]:
             continue
 
         filtered.append(item)
+
+    return filtered
+
+
+def _filter_noise_brinquedos(results: list[dict]) -> list[dict]:
+    """Filtro para Brinquedos B2B/revenda.
+
+    Mantem lojas, distribuidores e varejos correlatos com sinal claro de
+    brinquedos; remove servicos infantis como buffet, locacao e escolas.
+    """
+    filtered = []
+    for item in results:
+        nome = _norm_key(item.get("nome") or "")
+        raw_text = _norm_key(item.get("__raw_text") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+
+        texto_para_busca = f"{nome} {raw_text} {categorias_str}"
+
+        if any(t in texto_para_busca for t in _BRINQUEDOS_NOISE_NAMES):
+            continue
+
+        if any(t in texto_para_busca for t in _BRINQUEDOS_POSITIVE_TERMS):
+            filtered.append(item)
 
     return filtered
 
@@ -1166,7 +1250,30 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "saldão eletrodomésticos",
         ],
         "Gamer": ["gamer"],
-        "Brinquedos": ["brinquedos"],
+        "Brinquedos": [
+            # TIER 1: compra em volume e revenda
+            "distribuidor de brinquedos",
+            "atacadista de brinquedos",
+            "atacado de brinquedos",
+            "revenda de brinquedos",
+            "fornecedor de brinquedos",
+            "importadora de brinquedos",
+            "brinquedos atacado e varejo",
+            # TIER 2: varejo especializado com giro
+            "loja de brinquedos",
+            "lojas de brinquedos",
+            "brinquedos educativos",
+            "jogos educativos",
+            "jogos infantis",
+            "loja infantil brinquedos",
+            "loja kids brinquedos",
+            # TIER 3: correlatos que costumam revender brinquedos
+            "papelaria e brinquedos",
+            "bazar e brinquedos",
+            "loja de presentes e brinquedos",
+            "loja de variedades brinquedos",
+            "loja de 1.99 brinquedos",
+        ],
         "Drones e Câmeras": [
             # TIER 1: Revenda B2B / Distribuidores
             "distribuidor de drones",
@@ -1343,7 +1450,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                 # Palavras que indicam que a âncora já possui seu próprio prefixo estrutural
                 prefixes_to_ignore = (
                     "loja", "comércio", "comercial", "atacadista", "distribuidor",
-                    "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
+                    "atacado", "distribuidora", "fornecedor", "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
                     "locadora", "equipamento", "drone", "câmera", "estabilizador",
                     "acessório", "clube", "produtora", "estúdio", "importadora",
                 )
@@ -1381,6 +1488,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         all_excludes = exclude_terms
         if seg == "Sennheiser":
             all_excludes = exclude_terms + _SENNHEISER_NOISE_NAMES
+        if seg == "Brinquedos":
+            all_excludes = exclude_terms + _BRINQUEDOS_NOISE_NAMES
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     
