@@ -16,7 +16,13 @@ def test_sennheiser_queries_buscam_cnpj_com_uso_profissional_de_audio():
 
     assert result.ok is True
     assert result.primary_query.startswith("loja de audio profissional")
+    assert "audio profissional" in joined
     assert "estudio de gravacao" in joined
+    assert "podcast studio" in joined
+    assert "integrador audiovisual" in joined
+    assert "solucoes av" in joined
+    assert "equipamentos para eventos" in joined
+    assert "locacao de audio" in joined
     assert "emissora de radio" in joined
     assert "produtora audiovisual" in joined
     assert "sonorizacao para igrejas" in joined

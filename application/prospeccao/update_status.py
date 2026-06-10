@@ -39,7 +39,7 @@ def update_prospecction_status_with_repo(
     data_retorno = req.data_retorno
     hora_retorno = req.hora_retorno
 
-    # Validação de regras de negócio
+    # 1. Validações prévias
     if novo_status == "Pediu para retornar" and not data_retorno:
         return UpdateProspecctionStatusResult(
             ok=False,
@@ -53,34 +53,8 @@ def update_prospecction_status_with_repo(
             redirect_kwargs={"erro": "Informe o horário de retorno."},
         )
 
-    # Atualização de status via repository
-    if novo_status == "Pediu para retornar":
-        repo.agendar_retorno(
-            req.prospeccao_id,
-            data_retorno=data_retorno,
-            hora_retorno=hora_retorno,
-            observacao=observacao,
-        )
-    else:
-        repo.update_status(
-            req.prospeccao_id,
-            novo_status,
-            observacao=observacao,
-            data_retorno=data_retorno,
-            hora_retorno=hora_retorno,
-        )
-
-    # Ações derivadas por status
-    if novo_status == "Pediu para retornar":
-        return UpdateProspecctionStatusResult(
-            ok=True,
-            redirect_to="agendamentos_view",
-            redirect_kwargs={},
-        )
-
     if novo_status == "Interessado":
         prospeccao = repo.get_by_id(req.prospeccao_id)
-
         if not prospeccao:
             return UpdateProspecctionStatusResult(
                 ok=True,
@@ -103,6 +77,30 @@ def update_prospecction_status_with_repo(
                 redirect_kwargs={"erro": "Para converter em Lead, informe um CNPJ válido."},
             )
 
+    # 2. Atualização de status via repository (apenas após passar pelas validações)
+    if novo_status == "Pediu para retornar":
+        repo.agendar_retorno(
+            req.prospeccao_id,
+            data_retorno=data_retorno,
+            hora_retorno=hora_retorno,
+            observacao=observacao,
+        )
+        return UpdateProspecctionStatusResult(
+            ok=True,
+            redirect_to="agendamentos_view",
+            redirect_kwargs={},
+        )
+    else:
+        repo.update_status(
+            req.prospeccao_id,
+            novo_status,
+            observacao=observacao,
+            data_retorno=data_retorno,
+            hora_retorno=hora_retorno,
+        )
+
+    # 3. Ações derivadas pós-atualização
+    if novo_status == "Interessado":
         lead_id = repo.converter_para_lead(req.prospeccao_id)
         if lead_id:
             return UpdateProspecctionStatusResult(

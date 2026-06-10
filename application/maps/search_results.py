@@ -406,6 +406,9 @@ def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
     if "brinquedo" in seg_clean:
         return _filter_noise_brinquedos(results)
 
+    if "gamer" in seg_clean:
+        return _filter_noise_gamer(results)
+
     return results
 
 
@@ -533,6 +536,32 @@ _BRINQUEDOS_NOISE_NAMES = [
     "salao infantil",
     "cabelo infantil",
 ]
+
+_GAMER_NOISE_NAMES = [
+    "lan house",
+    "lanhouse",
+    "cyber cafe",
+    "cybercafe",
+    "arena e-sports",
+    "arena esports",
+    "arena gamer",
+    "salao de jogos",
+    "salao de games",
+    "clube de jogos",
+    "clube de games",
+    "fliperama",
+    "fliperamas",
+    "sinuca",
+    "bilhar",
+    "boliche",
+    "escape room",
+    "casa de jogos",
+    "cassino",
+    "poker",
+    "baralho",
+    "jogos de azar",
+]
+
 
 _SENNHEISER_NOISE_NAMES = [
     "som automotivo",
@@ -784,6 +813,28 @@ def _filter_noise_brinquedos(results: list[dict]) -> list[dict]:
 
         if any(t in texto_para_busca for t in _BRINQUEDOS_POSITIVE_TERMS):
             filtered.append(item)
+
+    return filtered
+
+
+def _filter_noise_gamer(results: list[dict]) -> list[dict]:
+    """Filtro para segmento Gamer B2B.
+    Descarta negócios voltados para consumo final (lan houses, cyber cafés, arenas de e-sports, fliperamas, etc.).
+    """
+    filtered = []
+    for item in results:
+        nome = _norm_key(item.get("nome") or "")
+        raw_text = _norm_key(item.get("__raw_text") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+
+        texto_para_busca = f"{nome} {raw_text} {categorias_str}"
+
+        # Se contiver qualquer termo de ruído gamer, descarta
+        if any(t in texto_para_busca for t in _GAMER_NOISE_NAMES):
+            continue
+
+        filtered.append(item)
 
     return filtered
 
@@ -1249,7 +1300,32 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "outlet eletrodomésticos",
             "saldão eletrodomésticos",
         ],
-        "Gamer": ["gamer"],
+        "Gamer": [
+            # TIER 1: Compra em volume e revenda B2B
+            "distribuidor gamer",
+            "distribuidor de games",
+            "distribuidor de jogos",
+            "atacadista gamer",
+            "atacadista de games",
+            "revenda gamer",
+            "revenda de games",
+            "fornecedor gamer",
+            "fornecedor de games",
+            "importadora gamer",
+            "atacado gamer",
+            
+            # TIER 2: Varejo especializado com foco em comércio (físico/online)
+            "loja gamer",
+            "loja de games",
+            "loja de jogos",
+            "loja de informática gamer",
+            
+            # TIER 3: Periféricos e Acessórios
+            "acessórios gamer",
+            "periféricos gamer",
+            "cadeira gamer",
+            "pc gamer",
+        ],
         "Brinquedos": [
             # TIER 1: compra em volume e revenda
             "distribuidor de brinquedos",
@@ -1366,6 +1442,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # consumidor final empresarial, e nao apenas revenda em volume.
     anchor_groups["Sennheiser"] = [
         "loja de audio profissional",
+        "audio profissional",
         "revenda de audio profissional",
         "equipamentos de audio profissional",
         "loja de instrumentos musicais",
@@ -1376,16 +1453,21 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "sistemas de microfone sem fio",
         "estudio de gravacao",
         "estudio de podcast",
+        "podcast studio",
         "produtora audiovisual",
         "produtora de video",
+        "integrador audiovisual",
+        "solucoes av",
         "emissora de radio",
         "emissora de tv",
         "broadcast audio",
         "equipamentos para radio e tv",
         "sonorizacao profissional",
         "sonorizacao de eventos",
+        "equipamentos para eventos",
         "locadora de som",
         "locacao de som para eventos",
+        "locacao de audio",
         "som para igreja",
         "sonorizacao para igrejas",
         "audio para auditorio",
@@ -1490,6 +1572,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             all_excludes = exclude_terms + _SENNHEISER_NOISE_NAMES
         if seg == "Brinquedos":
             all_excludes = exclude_terms + _BRINQUEDOS_NOISE_NAMES
+        if seg == "Gamer":
+            all_excludes = exclude_terms + _GAMER_NOISE_NAMES
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     

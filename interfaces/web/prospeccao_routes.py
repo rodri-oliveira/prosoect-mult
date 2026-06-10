@@ -10,7 +10,7 @@ from application.shared.cnpj_utils import is_valid_cnpj, normalize_cnpj
 from infrastructure.container import prospeccao_repository
 
 
-def _build_prospeccao_url_with_filters():
+def _build_prospeccao_url_with_filters(**extra_kwargs):
     """Constrói URL de prospecção preservando filtros atuais."""
     filtro_status = request.args.get("status") or request.form.get("filtro_status")
     filtro_nome = request.args.get("nome") or request.form.get("filtro_nome")
@@ -45,6 +45,7 @@ def _build_prospeccao_url_with_filters():
     if mostrar_arquivados:
         kwargs["arquivados"] = mostrar_arquivados
 
+    kwargs.update(extra_kwargs)
     return url_for("prospeccao_view", **kwargs)
 
 
@@ -67,6 +68,7 @@ def prospeccao_view():
     data_inicio = request.args.get("data_inicio")
     data_fim = request.args.get("data_fim")
     mostrar_arquivados = request.args.get("arquivados") == "1"
+    erro = request.args.get("erro")
 
     view = build_prospeccao_list_view_with_repo(
         ProspecctionListViewRequest(
@@ -100,6 +102,7 @@ def prospeccao_view():
         data_inicio=data_inicio,
         data_fim=data_fim,
         mostrar_arquivados=mostrar_arquivados,
+        erro=erro,
     )
 
 
@@ -170,7 +173,7 @@ def rascunho_status(prospeccao_id: int):
     if next_url and result.ok and not result.redirect_kwargs:
         return redirect(next_url)
     if result.redirect_to == "prospeccao_view":
-        return redirect(_build_prospeccao_url_with_filters())
+        return redirect(_build_prospeccao_url_with_filters(**result.redirect_kwargs))
     return redirect(url_for(result.redirect_to, **result.redirect_kwargs))
 
 

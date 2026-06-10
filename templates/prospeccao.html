@@ -1,6 +1,30 @@
 {% extends "layout.html" %}
 
 {% block content %}
+
+{% if erro %}
+<div id="alertErroProspeccao"
+     class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3
+            bg-red-600 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-2xl
+            border border-red-500 max-w-lg w-full mx-4 animate-fade-in"
+     role="alert">
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <span class="flex-1">{{ erro }}</span>
+    <button onclick="document.getElementById('alertErroProspeccao').remove()"
+            class="text-white/80 hover:text-white focus:outline-none ml-2 text-lg leading-none"
+            aria-label="Fechar">&times;</button>
+</div>
+<script>
+    setTimeout(function () {
+        var el = document.getElementById('alertErroProspeccao');
+        if (el) el.remove();
+    }, 6000);
+</script>
+{% endif %}
+
 <div class="h-full flex flex-col space-y-4">
     <!-- Header -->
     <div class="flex justify-between items-center px-2">
