@@ -36,6 +36,7 @@ def api_consultar_cnpj():
             "endereco": info.endereco,
             "cidade": info.cidade,
             "estado": info.estado,
+            "cep": info.cep,
             "telefone": info.telefone,
             "email": info.email,
         }

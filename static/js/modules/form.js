@@ -115,6 +115,67 @@ export async function submitLeadFormAsJsonIfFromMaps() {
 /**
  * Inicializa listeners do formulário
  */
+function statusNeedsReturnFields(value) {
+    const v = String(value || '').trim().toLowerCase();
+    return v === 'pediu para retornar'
+        || v === 'agendamento'
+        || v === 'agendar retorno'
+        || v === 'em negociação'
+        || v === 'não analisou ainda o material';
+}
+
+function syncReturnFieldsVisibility(statusSelect) {
+    if (!statusSelect) return;
+
+    const needsDate = statusNeedsReturnFields(statusSelect.value);
+    const campoData = document.getElementById('campo-data-retorno');
+    const campoHora = document.getElementById('campo-hora-retorno');
+
+    if (needsDate) {
+        if (campoData) campoData.classList.remove('hidden');
+        if (campoHora) campoHora.classList.remove('hidden');
+    } else {
+        if (campoData) campoData.classList.add('hidden');
+        if (campoHora) campoHora.classList.add('hidden');
+        const d = document.querySelector('input[name="data_retorno"]');
+        if (d) d.value = '';
+        const h = document.querySelector('input[name="hora_retorno"]');
+        if (h) h.value = '';
+    }
+}
+
+function formatPhoneBR(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    let digits = raw.replace(/\D/g, '');
+    if (!digits) return raw;
+
+    if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+        digits = digits.substring(2);
+    }
+
+    if (digits.length === 8) return `${digits.substring(0, 4)}-${digits.substring(4)}`;
+    if (digits.length === 9) return `${digits.substring(0, 5)}-${digits.substring(5)}`;
+    if (digits.length === 10) return `(${digits.substring(0, 2)}) ${digits.substring(2, 6)}-${digits.substring(6)}`;
+    if (digits.length === 11) return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7)}`;
+
+    return raw;
+}
+
+function installPhoneFormatting(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const apply = () => {
+        const formatted = formatPhoneBR(el.value);
+        if (formatted && formatted !== el.value) el.value = formatted;
+    };
+
+    el.addEventListener('blur', apply);
+    el.addEventListener('change', apply);
+}
+
 export function initFormListeners() {
     // Atualizar botão de buscar CNPJ no Google e limpar vinculo com Maps se editar manualmente
     ['f_nome', 'f_cidade', 'f_estado', 'f_endereco'].forEach((id) => {
@@ -137,29 +198,16 @@ export function initFormListeners() {
         }
     });
     updateBtnBuscarCnpjGoogle();
+    installPhoneFormatting('f_telefone');
+    installPhoneFormatting('f_whatsapp');
 
     // Status select - mostrar/esconder campo de data de retorno
     const statusSelect = document.querySelector('select[name="status_prospeccao"]');
     if (statusSelect) {
         statusSelect.addEventListener('change', function() {
-            const v = this.value.toLowerCase();
-            const needsDate = v === 'pediu para retornar' || v === 'em negociação' || v === 'não analisou ainda o material';
-            
-            const campoData = document.getElementById('campo-data-retorno');
-            const campoHora = document.getElementById('campo-hora-retorno');
-            
-            if (needsDate) {
-                if (campoData) campoData.classList.remove('hidden');
-                if (campoHora) campoHora.classList.remove('hidden');
-            } else {
-                if (campoData) campoData.classList.add('hidden');
-                if (campoHora) campoHora.classList.add('hidden');
-                const d = document.querySelector('input[name="data_retorno"]');
-                if (d) d.value = '';
-                const h = document.querySelector('input[name="hora_retorno"]');
-                if (h) h.value = '';
-            }
+            syncReturnFieldsVisibility(this);
         });
+        syncReturnFieldsVisibility(statusSelect);
     }
 }
 

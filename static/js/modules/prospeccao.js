@@ -8,7 +8,7 @@ import { ProspeccaoState } from './state.js';
 import { installDrawerDelegation, installBeforeUnloadHandler, openDrawer, closeDrawer } from './maps-drawer.js';
 import { restoreMapFilters, installPageshowListener } from './filters.js';
 import { searchMap, buscarCNPJNoGoogle, updateBtnBuscarCnpjGoogle } from './maps-search.js';
-import { consultarCNPJ } from './cnpj.js';
+import { consultarCNPJ, preencherDadosCNPJ } from './cnpj.js';
 import { initFormListeners, pedirDataRetorno, submitLeadFormAsJsonIfFromMaps } from './form.js';
 import { readMapsCache, writeMapsCache, clearMapsCache } from './maps-cache.js';
 import { renderResults, loadResults, initDrawerButtonListeners, initFormSubmitListener } from './maps-results.js';
@@ -385,6 +385,7 @@ export {
     buscarCNPJNoGoogle,
     updateBtnBuscarCnpjGoogle,
     consultarCNPJ,
+    preencherDadosCNPJ,
     pedirDataRetorno,
     submitLeadFormAsJsonIfFromMaps,
     readMapsCache,
