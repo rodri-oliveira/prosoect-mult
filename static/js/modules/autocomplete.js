@@ -4,7 +4,7 @@
  */
 
 export const SEGMENTOS = [
-    'Informática', 'Celulares', 'Tablets Kids', 'Áudio e Vídeo', 'Eletroportáteis', 'Gamer',
+    'Informática', 'Informática (Médio Porte)', 'Celulares', 'Tablets Kids', 'Áudio e Vídeo', 'Eletroportáteis', 'Gamer',
     'Brinquedos', 'Drones e Câmeras', 'Sennheiser', 'Ortopédica',
     'Fitness', 'Pet', 'Redes', 'Mobilidade Elétrica',
     'Health Care', 'Multikids', 'Utilidades e Variedades'

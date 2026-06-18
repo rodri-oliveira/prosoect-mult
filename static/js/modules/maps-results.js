@@ -84,8 +84,8 @@ export const renderResults = (items) => {
     }
     resultsNow.innerHTML = '';
     const list = Array.isArray(items) ? items : [];
-    const filteredList = list.filter((it) => !it?.already_added);
-    const normalized = filteredList.map((it) => {
+    // Mantém todos os itens, mesmo os já adicionados, para que apareçam como desativados
+    const normalized = list.map((it) => {
         const key = deriveMapsKey(it.maps_url, it.maps_place_id, it.id);
         const already = !!it.already_added;
         return { ...it, __key: key, __already: already };
@@ -415,12 +415,13 @@ export const loadResults = async () => {
         
         mapsLog('loadResults:success', { modo: data.modo, items: (data.items || []).length, mergedBefore, mergedAfter, totalQueries });
         const nextItems = Array.isArray(data.items) ? data.items : [];
-        // Filtrar itens já adicionados antes de salvar no cache
-        const filteredItems = nextItems.filter((it) => !it?.already_added);
+        // Não filtramos mais os itens já adicionados, deixamos a UI mostrar eles desabilitados
         
         if (data.modo !== 'mock') {
             if (mergedAfter > 0) {
-                statusEl.textContent = `OK - ${filteredItems.length}/${mergedAfter} resultados`;
+                // Conta quantos são novos apenas para mostrar no status
+                const novos = nextItems.filter(it => !it?.already_added).length;
+                statusEl.textContent = `OK - ${novos} novos / ${mergedAfter} totais`;
             } else {
                 statusEl.textContent = `OK - ${totalQueries} queries`;
             }
@@ -430,9 +431,9 @@ export const loadResults = async () => {
             : (Array.isArray(window.__mapsResultsCache) ? window.__mapsResultsCache : []);
         const shouldPreserve = nextItems.length === 0 && Array.isArray(currentCached) && currentCached.length > 0;
         if (!shouldPreserve) {
-            writeMapsCache(filteredItems, buildQueryPayload());
+            writeMapsCache(nextItems, buildQueryPayload());
             currentPage = 1;
-            renderResults(filteredItems);
+            renderResults(nextItems);
         } else {
             try { readMapsCache(); } catch (e) {}
             statusEl.textContent = '0 resultados. Mantendo últimos resultados.';

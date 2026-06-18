@@ -1485,6 +1485,19 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "sistemas de conferencia",
     ]
 
+    anchor_groups["Informática (Médio Porte)"] = [
+        # TOP 5 queries por novos resultados únicos (testado em Campinas)
+        "computadores e periféricos",         # 13 novos únicos - MELHOR
+        "revenda de informática",             # 11 novos únicos
+        "distribuidora de informática",       # 9 novos únicos
+        "suprimentos de informática",         # 8 novos únicos
+        "loja de informática atacado",        # 7 novos únicos
+        # Queries complementares (trazem poucos mas relevantes)
+        "atacado de informática",             # 3 novos únicos
+        "distribuidor de informática",        # 2 novos únicos
+        "empresa de informática",             # 1 novo único
+    ]
+
     queries: list[dict[str, str]] = []
     num_segs = len(segs)
     
@@ -1507,6 +1520,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "Multikids",
             "Health Care",
             "Sennheiser",
+            "Informática (Médio Porte)",
         ]
 
         if is_brand_segment:
