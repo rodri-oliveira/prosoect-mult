@@ -94,7 +94,7 @@ def search_maps_results_with_repo(
     estado = (req.estado or "").strip()
     segmentos = req.segmentos or []
 
-    limit = int(req.limit or 20)
+    limit = req.limit or 20
     if limit < 1:
         limit = 1
     if limit > 200:
@@ -323,8 +323,8 @@ def search_maps_results_with_repo(
         items=itens,
         executed_queries=executed_queries,
         query_stats=query_stats,
-        merged_before_dedupe=int(merged_before_dedupe),
-        merged_after_dedupe=int(merged_after_dedupe),
+        merged_before_dedupe=merged_before_dedupe,
+        merged_after_dedupe=merged_after_dedupe,
     )
 
 
