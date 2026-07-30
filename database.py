@@ -116,6 +116,10 @@ def init_db():
             elif col == 'hora_retorno': type_str = 'TIME'
             c.execute(f'ALTER TABLE prospeccao_temp ADD COLUMN {col} {type_str}')
 
+    # updated_at: registra o momento exato da última tabulação (status, agendamento, draft)
+    if 'updated_at' not in cols:
+        c.execute('ALTER TABLE prospeccao_temp ADD COLUMN updated_at DATETIME')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS prospeccao_eventos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

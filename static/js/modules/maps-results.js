@@ -646,6 +646,11 @@ export function initFormSubmitListener() {
 
             mapsLog('form:submit:api_done', { created: res.data ? res.data.created : null, maps_place_id: res.data ? res.data.maps_place_id : null });
 
+            if (res.data && res.data.redirect_to) {
+                window.location.assign(res.data.redirect_to);
+                return;
+            }
+
             if (res.data && res.data.created === false) {
                 if (statusEl) statusEl.textContent = 'Já existia na sua lista.';
                 alert('Este item já existe na sua lista de prospecção.');

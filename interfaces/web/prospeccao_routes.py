@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
+import unicodedata
 
 from application.prospeccao.create_draft import CreateProspecctionDraftRequest, create_prospeccao_draft_with_repo
 from application.prospeccao.list_view import ProspecctionListViewRequest, build_prospeccao_list_view_with_repo
@@ -115,9 +116,12 @@ def rascunho_novo():
     cnpj_valid = cnpj_norm if (cnpj_norm and is_valid_cnpj(cnpj_norm)) else None
 
     status_prospeccao = (request.form.get("status_prospeccao") or "").strip()
+    status_key = unicodedata.normalize("NFD", status_prospeccao).encode("ascii", "ignore").decode().casefold()
     
     if not status_prospeccao:
         return redirect(url_for("prospeccao_view"))
+
+    repo = prospeccao_repository()
 
     result = create_prospeccao_draft_with_repo(
         CreateProspecctionDraftRequest(
@@ -138,8 +142,15 @@ def rascunho_novo():
             hora_retorno=(request.form.get("hora_retorno") or "").strip() or None,
             responsavel=(request.form.get("responsavel") or "").strip() or None,
         ),
-        prospeccao_repository(),
+        repo,
     )
+
+    # Negociacao vira Lead e aparece na pagina de Leads.
+    if status_key == "em negociacao":
+        lead_id = repo.converter_para_lead(result.prospeccao_id)
+        if lead_id:
+            return redirect(url_for("leads_list"))
+        return redirect(_build_prospeccao_url_with_filters(erro="Nao foi possivel converter o contato em Lead."))
 
     # Redirecionar para agendamentos se status for "Pediu para retornar"
     if status_prospeccao == "Pediu para retornar":
@@ -159,6 +170,8 @@ def rascunho_status(prospeccao_id: int):
     if not novo_status:
         return redirect(next_url or _build_prospeccao_url_with_filters())
 
+    repo = prospeccao_repository()
+
     result = update_prospecction_status_with_repo(
         UpdateProspecctionStatusRequest(
             prospeccao_id=prospeccao_id,
@@ -167,7 +180,7 @@ def rascunho_status(prospeccao_id: int):
             data_retorno=data_retorno,
             hora_retorno=hora_retorno,
         ),
-        prospeccao_repository(),
+        repo,
     )
 
     if next_url and result.ok and not result.redirect_kwargs:

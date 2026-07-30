@@ -253,6 +253,13 @@ def search_maps_results_with_repo(
                         _get_sort_priority(it),
                     )
                 )
+            elif any("inform" in (s or "").lower() for s in segs):
+                merged.sort(
+                    key=lambda it: (
+                        -int(it.get("informatica_medio_fit_score") or it.get("informatica_fit_score") or 0),
+                        _get_sort_priority(it),
+                    )
+                )
             else:
                 merged.sort(key=_get_sort_priority)
             
@@ -478,6 +485,22 @@ _INFO_NOISE_NAMES = [
     "moveis para escritorio",
     "servicos de ti",
     "desentupidora",
+    "provedor",
+    "internet service provider",
+    "software company",
+    "data recovery service",
+    "telecom",
+    "telecomunicacoes",
+    "telecomunicações",
+    "fibra",
+    "provedor de internet",
+    "telecommunications service provider",
+    "cftv",
+    "segurança",
+    "seguranca",
+    "security system supplier",
+    "cerca eletrica",
+    "portão",
 ]
 
 _BRINQUEDOS_POSITIVE_TERMS = [
@@ -762,34 +785,112 @@ def _filter_noise_drones(results: list[dict]) -> list[dict]:
     return filtered
 
 
+_INFO_POSITIVE_TERMS = [
+    "informatica", "informática", "perifericos", "periféricos", "hardware",
+    "suprimentos", "computador", "computadores", "notebook", "notebooks",
+    "laptop", "laptops", "nobreak", "nobreaks", "cabos", "conectores",
+    "mouse", "mouses", "teclado", "teclados", "pendrive", "ssd",
+    "memoria", "memória", "componentes", "papelaria", "eletronicos", "eletrônicos",
+    "computer", "electronics", "office supply", "tech", "technology",
+]
+
+_PERSONAL_FIRST_NAMES = {
+    "joao", "joão", "pedro", "carlos", "paulo", "jose", "josé", "maria",
+    "lucas", "gabriel", "matheus", "marcos", "andre", "andré", "felipe",
+    "rafael", "luiz", "luis", "rodrigo", "diego", "bruno", "eduardo",
+    "guilherme", "renato", "marcelo", "alexandre", "fernando", "ricardo",
+    "vitor", "victor", "tiago", "thiago", "claudio", "cláudio", "sergio",
+    "sérgio", "antonio", "antônio", "francisco", "mario", "mário"
+}
+
+_BUSINESS_INDICATORS = [
+    "distribuidora", "distribuidor", "revenda", "atacado", "atacadista",
+    "suprimentos", "comercio", "comércio", "comercial", "loja", "store",
+    "milenio", "milênio", "alpha", "beta", "tech", "pc", "eletronica",
+    "eletrônica", "eletronicos", "eletrônicos", "papelaria"
+]
+
+
+def _score_informatica_fit(texto: str, nome: str) -> int:
+    score = 20  # Base
+    nome_norm = _norm_key(nome)
+    texto_norm = _norm_key(texto)
+
+    # Tier 1 (+80): Canal B2B Direto (Distribuidora, Revenda, Atacado)
+    if any(t in nome_norm or t in texto_norm for t in ["distribuidora", "distribuidor", "atacadista", "atacado", "revenda"]):
+        score += 80
+    # Tier 2 (+50): Suprimentos / TI Especializada
+    elif any(t in nome_norm or t in texto_norm for t in ["suprimentos", "computadores e perifericos", "hardware", "componentes"]):
+        score += 50
+    # Tier 3 (+30): Comércio/Loja de TI ou Papelaria + TI
+    elif any(t in nome_norm or t in texto_norm for t in ["loja de informatica", "comercio de informatica", "papelaria"]):
+        score += 30
+
+    return score
+
+
 def _filter_noise_informatica(results: list[dict]) -> list[dict]:
     """Filtro para o segmento de Informática.
     Lógica:
       - Remove escolas, cursos e baterias (automotivas)
-      - Remove empresas de serviço puro (Software, Nuvem, Consultoria)
-      - Verifica tanto o NOME quanto as CATEGORIAS retornadas pelo Maps
+      - Remove empresas de serviço puro (Software, Nuvem, Consultoria, ISPs, Segurança)
+      - Remove autônomos e pessoas físicas sem indicativo comercial
+      - Remove lojas genéricas sem correlação com TI
+      - Mantém lojas de TI e revendas mesmo que prestem assistência técnica secundária
+      - Calcula e atribui Fit Score B2B (informatica_medio_fit_score)
     """
     filtered = []
     for item in results:
-        nome = _norm_key(item.get("nome") or "")
-        # Pega as categorias (segmentos) que o scraper achou
+        nome_raw = item.get("nome") or ""
+        nome = _norm_key(nome_raw)
+        raw_text = _norm_key(item.get("__raw_text") or "")
         categorias_list = item.get("segmentos") or []
         categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        query_sources = " ".join([_norm_key(str(qs)) for qs in (item.get("query_sources") or [])])
         
-        texto_para_busca = f"{nome} {categorias_str}"
+        texto_loja = f"{nome} {raw_text} {categorias_str}"
+        texto_para_busca = f"{texto_loja} {query_sources}"
 
-        is_noise = any(t in texto_para_busca for t in _INFO_NOISE_NAMES)
+        # 1. Filtro de termos e categorias de ruído no texto da LOJA
+        is_noise = any(t in texto_loja for t in _INFO_NOISE_NAMES)
         
-        # Exceção: Se for "Bateria" mas também tiver "Informatica" no nome, 
-        # pode ser nobreak, então mantemos (ex: "Real Baterias e Informatica")
-        if "bateria" in texto_para_busca and "inform" in texto_para_busca:
+        # Exceção: Se o NOME da loja tiver "informatica", "eletronico" ou "suprimentos", mantemos
+        tem_nome_comercial_ti = any(b in nome for b in ["informatica", "informática", "eletronico", "eletrônico", "suprimentos", "distribuidora", "revenda", "componentes"])
+        if tem_nome_comercial_ti:
             is_noise = False
+
+        # Descartar assistências técnicas puras (sem indicação de loja/revenda/distribuidora no nome)
+        termos_reparo = ["assistencia tecnica", "assistência técnica", "computer repair service", "conserto", "reparo"]
+        tem_termo_reparo = any(r in texto_loja for r in termos_reparo)
+        if tem_termo_reparo:
+            tem_canal_loja = any(c in nome for c in ["loja", "store", "distribuidora", "distribuidor", "revenda", "atacadista", "atacado", "suprimentos", "comercio", "comércio", "comercial"])
+            if not tem_canal_loja:
+                continue
 
         if is_noise:
             continue
 
+        # 2. Filtro de Pessoas Físicas / Autônomos (Ex: "João da Silva Informática")
+        primeira_palavra = nome.split()[0] if nome.split() else ""
+        if primeira_palavra in _PERSONAL_FIRST_NAMES:
+            tem_indicativo_comercial = any(b in nome for b in _BUSINESS_INDICATORS)
+            if not tem_indicativo_comercial:
+                continue
+
+        # 3. Filtro de lojas genéricas sem termo de confirmação de TI no texto da LOJA
+        tem_termo_positivo = any(p in texto_loja for p in _INFO_POSITIVE_TERMS)
+        if not tem_termo_positivo:
+            continue
+
+        # Calcular Fit Score B2B
+        fit_score = _score_informatica_fit(texto_para_busca, nome_raw)
+        item["informatica_medio_fit_score"] = fit_score
+        item["informatica_fit_score"] = fit_score
+
         filtered.append(item)
 
+    # Ordenar por fit score decrescente
+    filtered.sort(key=lambda it: int(it.get("informatica_medio_fit_score") or 0), reverse=True)
     return filtered
 
 
@@ -922,16 +1023,6 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "lavadoras",
         "oficina",
         
-        # Filtros de Assistência Técnica
-        "assistência técnica",
-        "assistencia tecnica",
-        "assistência",
-        "assistencia",
-        "conserto",
-        "reparo",
-        "manutenção",
-        "manutencao",
-        
         # Lojas irrelevantes para Informática (varal, parafusos, metalurgia, ferragens)
         "varal",
         "varais",
@@ -969,14 +1060,50 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "buchas",
         "arruela",
     ]
+
+    repair_exclusions = [
+        "assistência técnica",
+        "assistencia tecnica",
+        "conserto",
+        "reparo",
+        "manutenção",
+        "manutencao",
+    ]
+
+    commercial_exceptions = [
+        "informática",
+        "informatica",
+        "distribuidor",
+        "distribuidora",
+        "revenda",
+        "atacadista",
+        "atacado",
+        "loja",
+        "suprimentos",
+        "periféricos",
+        "perifericos",
+        "eletrônicos",
+        "eletronicos",
+        "gamer",
+        "tecnologia",
+        "componentes",
+    ]
     
     filtered = []
     for item in results:
         nome = (item.get("nome", "") or "").lower()
-        # Verificar se o nome contém algum dos termos proibidos
-        excluded = any(excl in nome for excl in server_exclusions)
-        if not excluded:
-            filtered.append(item)
+        # Verificar grandes redes e exclusões absolutas
+        if any(excl in nome for excl in server_exclusions):
+            continue
+
+        # Verificar se é assistência técnica pura (sem termos comerciais de TI)
+        has_repair = any(rep in nome for rep in repair_exclusions)
+        if has_repair:
+            has_commercial = any(comm in nome for comm in commercial_exceptions)
+            if not has_commercial:
+                continue
+
+        filtered.append(item)
     
     return filtered
 
@@ -1207,45 +1334,19 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # AC = Acessórios/Periféricos | ME = Mídia/Energia | PC = Computadores | IC = SSD/Memória
     anchor_groups: dict[str, list[str]] = {
         "Informática": [
-            # Foco B2B - O Alto Volume
-            "atacadista informática",
+            # Núcleo de Alta Performance B2B e Varejo Especializado
             "distribuidor informática",
             "revenda informática",
-            "atacadista de periféricos",
-            "distribuidor de periféricos",
-            "atacado e varejo informática",
-            
-            # Produtos Específicos e Acessórios
-            "loja de mouses e teclados",
-            "loja de cabos",
-            "loja de cabos e conectores",
-            "pendrive e cartões de memória",
-            "venda de periféricos",
-            "comércio de acessórios de informática",
-            
-            # Equipamentos Maiores (O Médio Comércio)
-            "loja de tablets",
-            "loja de laptops",
-            "venda de notebooks e laptops",
-            "loja de nobreaks",
-            
-            # Varejo e Centro da Cidade (Giro Rápido)
+            "atacadista informática",
             "loja de informática",
-            "comércio de informática",
-            "varejo informática",
-            "loja de acessórios informática",
+            "comércio de acessórios de informática",
             "loja de eletrônicos e informática",
             "suprimentos de informática",
-            "loja de informática centro",
-            
-            # Componentes
-            "atacadista de componentes de computador",
-            "distribuidor de componentes de computador",
-            "atacadista de hardware",
-            "distribuidor de hardware",
-
-            # Papelarias que vendem acessórios de informática (B2B)
+            "loja de laptops",
+            "loja de tablets",
             "papelaria e informática",
+            "comércio de informática",
+            "distribuidor de componentes de computador",
         ],
         "Celulares": [
             # O Alto Volume
@@ -1486,16 +1587,14 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     ]
 
     anchor_groups["Informática (Médio Porte)"] = [
-        # TOP 5 queries por novos resultados únicos (testado em Campinas)
-        "computadores e periféricos",         # 13 novos únicos - MELHOR
-        "revenda de informática",             # 11 novos únicos
-        "distribuidora de informática",       # 9 novos únicos
-        "suprimentos de informática",         # 8 novos únicos
-        "loja de informática atacado",        # 7 novos únicos
-        # Queries complementares (trazem poucos mas relevantes)
-        "atacado de informática",             # 3 novos únicos
-        "distribuidor de informática",        # 2 novos únicos
-        "empresa de informática",             # 1 novo único
+        "distribuidora de informática",
+        "revenda de informática",
+        "atacadista de informática",
+        "atacado de informática",
+        "suprimentos de informática",
+        "loja de informática atacado",
+        "distribuidor de informática",
+        "computadores e periféricos",
     ]
 
     queries: list[dict[str, str]] = []
@@ -1588,6 +1687,8 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             all_excludes = exclude_terms + _BRINQUEDOS_NOISE_NAMES
         if seg == "Gamer":
             all_excludes = exclude_terms + _GAMER_NOISE_NAMES
+        if "inform" in seg.lower():
+            all_excludes = exclude_terms + ["software", "provedor", "consultoria"]
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     

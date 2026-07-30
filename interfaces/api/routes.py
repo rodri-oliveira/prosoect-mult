@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import unicodedata
 from datetime import date
 from flask import Flask, jsonify, request
 
@@ -21,6 +22,10 @@ from infrastructure.container import (
 )
 
 logger = logging.getLogger(__name__)
+
+def _is_em_negociacao(status: str | None) -> bool:
+    normalized = unicodedata.normalize("NFD", (status or "").strip()).encode("ascii", "ignore").decode().casefold()
+    return normalized == "em negociacao"
 
 
 def api_maps_queries():
@@ -170,6 +175,7 @@ def api_rascunho_novo():
         data["maps_url"] = (data.get("maps_url") or "").strip()
         data["site"] = (data.get("site") or data.get("website") or "").strip()
 
+        repo = prospeccao_repository()
         res = create_prospeccao_draft_with_repo(
             CreateProspecctionDraftRequest(
                 nome_loja=(data.get("nome_loja") or "").strip(),
@@ -190,12 +196,20 @@ def api_rascunho_novo():
                 responsavel=(data.get("responsavel") or "").strip() or None,
                 email=(data.get("email") or "").strip() or None,
             ),
-            prospeccao_repository(),
+            repo,
         )
+
+        lead_id = None
+        if _is_em_negociacao(data.get("status_prospeccao")):
+            lead_id = repo.converter_para_lead(res.prospeccao_id)
+            if not lead_id:
+                raise ValueError("Nao foi possivel converter o contato em Lead.")
 
         return jsonify({
             "ok": True,
             "id": res.prospeccao_id,
+            "lead_id": lead_id,
+            "redirect_to": "/leads" if lead_id else None,
             "created": bool(res.created),
             "key": (data.get("maps_place_id") or data.get("maps_url") or "").strip(),
             "maps_place_id": data.get("maps_place_id") or "",

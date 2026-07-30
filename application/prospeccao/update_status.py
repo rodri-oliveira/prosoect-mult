@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+import unicodedata
 
 from domain.repositories.prospeccao_repository import ProspeccaoRepository
 from infrastructure.repositories.sqlite_prospeccao_repository import SqliteProspeccaoRepository
@@ -35,6 +36,7 @@ def update_prospecction_status_with_repo(
     from services.cnpj_service import is_valid_cnpj, normalize_cnpj
 
     novo_status = req.novo_status
+    status_key = unicodedata.normalize("NFD", (novo_status or "").strip()).encode("ascii", "ignore").decode().casefold()
     observacao = req.observacao
     data_retorno = req.data_retorno
     hora_retorno = req.hora_retorno
@@ -97,9 +99,19 @@ def update_prospecction_status_with_repo(
             observacao=observacao,
             data_retorno=data_retorno,
             hora_retorno=hora_retorno,
+            clear_retorno=not bool(data_retorno),  # limpa data_retorno antiga se não há nova data
         )
 
     # 3. Ações derivadas pós-atualização
+    if status_key == "em negociacao":
+        lead_id = repo.converter_para_lead(req.prospeccao_id)
+        if lead_id:
+            return UpdateProspecctionStatusResult(
+                ok=True,
+                redirect_to="leads_list",
+                redirect_kwargs={},
+            )
+
     if novo_status == "Interessado":
         lead_id = repo.converter_para_lead(req.prospeccao_id)
         if lead_id:
