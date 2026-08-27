@@ -372,7 +372,22 @@ export const loadResults = async () => {
         const mergedBefore = data.merged_before_dedupe || 0;
         const mergedAfter = data.merged_after_dedupe || 0;
 
-        statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : `OK - ${totalQueries} queries`;
+        if (data.modo === 'mock' && data.message) {
+            const failureText = `Falha na busca: ${data.message}`;
+            clearMapsCache();
+            statusEl.textContent = failureText;
+            renderResults([]);
+            try {
+                if (window.ProspeccaoState && typeof window.ProspeccaoState.save === 'function') {
+                    window.ProspeccaoState.save({ mapsSearchPending: false });
+                } else {
+                    localStorage.setItem('mapsSearchPending', '0');
+                }
+            } catch (e) {}
+            return;
+        } else {
+            statusEl.textContent = data.modo === 'mock' ? 'Modo: mock' : `OK - ${totalQueries} queries`;
+        }
         
         // Alinhar "Abrir no Google Maps" com a query principal executada
         if (Array.isArray(data.executed_queries) && data.executed_queries.length > 0) {

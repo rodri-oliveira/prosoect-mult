@@ -173,7 +173,7 @@ def search_maps_results_with_repo(
                 
                 # Filtro geográfico estrito: remove itens que o scraper identificou como estando em outra cidade
                 if cidade:
-                    got = _filter_strict_city(got or [], cidade=cidade)
+                    got = _filter_strict_city(got or [], cidade=cidade, estado=estado)
 
                 # Calcular new_unique APÓS filtros → stats refletem o que realmente entra
                 new_keys: set[str] = set()
@@ -291,24 +291,10 @@ def search_maps_results_with_repo(
         except Exception as e:
             message = str(e)
             itens = []
-            for i in range(1, limit + 1):
-                itens.append(
-                    {
-                        "id": f"mock-{i}",
-                        "nome": f"Resultado Exemplo {i} ({query})",
-                        "endereco": endereco_base,
-                        "telefone": f"(11) 9000{i:02d}-000{i%10}",
-                        "whatsapp": f"(11) 9000{i:02d}-000{i%10}",
-                        "website": "",
-                        "maps_url": f"https://www.google.com/maps/search/{query}",
-                        "cidade": cidade,
-                        "estado": estado,
-                        "segmentos": segs,
-                    }
-                )
             modo = "mock"
-            merged_before_dedupe = len(itens)
-            merged_after_dedupe = len(itens)
+            merged_before_dedupe = 0
+            merged_after_dedupe = 0
+            logger.error("maps_search_failed query=%s error=%s", query, message, exc_info=True)
 
     existing_data = existing_keys_repo.get_existing_maps_keys()
     existing_keys = _find_existing_keys(itens, existing_keys_repo)
@@ -1167,6 +1153,19 @@ _MOBILIDADE_NOISE_NAMES = [
     "cadeira de rodas",
     "ortopedia",
     "ortopedica",
+    "energia solar",
+    "solar",
+    "fotovoltaica",
+    "fotovoltaico",
+    "eletricista",
+    "materiais eletricos",
+    "material eletrico",
+    "hidraulica",
+    "vidros",
+    "vidracaria",
+    "multimarcas",
+    "carros",
+    "automoveis",
     "ortopédica",
 ]
 
@@ -1266,8 +1265,21 @@ def _filter_noise_mobilidade_eletrica(results: list[dict]) -> list[dict]:
                 continue
 
         # 3. Filtro de negócios genéricos sem qualquer sinal positivo de mobilidade elétrica no texto próprio da loja
-        tem_positivo = any(p in texto_loja for p in _MOBILIDADE_POSITIVE_TERMS)
-        if not tem_positivo:
+        termos_positivos_fracos = ("concessionaria",)
+        tem_positivo = any(
+            p in texto_loja
+            for p in _MOBILIDADE_POSITIVE_TERMS
+            if _norm_key(p) not in termos_positivos_fracos
+        )
+        categorias_relevantes = (
+            "bike store", "bicycle store", "loja de bicicletas", "bicicletaria",
+            "motorcycle dealer", "motocicletas", "loja de motos", "moto shop",
+            "motor scooter dealer", "scooter", "electric vehicle dealer",
+            "veiculos eletricos", "veículos elétricos", "electric motor store",
+        )
+        tem_categoria_relevante = any(c in categorias_str for c in categorias_relevantes)
+        tem_sinal_comercial = any(h in texto_loja for h in _MOBILIDADE_BUSINESS_HINTS)
+        if not tem_positivo and not (tem_categoria_relevante and tem_sinal_comercial):
             continue
 
         # Calcular Fit Score B2B
@@ -1474,13 +1486,14 @@ def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> l
     return out
 
 
-def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
+def _filter_strict_city(results: list[dict], cidade: str, estado: str = "") -> list[dict]:
     """Remove itens que são explícitos sobre estarem em outra cidade,
     ou quando o resultado é apenas o marcador da própria cidade.
     """
     import re
 
     target_city = _norm_key(cidade)
+    target_state = _norm_key(estado)
     if not target_city:
         return results
 
@@ -1510,10 +1523,15 @@ def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
         # 2. Verifica se o campo cidade extraído do scraper está diferente da cidade alvo
         cidade_extraida = str(item.get("cidade") or "").strip()
         if cidade_extraida:
+            cidade_extraida = re.split(r"[,·|]", cidade_extraida)[-1].strip()
             norm_cidade_extraida = _norm_key(cidade_extraida)
-            if norm_cidade_extraida and norm_cidade_extraida != target_city and target_city not in norm_cidade_extraida:
+            if norm_cidade_extraida and norm_cidade_extraida != target_city:
                 # Cidade extraída é diferente da cidade alvo - descarta
                 continue
+
+        estado_extraido = _norm_key(str(item.get("estado") or ""))
+        if target_state and estado_extraido and estado_extraido != target_state:
+            continue
 
         # 3. Fallback: Verifica se o texto bruto do card do Maps acusa uma cidade diferente
         raw_text = str(item.get("__raw_text") or "")
@@ -1522,10 +1540,11 @@ def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
             if matches:
                 found_wrong_city = False
                 for match_city in reversed(matches):
+                    match_city = re.split(r"[,·|]", match_city)[-1]
                     candidate = match_city.split("·")[-1].split("|")[-1].split("-")[-1].strip()
                     candidate = _norm_key(candidate)
 
-                    if candidate and candidate != target_city and candidate not in target_city:
+                    if candidate and candidate != target_city:
                         found_wrong_city = True
                         break
 

@@ -28,6 +28,15 @@ def _is_em_negociacao(status: str | None) -> bool:
     return normalized == "em negociacao"
 
 
+def _default_maps_estado(cidade: str, estado: str) -> str:
+    estado = (estado or "").strip().upper()
+    if estado:
+        return estado
+    if (cidade or "").strip():
+        return "SP"
+    return ""
+
+
 def api_maps_queries():
     """API: Gerar queries para segmentos (sem executar scraper).
     
@@ -35,7 +44,7 @@ def api_maps_queries():
     """
     try:
         cidade = (request.args.get("cidade") or "").strip()
-        estado = (request.args.get("estado") or "").strip()
+        estado = _default_maps_estado(cidade, request.args.get("estado") or "")
         segmentos = request.args.getlist("segmentos")
         extra = (request.args.get("extra") or "").strip()
 
@@ -62,7 +71,7 @@ def api_maps_resultados():
     try:
         query = (request.args.get("query") or "").strip()
         cidade = (request.args.get("cidade") or "").strip()
-        estado = (request.args.get("estado") or "").strip()
+        estado = _default_maps_estado(cidade, request.args.get("estado") or "")
         segmentos = request.args.getlist("segmentos")
 
         try:

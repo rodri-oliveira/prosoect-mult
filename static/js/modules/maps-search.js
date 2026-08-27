@@ -11,7 +11,12 @@ import { ProspeccaoState } from './state.js';
  */
 export async function searchMap() {
     const cidade = (document.getElementById('mapCidade')?.value || '').trim();
-    const estado = (document.getElementById('mapEstado')?.value || '').trim();
+    let estado = (document.getElementById('mapEstado')?.value || '').trim();
+    if (cidade && !estado) {
+        estado = 'SP';
+        const mapEstado = document.getElementById('mapEstado');
+        if (mapEstado) mapEstado.value = estado;
+    }
     const segWrapper = document.getElementById('segmentoSelector');
 
     let segmentos = [];
@@ -92,6 +97,16 @@ export async function searchMap() {
     }
     if (openGoogleMaps) {
         openGoogleMaps.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(effectiveQuery)}`;
+    }
+
+    // O botao Buscar tambem precisa disparar a busca real no backend.
+    // A rota /api/maps/queries apenas monta as consultas; os resultados sao
+    // coletados pelo loader do drawer usando /api/maps/resultados.
+    if (typeof window.__openMapsDrawer === 'function') {
+        window.__openMapsDrawer();
+    }
+    if (typeof window.__loadMapsResults === 'function') {
+        window.__loadMapsResults();
     }
 }
 

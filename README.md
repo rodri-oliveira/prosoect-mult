@@ -61,6 +61,9 @@ py -3 -m venv .venv
 
 # Instalar dependências
 pip install -r requirements.txt
+
+# Instalar o navegador usado pelo Playwright na busca do Maps
+playwright install chromium
 ```
 
 ### 2. Configuração

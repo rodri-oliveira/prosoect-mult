@@ -102,3 +102,37 @@ def test_mobilidade_eletrica_filter_remove_bicicletarias_tradicionais():
     assert "Casa das Bicicletas" not in names
     assert "Bicicletaria Ideal" not in names
     assert "Conserto de Bicicleta do Zezinho" not in names
+
+
+def test_mobilidade_eletrica_accepts_maps_category_without_literal_eletrica():
+    items = [
+        {"nome": "Mobility Center", "segmentos": ["Motorcycle dealer"]},
+        {"nome": "Eletronica Silva", "segmentos": ["Electronics store"]},
+    ]
+
+    filtered = _filter_segment_noise(items, "Mobilidade ElÃ©trica")
+    names = [item["nome"] for item in filtered]
+
+    assert "Mobility Center" in names
+    assert "Eletronica Silva" not in names
+
+
+def test_mobilidade_eletrica_remove_ruidos_vistos_em_logs():
+    items = [
+        {"nome": "VELOT AMERICANA - SP", "segmentos": ["Loja de motos eletricas"]},
+        {"nome": "GTMax Energy - Energia Solar", "segmentos": ["Empresa de energia solar"]},
+        {"nome": "Meta Materiais Eletricos e Hidraulica", "segmentos": ["Loja de materiais eletricos"]},
+        {"nome": "Eletricista 24 Horas- Mogi das Cruzes", "segmentos": ["Eletricista"]},
+        {"nome": "Rei Dos Vidros Americana", "segmentos": ["Vidracaria"]},
+        {"nome": "Margutti Multimarcas Americana", "segmentos": ["Concessionaria"]},
+    ]
+
+    filtered = _filter_segment_noise(items, "Mobilidade Eletrica")
+    names = [item["nome"] for item in filtered]
+
+    assert "VELOT AMERICANA - SP" in names
+    assert "GTMax Energy - Energia Solar" not in names
+    assert "Meta Materiais Eletricos e Hidraulica" not in names
+    assert "Eletricista 24 Horas- Mogi das Cruzes" not in names
+    assert "Rei Dos Vidros Americana" not in names
+    assert "Margutti Multimarcas Americana" not in names

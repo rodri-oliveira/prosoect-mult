@@ -159,7 +159,12 @@ export const buildQueryPayload = () => {
     const segWrapper = document.getElementById('segmentoSelector');
     const segmentosSelecionados = segWrapper ? (Alpine.$data(segWrapper).selecionados || []) : [];
     const cidade = (document.getElementById('mapCidade')?.value || '').trim();
-    const estado = (document.getElementById('mapEstado')?.value || '').trim();
+    let estado = (document.getElementById('mapEstado')?.value || '').trim();
+    if (cidade && !estado) {
+        estado = 'SP';
+        const mapEstado = document.getElementById('mapEstado');
+        if (mapEstado) mapEstado.value = estado;
+    }
     const query = (window.lastQuery || '').trim();
     return { segmentosSelecionados, cidade, estado, query };
 };

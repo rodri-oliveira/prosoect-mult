@@ -18,7 +18,7 @@ export function restoreMapFilters() {
         const mapEstado = document.getElementById('mapEstado');
 
         if (mapCidade) mapCidade.value = cidade;
-        if (mapEstado) mapEstado.value = estado;
+        if (mapEstado && estado) mapEstado.value = estado;
 
         // Restaurar segmentos no Alpine com retry melhorado
         const segWrapper = document.getElementById('segmentoSelector');
