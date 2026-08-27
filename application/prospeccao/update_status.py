@@ -81,6 +81,7 @@ def update_prospecction_status_with_repo(
 
     # 2. Atualização de status via repository (apenas após passar pelas validações)
     if novo_status == "Pediu para retornar":
+        assert data_retorno is not None
         repo.agendar_retorno(
             req.prospeccao_id,
             data_retorno=data_retorno,

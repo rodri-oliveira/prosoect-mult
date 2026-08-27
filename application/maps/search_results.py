@@ -253,10 +253,24 @@ def search_maps_results_with_repo(
                         _get_sort_priority(it),
                     )
                 )
+            elif any("varej" in (s or "").lower() for s in segs):
+                merged.sort(
+                    key=lambda it: (
+                        -int(it.get("varejo_medio_fit_score") or 0),
+                        _get_sort_priority(it),
+                    )
+                )
             elif any("inform" in (s or "").lower() for s in segs):
                 merged.sort(
                     key=lambda it: (
                         -int(it.get("informatica_medio_fit_score") or it.get("informatica_fit_score") or 0),
+                        _get_sort_priority(it),
+                    )
+                )
+            elif any("mobilidade" in (s or "").lower() for s in segs):
+                merged.sort(
+                    key=lambda it: (
+                        -int(it.get("mobilidade_fit_score") or 0),
                         _get_sort_priority(it),
                     )
                 )
@@ -415,6 +429,12 @@ def _filter_segment_noise(results: list[dict], seg: str) -> list[dict]:
 
     if "gamer" in seg_clean:
         return _filter_noise_gamer(results)
+
+    if "varej" in seg_clean:
+        return _filter_noise_varejo_medio(results)
+
+    if "mobilidade" in seg_clean:
+        return _filter_noise_mobilidade_eletrica(results)
 
     return results
 
@@ -991,10 +1011,278 @@ def _looks_like_person_name(nome_norm: str) -> bool:
     return True
 
 
+_VAREJO_MEDIO_NOISE_NAMES = [
+    # Mercados municipais / Órgãos públicos
+    "mercado municipal", "mercadão municipal", "mercadao municipal", "feira livre",
+    # Usados / Brechós / Segunda mão / Antiguidades
+    "usados", "usado", "segunda mão", "segunda mao", "brechó", "brecho", "móveis usados", "moveis usados", "eletros usados", "antiguidades", "bazar beneficente",
+    # Saúde / Farmácias puras / Óticas / Clínicas
+    "farmacia", "farmácia", "drogaria", "drogarias", "drogasil", "droga raia",
+    "otica", "ótica", "optica", "óptica", "laboratorio", "laboratório",
+    "clinica", "clínica", "hospital", "consultorio", "consultório", "odontologia", "dentista", "ortodontia",
+    # Automotivo / Postos / Mecânica
+    "auto pecas", "auto peças", "autopeças", "autopecas", "mecanica", "mecânica",
+    "funilaria", "borracharia", "pneus", "posto de gasolina", "posto de combustivel", "lava rapido", "lava rápido", "centro automotivo",
+    # Construção civil pesada
+    "material de construcao", "material de construção", "tintas", "madeireira", "marmoraria", "vidracaria", "vidraçaria", "serralheria", "cimento", "areia",
+    # Serviços administrativos e profissionais
+    "imobiliaria", "imobiliária", "advocacia", "advogado", "contabilidade", "contabil", "despachante",
+    # Estética / Beleza / Fitness
+    "academia", "pilates", "crossfit", "barbearia", "salao de beleza", "salão de beleza", "estetica", "estética", "manicure",
+    # Pets / Veterinária
+    "pet shop", "veterinaria", "veterinária", "agropecuaria", "agropecuária",
+    # Alimentação consumo imediato (Restaurantes/Bares/Padarias)
+    "restaurante", "lanchonete", "pizzaria", "hamburgueria", "padaria", "confeitaria", "bar ", "churrascaria", "sorveteria",
+]
+
+_VAREJO_MEDIO_POSITIVE_TERMS = [
+    "supermercado", "supermercados", "hipermercado", "hipermercados", "mercado", "mercados",
+    "atacarejo", "atacarejos", "mercearia", "comercial de alimentos", "rede de supermercados",
+    "moveis", "móveis", "eletro", "eletromoveis", "eletromóveis", "eletrodomesticos", "eletrodomésticos",
+    "eletroportateis", "eletroportáteis", "departamento", "departamentos", "loja de departamentos",
+    "utilidades", "utilidade", "variedades", "variedade", "bazar", "presentes", "artigos para o lar",
+    "loja", "magazine", "comercio", "comércio", "comercial", "varejo", "varejista",
+]
+
+
+def _score_varejo_medio_fit(texto: str, nome: str) -> int:
+    score = 20  # Base
+    nome_norm = _norm_key(nome)
+    texto_norm = _norm_key(texto)
+
+    # Tier 1 (+80): Supermercados / Hipermercados / Atacarejos regionais / Redes alimentícias
+    if any(t in nome_norm or t in texto_norm for t in ["supermercado", "supermercados", "hipermercado", "hipermercados", "atacarejo", "atacarejos", "rede de supermercados", "comercial de alimentos"]):
+        score += 80
+    # Tier 2 (+50): Móveis e Eletro / Eletromóveis / Lojas de Departamentos regionais
+    elif any(t in nome_norm or t in texto_norm for t in ["moveis e eletro", "móveis e eletro", "eletromoveis", "eletromóveis", "eletrodomesticos", "eletrodomésticos", "departamento", "departamentos", "loja de departamentos", "eletroportateis", "eletroportáteis"]):
+        score += 50
+    # Tier 3 (+30): Utilidades Domésticas / Variedades / Bazar
+    elif any(t in nome_norm or t in texto_norm for t in ["utilidades", "variedades", "bazar", "artigos para o lar", "presentes"]):
+        score += 30
+
+    return score
+
+
+def _filter_noise_varejo_medio(results: list[dict]) -> list[dict]:
+    """Filtro para Varejistas de Médio Porte (Tier 3).
+    
+    Lógica:
+      - Remove serviços puros, autopeças, clínicas, drogarias, construção pesada e restaurantes
+      - Mantém supermercados, hipermercados locais, lojas de móveis e eletro, utilidades e departamentos
+      - Calcula e atribui Fit Score B2B (varejo_medio_fit_score)
+    """
+    filtered = []
+    for item in results:
+        nome_raw = item.get("nome") or ""
+        nome = _norm_key(nome_raw)
+        raw_text = _norm_key(item.get("__raw_text") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        query_sources = " ".join([_norm_key(str(qs)) for qs in (item.get("query_sources") or [])])
+
+        texto_loja = f"{nome} {raw_text} {categorias_str}"
+        texto_para_busca = f"{texto_loja} {query_sources}"
+
+        # 1. Filtro de ruídos óbvios
+        is_noise = any(t in texto_loja for t in _VAREJO_MEDIO_NOISE_NAMES)
+
+        # Bloqueios absolutos (itens usados, brechós e mercados municipais sempre são descartados)
+        termos_bloqueio_absoluto = ["usado", "usados", "segunda mao", "segunda mão", "brecho", "brechó", "mercado municipal", "mercadao municipal", "mercadão municipal", "feira livre", "antiguidades"]
+        tem_bloqueio_absoluto = any(u in texto_loja for u in termos_bloqueio_absoluto)
+
+        if tem_bloqueio_absoluto:
+            is_noise = True
+        elif is_noise:
+            # Exceção de ruído para nomes fortes de redes (ex: Supermercado do Povo)
+            tem_indicativo_forte = any(b in nome for b in ["supermercado", "hipermercado", "atacarejo", "eletromoveis", "eletromóveis", "moveis e eletro", "móveis e eletro"])
+            if tem_indicativo_forte:
+                is_noise = False
+
+        if is_noise:
+            continue
+
+        # 2. Filtro de negócios genéricos sem qualquer sinal positivo de varejo/médio porte
+        tem_positivo = any(p in texto_loja for p in _VAREJO_MEDIO_POSITIVE_TERMS)
+        if not tem_positivo:
+            continue
+
+        # Calcular Fit Score Tier 3
+        fit_score = _score_varejo_medio_fit(texto_para_busca, nome_raw)
+        item["varejo_medio_fit_score"] = fit_score
+
+        filtered.append(item)
+
+    filtered.sort(key=lambda it: int(it.get("varejo_medio_fit_score") or 0), reverse=True)
+    return filtered
+
+
+_MOBILIDADE_NOISE_NAMES = [
+    # Eletropostos / Estações de Carga (não vendem veículos)
+    "eletroposto",
+    "estacao de recarga",
+    "estação de recarga",
+    "ponto de recarga",
+    "posto de recarga",
+    "chargestation",
+    "ev charging",
+    "carregador eletrico",
+    "carregador elétrico",
+    # Locação pública por app / Compartilhamento
+    "bike itau",
+    "bike sampa",
+    "yellow bike",
+    "grin",
+    "ciclofaixa",
+    "aluguel de bike",
+    "aluguel de bicicleta",
+    "locacao de patinete",
+    "locação de patinete",
+    # Oficinas mecânicas a combustão / Carros
+    "troca de oleo",
+    "troca de óleo",
+    "funilaria",
+    "pintura automotiva",
+    "centro automotivo",
+    "auto center",
+    "mecanica automotiva",
+    "mecânica automotiva",
+    "retifica",
+    "retífica",
+    "oficina mecanica",
+    "oficina mecânica",
+    "alinhamento e balanceamento",
+    "borracharia",
+    "posto de combustivel",
+    "posto de combustível",
+    "conveniencia",
+    "conveniência",
+    # Auto Elétrica de carros a combustão (baterias/alternadores de automóveis)
+    "auto eletrica",
+    "auto elétrica",
+    "eletrica automotiva",
+    "elétrica automotiva",
+    "auto eletrico",
+    "auto elétrico",
+    # Ortopedia / Cadeira de rodas motorizada
+    "cadeira de rodas",
+    "ortopedia",
+    "ortopedica",
+    "ortopédica",
+]
+
+_MOBILIDADE_POSITIVE_TERMS = [
+    "moto eletrica", "moto elétrica", "motos eletricas", "motos elétricas",
+    "bicicleta eletrica", "bicicleta elétrica", "bicicletas eletricas", "bicicletas elétricas",
+    "bicicletaria eletrica", "bicicletaria elétrica", "bicicletaria e-bike", "bicicletaria ebike",
+    "e-bike", "ebike", "scooter eletrica", "scooter elétrica", "scooters eletricas", "scooters elétricas",
+    "patinete eletrico", "patinete elétrico", "patinetes eletricos", "patinetes elétricos",
+    "veiculo eletrico", "veículo elétrico", "veiculos eletricos", "veículos elétricos",
+    "mobilidade eletrica", "mobilidade elétrica", "mobilidade leve",
+    "watts", "voltz", "shineray eletrica", "shineray elétrica", "niu", "super soco", "bee eletrica", "lev", "nxt", "muv", "two dogs",
+    "concessionaria", "concessionária", "revenda de motos", "revenda de ebike", "revenda de bicicletas eletricas", "revenda de bicicletas elétricas",
+]
+
+_MOBILIDADE_B2B_HIGH_INTENT = [
+    "distribuidor", "distribuidora", "atacadista", "atacado", "revenda", "importadora", "fornecedor", "concessionaria", "concessionária",
+]
+
+_MOBILIDADE_B2B_MEDIUM_INTENT = [
+    "loja de motos eletricas", "loja de motos elétricas", "loja de bicicletas eletricas", "loja de bicicletas elétricas",
+    "loja de e-bikes", "ebike shop", "loja de scooters", "veiculos eletricos", "veículos elétricos", "mobilidade eletrica", "mobilidade elétrica",
+    "bicicletaria eletrica", "bicicletaria elétrica",
+]
+
+_MOBILIDADE_BUSINESS_HINTS = [
+    "eletrica", "elétrica", "ebike", "e-bike", "scooter", "moto", "motos", "bike", "bikes",
+    "bicicleta", "bicicletas", "mobilidade", "veiculos", "veículos", "motors", "ev",
+    "distribuidora", "revenda", "loja", "concessionaria", "concessionária", "ltda", "me", "epp", "s.a",
+]
+
+
+def _score_mobilidade_fit(texto: str, nome: str) -> int:
+    score = 20  # Base
+    nome_norm = _norm_key(nome)
+    texto_norm = _norm_key(texto)
+
+    # Tier 1 (+80): Canal B2B Direto (Distribuidor, Revenda, Atacado, Concessionária)
+    if any(t in nome_norm or t in texto_norm for t in _MOBILIDADE_B2B_HIGH_INTENT):
+        score += 80
+
+    # Tier 2 (+50): Produto e Loja Especializada (Moto Elétrica, E-bike, Scooter, Mobilidade Elétrica)
+    if any(t in nome_norm or t in texto_norm for t in _MOBILIDADE_B2B_MEDIUM_INTENT):
+        score += 50
+
+    # Tier 3 (+30): Termos positivos de mobilidade elétrica
+    if any(t in nome_norm or t in texto_norm for t in _MOBILIDADE_POSITIVE_TERMS):
+        score += 30
+
+    # Penalidade (-30): Se parecer nome de pessoa física sem indicador comercial
+    if _looks_like_mobilidade_person_name(nome_norm):
+        score -= 30
+
+    return max(0, score)
+
+
+def _looks_like_mobilidade_person_name(nome_norm: str) -> bool:
+    parts = [p for p in (nome_norm or "").split() if p]
+    if len(parts) < 2 or len(parts) > 5:
+        return False
+    if any(term in nome_norm for term in _MOBILIDADE_BUSINESS_HINTS):
+        return False
+    return True
+
+
+def _filter_noise_mobilidade_eletrica(results: list[dict]) -> list[dict]:
+    """Filtro semântico e B2B em memória para o segmento 'Mobilidade Elétrica'.
+
+    Lógica:
+      - Remove eletropostos, estações de carga, oficinas a combustão, aluguel público e bicicletarias tradicionais sem e-bike
+      - Mantém lojas, concessionárias e distribuidores de motos, e-bikes e scooters elétricas
+      - Calcula e atribui Fit Score B2B (mobilidade_fit_score)
+    """
+    filtered = []
+    for item in results:
+        nome_raw = item.get("nome") or ""
+        nome = _norm_key(nome_raw)
+        raw_text = _norm_key(item.get("__raw_text") or "")
+        categorias_list = item.get("segmentos") or []
+        categorias_str = " ".join([_norm_key(str(c)) for c in categorias_list])
+        query_sources = " ".join([_norm_key(str(qs)) for qs in (item.get("query_sources") or [])])
+
+        texto_loja = f"{nome} {raw_text} {categorias_str}"
+        texto_para_busca = f"{texto_loja} {query_sources}"
+
+        # 1. Filtro de ruídos óbvios
+        is_noise = any(t in texto_loja for t in _MOBILIDADE_NOISE_NAMES)
+        if is_noise:
+            continue
+
+        # 2. Descarte de bicicletarias e oficinas tradicionais de bicicletas a pedal sem sinal elétrico/e-bike
+        termos_bicicletaria_tradicional = ["bicicletaria", "casa das bicicletas", "oficina de bicicletas", "conserto de bicicletas", "loja de bicicletas", "bicicletas"]
+        eh_bicicletaria_tradicional = any(b in texto_loja for b in termos_bicicletaria_tradicional)
+        if eh_bicicletaria_tradicional:
+            tem_sinal_eletrico = any(e in texto_loja for e in ["eletrica", "elétrica", "e-bike", "ebike", "scooter", "moto", "watts", "voltz", "shineray", "niu", "lev", "nxt", "mobilidade"])
+            if not tem_sinal_eletrico:
+                continue
+
+        # 3. Filtro de negócios genéricos sem qualquer sinal positivo de mobilidade elétrica no texto próprio da loja
+        tem_positivo = any(p in texto_loja for p in _MOBILIDADE_POSITIVE_TERMS)
+        if not tem_positivo:
+            continue
+
+        # Calcular Fit Score B2B
+        fit_score = _score_mobilidade_fit(texto_para_busca, nome_raw)
+        item["mobilidade_fit_score"] = fit_score
+
+        filtered.append(item)
+
+    filtered.sort(key=lambda it: int(it.get("mobilidade_fit_score") or 0), reverse=True)
+    return filtered
+
+
 def _filter_large_retail(results: list[dict]) -> list[dict]:
     """Filtra grandes redes de varejo e serviços puramente técnicos dos resultados."""
     server_exclusions = [
-        # Grandes redes B2C globais e regionais
         "magazine luiza",
         "magalu",
         "americanas",
@@ -1013,6 +1301,21 @@ def _filter_large_retail(results: list[dict]) -> list[dict]:
         "bumerang",
         "pichau",
         "terabyte",
+        "lojas cem",
+        "loja cem",
+        "pernambucanas",
+        "marabraz",
+        "lojas colombo",
+        "gazin",
+        "novo mundo",
+        "assaí",
+        "assai",
+        "atacadão",
+        "atacadao",
+        "sam's club",
+        "sams club",
+        "pão de açúcar",
+        "pao de acucar",
         "mercado livre",
         "ponto de coleta",
         "agência mercado livre",
@@ -1141,11 +1444,8 @@ def _filter_city_page_results(results: list[dict], cidade: str) -> list[dict]:
 def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> list[dict]:
     """Remove itens que declaram explicitamente outra cidade no nome.
 
-    Ex: ao buscar em "Aguaí", remove "Loja Zema - Casa Branca".
-    Filtro conservador: só remove quando o nome termina com " - <texto>" e esse
-    <texto> não bate com a cidade alvo normalizada.
+    Ex: ao buscar em "Altair", remove "Shineray Suzano", "Shineray Ferraz de Vasconcelos" ou "Loja Zema - Casa Branca".
     """
-
     import re
 
     target_city = _norm_key(cidade)
@@ -1159,20 +1459,15 @@ def _filter_items_with_other_city_in_name(results: list[dict], cidade: str) -> l
             out.append(item)
             continue
 
-        m = re.search(r"\s-\s([^\d]{2,40})$", nome_raw)
-        if not m:
-            out.append(item)
-            continue
+        norm_nome = _norm_key(nome_raw)
 
-        declared_city = _norm_key(m.group(1))
-        if not declared_city:
-            out.append(item)
-            continue
-
-        # Se declarou explicitamente outra cidade, remover.
-        # Se declarou a própria cidade (ou variação), manter.
-        if declared_city != target_city:
-            continue
+        # 1. Checa separadores " - Cidade", " / Cidade", " (Cidade)" ou palavra isolada de cidade no final
+        m = re.search(r"[\s\-/\(]\s*([A-Za-zÀ-ÿ0-9\s]{2,40})[\)]?$", nome_raw)
+        if m:
+            declared_city = _norm_key(m.group(1))
+            if declared_city and declared_city != target_city and target_city not in norm_nome:
+                # Se declarou explicitamente outra cidade no nome e a cidade alvo não está no nome, descarte
+                continue
 
         out.append(item)
 
@@ -1195,9 +1490,7 @@ def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
     estados = "AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO"
 
     # Regex melhorado:
-    # 1. Suporta separadores , ou · ou - antes da sigla do estado
-    # 2. Suporta siglas em maiúsculo ou minúsculo
-    # 3. Detecta "Cidade - UF" ou "Cidade, UF"
+    # Detecta "Cidade - UF" ou "Cidade, UF"
     city_state_re = re.compile(
         rf'([A-Za-zÀ-ÿ0-9\s\-]+)\s*[,·\-]\s*(?:{estados})\b', 
         re.IGNORECASE
@@ -1218,26 +1511,21 @@ def _filter_strict_city(results: list[dict], cidade: str) -> list[dict]:
         cidade_extraida = str(item.get("cidade") or "").strip()
         if cidade_extraida:
             norm_cidade_extraida = _norm_key(cidade_extraida)
-            if norm_cidade_extraida and norm_cidade_extraida != target_city:
+            if norm_cidade_extraida and norm_cidade_extraida != target_city and target_city not in norm_cidade_extraida:
                 # Cidade extraída é diferente da cidade alvo - descarta
                 continue
 
         # 3. Fallback: Verifica se o texto bruto do card do Maps acusa uma cidade diferente
         raw_text = str(item.get("__raw_text") or "")
-        if raw_text and not cidade_extraida:
-            # Tenta encontrar correspondências de "Cidade, UF"
-            # O Maps costuma colocar o endereço no final ou perto do final separados por | ou ponto
+        if raw_text:
             matches = city_state_re.findall(raw_text)
             if matches:
-                # Vamos verificar de trás para frente, pois o endereço completo costuma estar no final
                 found_wrong_city = False
                 for match_city in reversed(matches):
-                    # Limpa a "cidade" encontrada
                     candidate = match_city.split("·")[-1].split("|")[-1].split("-")[-1].strip()
                     candidate = _norm_key(candidate)
 
-                    if candidate and candidate != target_city:
-                        # Se achamos uma cidade explícita diferente, é lixo geográfico
+                    if candidate and candidate != target_city and candidate not in target_city:
                         found_wrong_city = True
                         break
 
@@ -1263,12 +1551,13 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     """
     cidade_clean = (cidade or "").strip()
     estado_clean = (estado or "").strip()
+
     local_parts = []
     if cidade_clean:
         local_parts.append(f'"{cidade_clean}"')
     if estado_clean:
         local_parts.append(estado_clean)
-        
+
     local = ", ".join(local_parts)
     if local:
         local = f" em {local}"
@@ -1298,36 +1587,12 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
     # Multilaser + marcas complementares que indicam potencial B2B
     brand_terms = ["Multilaser", "Lenovo", "Dell", "Samsung", "LG", "Positivo"]
     
-    # Termos de exclusão para evitar resultados irrelevantes
-    # Serão usados como "-fechado" na query do Google
+    # Termos leves de exclusão para a query do Google Maps (para não estourar limite de tamanho da busca)
+    # O descarte pesado de grandes redes e assistências técnicas é feito 100% em memória no Python (_filter_large_retail)
     exclude_terms = [
         "fechado",
         "extinto",
         "falência",
-        # Varejo grande e agências - não interessam para revenda CNPJ
-        "Magazine Luiza",
-        "Magalu",
-        "Americanas",
-        "Casas Bahia",
-        "Ponto Frio",
-        "Carrefour",
-        "Extra",
-        "Walmart",
-        "Leroy Merlin",
-        "Camicado",
-        "MadeiraMadeira",
-        "Havan",
-        "Kalunga",
-        "Fast Shop",
-        "Kabum",
-        "Agência Mercado Livre",
-        "Ponto de Coleta",
-        "Assistência Técnica",
-        "Assistencia Tecnica",
-        "Conserto",
-        "Reparo",
-        "Manutenção",
-        "Manutencao",
     ]
     
     # Grupos de âncoras por família Multilaser (Curva ABC Fevereiro)
@@ -1474,7 +1739,39 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "Fitness": ["fitness"],
         "Pet": ["pet shop"],
         "Redes": ["roteador switch", "cabo rede"],
-        "Mobilidade Elétrica": ["patinete elétrico", "scooter"],
+        "Mobilidade Elétrica": [
+            # TIER 0: Termos naturais diretos de busca no Maps
+            "mobilidade elétrica",
+            "lojas de mobilidade elétrica",
+
+            # TIER 1: B2B - Atacadistas e Distribuidores
+            "distribuidor de mobilidade elétrica",
+            "distribuidor de motos elétricas",
+            "distribuidor de bicicletas elétricas",
+            "atacadista de mobilidade elétrica",
+            "revenda de mobilidade elétrica",
+            "revenda de motos elétricas",
+            "revenda de bicicletas elétricas",
+
+            # TIER 2: Motos e Scooter Elétricas (Concessionárias e Lojas Especializadas)
+            "loja de motos elétricas",
+            "concessionária de motos elétricas",
+            "loja de scooters elétricas",
+            "scooter elétrica",
+            "motos elétricas",
+
+            # TIER 3: Bicicletas Elétricas (e-bikes)
+            "loja de bicicletas elétricas",
+            "loja de e-bikes",
+            "ebike shop",
+            "bicicletaria elétrica",
+            "bicicletas elétricas",
+
+            # TIER 4: Patinetes e Veículos Leves Elétricos
+            "loja de patinetes elétricos",
+            "veículos elétricos",
+            "assistência e venda de moto elétrica",
+        ],
         "Health Care": [
             # Atacadistas e distribuidores (foco CNPJ)
             "atacadista equipamentos médicos",
@@ -1597,6 +1894,24 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
         "computadores e periféricos",
     ]
 
+    anchor_groups["Varejistas de Médio Porte"] = [
+        "supermercado",
+        "supermercados",
+        "supermercado regional",
+        "rede de supermercados",
+        "hipermercado",
+        "atacarejo",
+        "loja de móveis e eletro",
+        "móveis e eletrodomésticos",
+        "loja de eletrodomésticos",
+        "loja de departamentos",
+        "loja de utilidades domésticas",
+        "loja de utilidades",
+        "loja de variedades",
+        "bazar e presentes",
+        "eletromóveis",
+    ]
+
     queries: list[dict[str, str]] = []
     num_segs = len(segs)
     
@@ -1620,6 +1935,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             "Health Care",
             "Sennheiser",
             "Informática (Médio Porte)",
+            "Varejistas de Médio Porte",
         ]
 
         if is_brand_segment:
@@ -1648,6 +1964,7 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
                     "atacado", "distribuidora", "fornecedor", "revenda", "outlet", "saldão", "bazar", "shopping", "papelaria",
                     "locadora", "equipamento", "drone", "câmera", "estabilizador",
                     "acessório", "clube", "produtora", "estúdio", "importadora",
+                    "concessionária", "concessionaria", "ebike", "bicicletaria", "veículos", "veiculos", "assistência", "assistencia",
                 )
                 
                 if anchor_lower.startswith(prefixes_to_ignore):
@@ -1662,8 +1979,14 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             queries.append({"q": q, "segmento": seg_clean})
             
             # Queries com marcas relevantes
-            # Drones: Inserir "DJI" para focar em profissionais e revendas
-            seg_brands = brand_terms[:2] if "drone" not in seg_clean.lower() else ["DJI"]
+            # Drones: Inserir "DJI"
+            # Mobilidade Elétrica: Inserir marcas do setor ("Watts", "Voltz", "Shineray")
+            if "drone" in seg_clean.lower():
+                seg_brands = ["DJI"]
+            elif "mobilidade" in seg_clean.lower():
+                seg_brands = ["Watts", "Voltz", "Shineray"]
+            else:
+                seg_brands = brand_terms[:2]
             for brand in seg_brands:
                 queries.append({"q": f"{brand} {seg_clean}{local}".strip(), "segmento": seg_clean})
     
@@ -1687,8 +2010,10 @@ def _build_queries_for_segments(segs: list[str], cidade: str, estado: str, extra
             all_excludes = exclude_terms + _BRINQUEDOS_NOISE_NAMES
         if seg == "Gamer":
             all_excludes = exclude_terms + _GAMER_NOISE_NAMES
+        if "varej" in seg.lower():
+            all_excludes = exclude_terms + ["magazine luiza", "casas bahia", "lojas cem", "pernambucanas", "marabraz", "farmacia", "drogaria", "oficina", "mecanica"]
         if "inform" in seg.lower():
-            all_excludes = exclude_terms + ["software", "provedor", "consultoria"]
+            all_excludes = exclude_terms + ["assistencia tecnica", "software", "provedor", "consultoria"]
         exclude_suffix = " " + " ".join([f'-"{term}"' for term in all_excludes])
         spec["q"] = f"{spec['q']}{exclude_suffix}".strip()
     

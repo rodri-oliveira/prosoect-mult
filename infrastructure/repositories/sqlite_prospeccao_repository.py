@@ -235,7 +235,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
     def add(self, dados: dict) -> tuple[int, bool]:
         import logging
         _logger = logging.getLogger(__name__)
-        def _norm_text(v: str) -> str:
+        def _norm_text(v: str | None) -> str:
             return " ".join((v or "").strip().lower().split())
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -385,7 +385,10 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
         )
         conn.commit()
         new_id = c.lastrowid
-        if status != "Não contatado" and new_id:
+        if new_id is None:
+            conn.close()
+            raise RuntimeError("Erro ao obter o ID inserido.")
+        if status != "Não contatado":
             detalhe = status
             if obs:
                 detalhe = f"{status} | {obs}"
@@ -521,7 +524,7 @@ class SqliteProspeccaoRepository(ProspeccaoRepository):
             )
             conn.commit()
         updates = []
-        params = []
+        params: list[Any] = []
         
         if observacao is not None:
             updates.append("observacao = ?")

@@ -67,5 +67,14 @@ Abaixo está o registro de como cada área foi lapidada com dados reais empíric
 *   **FOCO (Próximos passos baseados na regra):** Evitar caixas bluetooth comuns de varejo e atacar locais de alto consumo sonoro B2B.
 *   **ALVOS PRINCIPAIS:** `"loja de instrumentos musicais"`, `"distribuidor som automotivo"`, `"acústica e som"`.
 
+### 🛒 Varejistas de Médio Porte (Tier 3)
+*   **FOCO:** Redes de médio porte e comércio regional de giro para produtos de curva B/C, eletroportáteis, brinquedos e eletrônicos de consumo.
+*   **ALVOS PRINCIPAIS:** `"supermercado"`, `"hipermercado"`, `"loja de móveis e eletro"`, `"loja de departamentos"`, `"atacarejo"`, `"loja de utilidades domésticas"`, `"eletromóveis"`.
+*   **O QUE FOI CORTADO:** Grandes redes nacionais (Magazine Luiza, Casas Bahia, Lojas Cem, Pernambucanas, Marabraz, Gazin, Colombo, Novo Mundo, Assaí, Atacadão Carrefour, Sam's Club, Pão de Açúcar) e serviços puros/comércios sem relevância (drogarias, oficinas, postos, restaurantes).
+*   **FIT SCORE TIER 3:**
+    *   **Tier 1 (+80):** Supermercados, Hipermercados, Atacarejos e Redes Alimentícias regionais.
+    *   **Tier 2 (+50):** Móveis e Eletro, Eletromóveis e Lojas de Departamentos.
+    *   **Tier 3 (+30):** Utilidades Domésticas, Bazar e Variedades.
+
 ---
 *Documento gerado como base analítica para garantia do funil B2B do motor de prospecção ativa do CRM Multilaser.*
